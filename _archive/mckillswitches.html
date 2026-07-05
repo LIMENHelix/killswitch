@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>McKillswitch's — The Website Drive-Thru 💻 (Kansas City)</title>
+<meta name="description" content="McKillswitch's: sites served HOT. Cheap, fast, fully custom websites for Kansas City — grab a value meal and go live this week. Special orders always welcome." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%23cf1322'/%3E%3Ctext x='50' y='73' font-family='Georgia,serif' font-size='66' font-weight='700' text-anchor='middle' fill='%23ffffff'%3EK%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .mck-hero { text-align: center; padding: 64px 0 30px;
+    background: radial-gradient(900px 400px at 50% -10%, color-mix(in srgb, #ffb81c 20%, transparent), transparent 60%), var(--bg); }
+  .mck-hero .meal-deal { display: inline-block; background: #ffb81c; color: #15161a; font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; padding: 7px 16px; border-radius: 999px; transform: rotate(-2deg); margin-bottom: 20px; }
+  .mck-hero h1 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(40px, 9vw, 86px); line-height: .95; letter-spacing: -0.02em; }
+  .mck-hero h1 .y { color: #ffb81c; } .mck-hero h1 .r { color: var(--brand-red); }
+  .mck-hero p { color: var(--body); font-size: 20px; max-width: 600px; margin: 18px auto 0; font-weight: 500; }
+  .mck-hero .wee { color: var(--muted); font-size: 14px; margin-top: 10px; font-style: italic; }
+  /* the MENU BOARD */
+  .board { background: var(--brand-red); border-radius: 26px; padding: 24px; margin: 50px 0; box-shadow: var(--shadow-lg); }
+  .board__inner { position: relative; background: #111; border-radius: 16px; padding: 36px 30px; }
+  /* old-school marquee bulbs flashing around the frame */
+  .board__inner::before, .board__inner::after {
+    content: ''; position: absolute; inset: -15px; border-radius: 26px; pointer-events: none;
+    background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+    background-position: 0 top, 0 bottom, left 0, right 0;
+    background-size: 30px 16px, 30px 16px, 16px 30px, 16px 30px;
+    filter: drop-shadow(0 0 5px rgba(255,184,28,.95));
+  }
+  .board__inner::before {
+    background-image:
+      radial-gradient(circle 6px at 8px center, #ffd24a 72%, transparent 77%),
+      radial-gradient(circle 6px at 8px center, #ffd24a 72%, transparent 77%),
+      radial-gradient(circle 6px at center 8px, #ffd24a 72%, transparent 77%),
+      radial-gradient(circle 6px at center 8px, #ffd24a 72%, transparent 77%);
+    animation: marquee-a .5s steps(1) infinite;
+  }
+  .board__inner::after {
+    background-image:
+      radial-gradient(circle 6px at 23px center, #fff1bd 72%, transparent 77%),
+      radial-gradient(circle 6px at 23px center, #fff1bd 72%, transparent 77%),
+      radial-gradient(circle 6px at center 23px, #fff1bd 72%, transparent 77%),
+      radial-gradient(circle 6px at center 23px, #fff1bd 72%, transparent 77%);
+    animation: marquee-b .5s steps(1) infinite;
+  }
+  @keyframes marquee-a { 0%, 49% { opacity: 1; } 50%, 100% { opacity: .25; } }
+  @keyframes marquee-b { 0%, 49% { opacity: .25; } 50%, 100% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .board__inner::before, .board__inner::after { animation: none; opacity: .9; } }
+  .board__title { text-align: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: #ffb81c;
+    font-size: 28px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+  .board__title small { display: block; color: #fff; font-size: 13px; letter-spacing: .2em; font-weight: 500; margin-top: 4px; }
+  .meals { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 26px; }
+  .meal { background: #1a1a1d; border: 2px solid #2c2c30; border-radius: 14px; padding: 22px 20px; transition: transform .15s, border-color .15s; }
+  .meal:hover { transform: translateY(-4px) rotate(-.6deg); border-color: #ffb81c; }
+  .meal__no { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 15px; color: #15161a; background: #ffb81c;
+    display: inline-block; padding: 3px 12px; border-radius: 999px; margin-bottom: 12px; }
+  .meal h3 { font-family: 'Space Grotesk', sans-serif; font-size: 22px; color: #fff; margin-bottom: 6px; }
+  .meal__desc { color: #d8d2b0; font-size: 13.5px; line-height: 1.45; margin-bottom: 12px; font-style: italic; }
+  .meal ul { list-style: none; margin: 0 0 16px; padding: 0; }
+  .meal li { color: #c9c9cf; font-size: 14.5px; padding: 3px 0 3px 22px; position: relative; }
+  .meal li::before { content: '🍟'; position: absolute; left: 0; font-size: 12px; }
+  .meal__price { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 30px; color: #ffb81c; }
+  .meal__price small { font-size: 14px; color: #8a8a90; font-weight: 500; }
+  .meal .btn { margin-top: 14px; }
+  /* upsell strip */
+  .upsell { text-align: center; background: #ffb81c; color: #15161a; border-radius: 18px; padding: 28px 24px; margin: 40px 0; }
+  .upsell h2 { color: #15161a; font-family: 'Space Grotesk', sans-serif; font-size: clamp(24px, 4vw, 34px); }
+  .upsell p { color: #3a2f10; font-weight: 600; margin-top: 8px; font-size: 17px; }
+  .upsell .btn { margin-top: 18px; background: #15161a; color: #ffb81c; border-color: #15161a; }
+  .upsell .btn:hover { filter: brightness(1.3); }
+  .mck-foot-note { text-align: center; color: var(--muted); font-size: 14px; margin: 10px 0 0; font-style: italic; }
+  .upgrade-row { text-align: center; margin: 40px 0 10px; color: var(--body); font-size: 16px; }
+  .upgrade-row a { color: #ffb81c; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<header class="nav" id="top">
+  <div class="container nav__inner">
+    <a href="/" class="brand">⏻ KILLSWITCH</a>
+    <nav class="nav__links" id="navLinks">
+      <a href="/services">Services</a>
+      <a href="/work">Work</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/contact" class="btn btn--sm nav__cta">Start a plan</a>
+    </nav>
+    <button class="nav__toggle" id="navToggle" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="23" height="23"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></button>
+  </div>
+</header>
+
+<section class="mck-hero">
+  <div class="container">
+    <span class="meal-deal">🚗 Now serving · pull on up</span>
+    <h1>WELCOME TO<br /><span class="r">McKILLSWITCH'S</span> <span class="y">💻</span></h1>
+    <p><strong>Sites, served HOT.</strong> Cheap, fast, and somehow still 100% custom. Order at the window, go live this week.</p>
+    <p class="wee">No drive-thru, no problem — we deliver. Bada bing, bada <em>built</em>.</p>
+  </div>
+</section>
+
+<div class="container">
+  <div class="board">
+    <div class="board__inner">
+      <div class="board__title">🍟 The Value Menu <small>POINT &amp; GRUNT · WE'LL FIGURE IT OUT</small></div>
+      <div class="meals">
+
+        <div class="meal">
+          <span class="meal__no">THE #1</span>
+          <h3>The One-Pager</h3>
+          <p class="meal__desc">One slammin' page, out the window in days. No combo brain-freeze.</p>
+          <ul><li>One slammin' page</li><li>Looks great on a phone</li><li>"Contact us" button that works</li><li>Lil' AI chat robot</li></ul>
+          <div class="meal__price">$149<small> /one-time</small></div>
+          <a href="/contact" class="btn btn--block">I'll take it</a>
+        </div>
+
+        <div class="meal">
+          <span class="meal__no">THE #2</span>
+          <h3>The Combo</h3>
+          <p class="meal__desc">The classic everybody points at — site, booking, a couple extra pages.</p>
+          <ul><li>Everything in the #1</li><li>Online booking 📅</li><li>A few more pages</li><li>Show up on Google</li></ul>
+          <div class="meal__price">$299<small> /one-time</small></div>
+          <a href="/contact" class="btn btn--block">Supersize me</a>
+        </div>
+
+        <div class="meal">
+          <span class="meal__no">THE #3</span>
+          <h3>The Big Mac... ro Site</h3>
+          <p class="meal__desc">Go big: payments, gallery, the whole tray. You're gonna need two hands.</p>
+          <ul><li>Everything in the #2</li><li>Take payments 💳</li><li>Photo gallery / menu</li><li>The works, basically</li></ul>
+          <div class="meal__price">$499<small> /one-time</small></div>
+          <a href="/contact" class="btn btn--block">Heck yeah</a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="upsell">
+    <h2>YOU WANT A LOGO WITH THAT? 🤤</h2>
+    <p>Toss a fresh logo, a splash of animation, or a goofy easter egg on any order — sides from just $75. Go on. Treat yourself.</p>
+    <a href="/contact" class="btn">Add a side</a>
+  </div>
+  <p class="mck-foot-note">⚠️ Special orders ALWAYS welcome. Want something weird? Just ask at the window — the cook can make basically anything.</p>
+
+  <p class="upgrade-row">Fancier appetite? Sit down at the <a href="/kitchen">Killswitch Kitchen →</a> or go full snob at <a href="/reserve">the Reserve →</a></p>
+</div>
+
+<section class="section section--cta" id="contact">
+  <div class="container contact">
+    <h2>Place your order.</h2>
+    <p>Tell us what you want. We'll send back a price and a "you got it." Easy.</p>
+    <form class="contact__form" id="contactForm">
+      <input type="text" placeholder="Name" required />
+      <input type="text" placeholder="Phone or email" required />
+      <input type="text" placeholder="Your business" />
+      <button class="btn btn--lg" type="submit">Order up 🛎️</button>
+    </form>
+    <p class="contact__ok" id="contactOk" hidden>✓ Order in! We'll holler back within one business day.</p>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container footer__grid">
+    <div class="footer__brand">
+      <span class="brand">⏻ KILLSWITCH</span>
+      <p>Custom software, disguised as a website. Built in Kansas City.</p>
+    </div>
+    <nav class="footer__links">
+      <a href="/services">Services</a>
+      <a href="/work">Work</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/contact">Start a project</a>
+    </nav>
+  </div>
+  <div class="container footer__bar">
+    <span>© 2026 KILLSWITCH · McKillswitch's is a registered state of mind</span>
+    <a href="#top">Back to top ↑</a>
+  </div>
+</footer>
+
+<button class="chat__launch" id="chatLaunch" aria-label="Open chat">
+  <span class="chat__launchicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3.5 20.5l1.4-5.2A8.5 8.5 0 1 1 21 11.5Z"/></svg></span>
+  <span class="chat__launchdot"></span>
+</button>
+<div class="chat" id="chatPanel" hidden>
+  <div class="chat__head">
+    <div><strong>KILLSWITCH Assistant</strong><small>Typically replies instantly</small></div>
+    <button class="chat__close" id="chatClose" aria-label="Close">✕</button>
+  </div>
+  <div class="chat__log" id="chatLog"></div>
+  <form class="chat__input" id="chatForm">
+    <input type="text" id="chatText" placeholder="Ask us anything…" autocomplete="off" />
+    <button type="submit" aria-label="Send">➤</button>
+  </form>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

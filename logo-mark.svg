@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" role="img" aria-label="Killswitch">
+  <rect width="100" height="100" rx="22" fill="#0a0b0e"/>
+  <g fill="none" stroke="#cf1322" stroke-width="9" stroke-linecap="round">
+    <path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/>
+    <path d="M50 22 V52"/>
+  </g>
+</svg>

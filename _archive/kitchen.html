@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Killswitch Kitchen — The Full Menu (Kansas City)</title>
+<meta name="description" content="The Killswitch Kitchen: real builds, made to order. Mains, combos, sides and desserts for your website and custom software — plus a House Account for unlimited on-the-spot changes." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%23cf1322'/%3E%3Ctext x='50' y='73' font-family='Georgia,serif' font-size='66' font-weight='700' text-anchor='middle' fill='%23ffffff'%3EK%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .kit-hero { text-align: center; padding: 80px 0 20px; }
+  .kit-hero h1 { font-size: clamp(36px, 6vw, 62px); }
+  .kit-hero h1 .accent { color: var(--accent); }
+  .kit-hero p { color: var(--muted); font-size: 19px; max-width: 600px; margin: 16px auto 0; }
+  .menu-card { background: var(--bg-alt); border: 1px solid var(--line); border-radius: var(--radius); padding: 40px 38px; margin: 26px 0; }
+  .menu-sec + .menu-sec { margin-top: 34px; padding-top: 30px; border-top: 1px solid var(--line); }
+  .menu-sec__label { font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--accent); font-size: 14px;
+    letter-spacing: .2em; text-transform: uppercase; margin-bottom: 4px; }
+  .menu-sec__note { color: var(--muted); font-size: 14.5px; font-style: italic; margin-bottom: 20px; }
+  .item { display: flex; align-items: baseline; gap: 10px; padding: 11px 0; }
+  .item__main { flex: 0 1 auto; }
+  .item__name { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 18px; color: var(--ink); }
+  .item__name .star { color: var(--accent); font-size: 13px; vertical-align: 2px; }
+  .item__desc { color: var(--body); font-size: 14.5px; margin-top: 2px; }
+  .item__dots { flex: 1 1 auto; border-bottom: 2px dotted color-mix(in srgb, var(--line) 80%, var(--muted)); transform: translateY(-4px); min-width: 24px; }
+  .item__price { font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--accent); font-size: 18px; white-space: nowrap; }
+  .house { background: linear-gradient(135deg, #15110a, var(--bg-alt)); border-color: color-mix(in srgb, var(--accent) 30%, var(--line)); text-align: center; }
+  .house__price { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 40px; color: var(--accent); margin: 6px 0 2px; }
+  .house__price small { font-size: 16px; color: var(--muted); }
+  .house p { color: var(--body); max-width: 520px; margin: 10px auto 18px; }
+  .chefs { text-align: center; border: 1px dashed color-mix(in srgb, var(--brand-red) 50%, var(--line)); border-radius: var(--radius); padding: 32px; margin: 26px 0; }
+  .chefs h2 { color: var(--brand-red); }
+  .chefs p { color: var(--body); max-width: 540px; margin: 10px auto 18px; }
+  .rooms-row { text-align: center; color: var(--muted); margin: 36px 0 0; font-size: 15.5px; }
+  .rooms-row a { color: var(--accent); font-weight: 600; }
+  /* ── Build-to-Order counter ── */
+  .byo { padding: 30px 0 20px; }
+  .byo__intro { max-width: 720px; margin: 0 auto 34px; text-align: center; }
+  .byo__intro h2 { font-size: clamp(28px, 4vw, 42px); }
+  .byo__intro h2 .accent { color: var(--accent); }
+  .byo__intro p { color: var(--body); font-size: 16.5px; margin-top: 14px; line-height: 1.6; }
+  .byo__intro p b { color: var(--ink); }
+  .byo__grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 26px; align-items: start; }
+  .byo__menu { display: flex; flex-direction: column; gap: 20px; }
+  .byo__group { background: var(--bg-alt); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; }
+  .byo__group-h { font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--accent); font-size: 12.5px; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 12px; }
+  .byo__opt { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; cursor: pointer; transition: background .15s; flex-wrap: wrap; }
+  .byo__opt:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .byo__opt input { width: 18px; height: 18px; accent-color: var(--accent); flex: 0 0 auto; cursor: pointer; }
+  .byo__opt-name { font-weight: 600; color: var(--ink); }
+  .byo__opt-price { margin-left: auto; font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--accent); white-space: nowrap; }
+  .byo__opt-desc { color: var(--muted); font-size: 13px; flex: 1 1 100%; padding-left: 30px; margin-top: -2px; }
+  .byo__group textarea { width: 100%; min-height: 92px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; color: var(--ink); font: inherit; padding: 13px 15px; resize: vertical; }
+  .byo__group textarea::placeholder { color: var(--muted); }
+  .byo__group textarea:focus { outline: none; border-color: var(--accent); }
+  .byo__cart { position: sticky; top: 96px; background: linear-gradient(160deg, #15110a, var(--bg-alt)); border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line)); border-radius: var(--radius); padding: 24px; }
+  .byo__cart-h { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink); margin-bottom: 14px; }
+  .byo__cart ul { list-style: none; margin: 0 0 14px; padding: 0; }
+  .byo__cart li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; color: var(--body); }
+  .byo__cart li:first-child { border-top: none; }
+  .byo__cart li span:last-child { color: var(--ink); font-weight: 600; white-space: nowrap; }
+  .byo-empty { color: var(--muted); font-style: italic; }
+  .byo__total { display: flex; justify-content: space-between; align-items: baseline; border-top: 2px solid var(--accent); padding-top: 14px; margin-bottom: 6px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--ink); font-size: 15px; }
+  .byo__total span { font-size: 28px; color: var(--accent); }
+  .byo__fine { color: var(--muted); font-size: 12.5px; line-height: 1.5; margin-bottom: 16px; }
+  .byo__cart input { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); font: inherit; padding: 12px 14px; margin-bottom: 10px; }
+  .byo__cart input:focus { outline: none; border-color: var(--accent); }
+  .byo__note { margin-top: 12px; font-size: 14px; min-height: 18px; }
+  @media (max-width: 860px) { .byo__grid { grid-template-columns: 1fr; } .byo__cart { position: static; } }
+</style>
+</head>
+<body>
+
+<header class="nav" id="top">
+  <div class="container nav__inner">
+    <a href="/" class="brand">⏻ KILLSWITCH</a>
+    <nav class="nav__links" id="navLinks">
+      <a href="/services">Services</a>
+      <a href="/work">Work</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/contact" class="btn btn--sm nav__cta">Start a plan</a>
+    </nav>
+    <button class="nav__toggle" id="navToggle" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="23" height="23"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></button>
+  </div>
+</header>
+
+<section class="kit-hero">
+  <div class="container">
+    <div class="eyebrow">The Sit-Down</div>
+    <h1>Killswitch <span class="accent">Kitchen</span></h1>
+    <p>Pull up a chair. Everything's made to order — pick a main, add what you like, and tell the chef about anything that isn't on here.</p>
+  </div>
+</section>
+
+<!-- ── BUILD-TO-ORDER COUNTER ── -->
+<section class="byo" id="byo">
+  <div class="container">
+    <div class="byo__intro">
+      <div class="eyebrow">Built to order</div>
+      <h2>Build your <span class="accent">own</span></h2>
+      <p>This isn't "more pages." <b>Start with a base, then bolt on the custom pieces your business actually runs on</b> — watch it come together and price itself. A template can't do this; we build each part to your workflow. Don't see what you need? <b>Tell the chef</b> at the bottom — we cook off-menu all day.</p>
+    </div>
+
+    <div class="byo__grid">
+      <div class="byo__menu">
+        <div class="byo__group">
+          <div class="byo__group-h">1 · Pick a base</div>
+          <label class="byo__opt"><input type="radio" name="byo-base" data-price="149" data-label="One-pager base"><span class="byo__opt-name">One-pager</span><span class="byo__opt-price">$149</span><span class="byo__opt-desc">A single sharp page to start from.</span></label>
+          <label class="byo__opt"><input type="radio" name="byo-base" data-price="750" data-label="Basic site base" checked><span class="byo__opt-name">Basic site</span><span class="byo__opt-price">$750</span><span class="byo__opt-desc">Clean, fast, custom foundation.</span></label>
+          <label class="byo__opt"><input type="radio" name="byo-base" data-price="2500" data-label="Mid site base"><span class="byo__opt-name">Mid site ★</span><span class="byo__opt-price">$2,500</span><span class="byo__opt-desc">Multi-page, the popular starting point.</span></label>
+          <label class="byo__opt"><input type="radio" name="byo-base" data-price="7500" data-label="Large build base"><span class="byo__opt-name">Large build</span><span class="byo__opt-price">$7,500</span><span class="byo__opt-desc">A full custom platform to grow on.</span></label>
+        </div>
+
+        <div class="byo__group">
+          <div class="byo__group-h">2 · Add custom modules</div>
+          <label class="byo__opt"><input type="checkbox" data-price="250" data-label="AI Concierge Chat"><span class="byo__opt-name">AI Concierge Chat</span><span class="byo__opt-price">+$250</span><span class="byo__opt-desc">A 24/7 host that answers, qualifies and books.</span></label>
+          <label class="byo__opt"><input type="checkbox" data-price="400" data-label="Online Booking"><span class="byo__opt-name">Online Booking</span><span class="byo__opt-price">+$400</span><span class="byo__opt-desc">Take appointments without the phone tag.</span></label>
+          <label class="byo__opt"><input type="checkbox" data-price="400" data-label="Payments / Checkout"><span class="byo__opt-name">Payments / Checkout</span><span class="byo__opt-price">+$400</span><span class="byo__opt-desc">Sell right on the site — Stripe.</span></label>
+          <label class="byo__opt"><input type="checkbox" data-price="1500" data-label="Dashboard / CRM"><span class="byo__opt-name">Dashboard / CRM</span><span class="byo__opt-price">+$1,500</span><span class="byo__opt-desc">Leads, customers and jobs, your way.</span></label>
+          <label class="byo__opt"><input type="checkbox" data-price="500" data-label="Live Data Feed"><span class="byo__opt-name">Live Data Feed</span><span class="byo__opt-price">+$500</span><span class="byo__opt-desc">Real-time numbers pulled in fresh.</span></label>
+          <label class="byo__opt"><input type="checkbox" data-price="400" data-label="Blog + SEO"><span class="byo__opt-name">Blog + SEO</span><span class="byo__opt-price">+$400</span><span class="byo__opt-desc">Get found on Google.</span></label>
+          <label class="byo__opt"><input type="checkbox" data-price="1200" data-label="Client / Member Portal"><span class="byo__opt-name">Client / Member Portal</span><span class="byo__opt-price">+$1,200</span><span class="byo__opt-desc">Logins and accounts for your regulars.</span></label>
+          <label class="byo__opt"><input type="checkbox" data-price="600" data-label="Automations"><span class="byo__opt-name">Automations</span><span class="byo__opt-price">+$600</span><span class="byo__opt-desc">Let the robots do the busywork.</span></label>
+        </div>
+
+        <div class="byo__group">
+          <div class="byo__group-h">3 · Finishing touches</div>
+          <label class="byo__opt"><input type="checkbox" data-price="300" data-label="Custom Logo / Brand Kit"><span class="byo__opt-name">Custom Logo / Brand Kit</span><span class="byo__opt-price">+$300</span></label>
+          <label class="byo__opt"><input type="checkbox" data-price="250" data-label="Animations &amp; Polish"><span class="byo__opt-name">Animations &amp; Polish</span><span class="byo__opt-price">+$250</span></label>
+          <label class="byo__opt"><input type="checkbox" data-price="400" data-label="Custom Illustrations"><span class="byo__opt-name">Custom Illustrations</span><span class="byo__opt-price">+$400</span></label>
+          <label class="byo__opt"><input type="checkbox" data-price="75" data-label="An Easter Egg"><span class="byo__opt-name">An Easter Egg 🥚</span><span class="byo__opt-price">+$75</span></label>
+        </div>
+
+        <div class="byo__group">
+          <div class="byo__group-h">4 · Off-menu — tell the chef</div>
+          <textarea id="byoCustom" placeholder="Want something that isn't on the menu? A custom dish, a wild idea, a tool you wish existed, a side to add later? Describe it in plain English — we build to order, and this goes straight to us."></textarea>
+        </div>
+      </div>
+
+      <aside class="byo__cart">
+        <div class="byo__cart-h">🧾 Your build</div>
+        <ul id="byoList"></ul>
+        <div class="byo__total">Starting estimate <span id="byoTotal">$750</span></div>
+        <p class="byo__fine">A starting estimate, not a final bill — your exact quote comes after we talk, and anything you describe off-menu is priced on the call. No surprises.</p>
+        <form id="byoForm" novalidate>
+          <input type="text" id="byoName" placeholder="Your name" required>
+          <input type="text" id="byoContact" placeholder="Phone or email" required>
+          <button class="btn btn--block" type="submit">Send my build to the chef →</button>
+        </form>
+        <p class="byo__note" id="byoNote" hidden></p>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<div class="container">
+
+  <div class="menu-card">
+    <div class="menu-sec">
+      <div class="menu-sec__label">🍽️ Mains</div>
+      <div class="menu-sec__note">Full builds — your main course. One-time.</div>
+      <div class="item"><div class="item__main"><div class="item__name">Basic</div><div class="item__desc">A clean, fast site — a page or a few, lead form, AI chat. The reliable house plate.</div></div><div class="item__dots"></div><div class="item__price">$750</div></div>
+      <div class="item"><div class="item__main"><div class="item__name">Mid <span class="star">★ most ordered</span></div><div class="item__desc">Multi-page + blog, booking, payments, live data, SEO. What most folks come in for.</div></div><div class="item__dots"></div><div class="item__price">$2,500</div></div>
+      <div class="item"><div class="item__main"><div class="item__name">Large</div><div class="item__desc">Custom CRM, dashboards, portals, integrations, AI built in. The hungry-table feast.</div></div><div class="item__dots"></div><div class="item__price">$7,500</div></div>
+    </div>
+
+    <div class="menu-sec">
+      <div class="menu-sec__label">🥡 Combos</div>
+      <div class="menu-sec__note">Built plates at a bundle price — order the whole thing.</div>
+      <div class="item"><div class="item__main"><div class="item__name">The Local Special</div><div class="item__desc">Site + online booking + AI concierge. For service businesses — bundled, so you save.</div></div><div class="item__dots"></div><div class="item__price">$1,800</div></div>
+      <div class="item"><div class="item__main"><div class="item__name">The Storefront</div><div class="item__desc">Site + payments + product catalog. Everything you need to start selling today.</div></div><div class="item__dots"></div><div class="item__price">$2,200</div></div>
+      <div class="item"><div class="item__main"><div class="item__name">The Front Desk</div><div class="item__desc">Site + CRM + booking. Run the whole front of house from one screen.</div></div><div class="item__dots"></div><div class="item__price">$3,500</div></div>
+    </div>
+
+    <div class="menu-sec">
+      <div class="menu-sec__label">🍟 Sides &amp; Add-Ons</div>
+      <div class="menu-sec__note">À la carte — add any of these to any plate.</div>
+      <div class="item"><div class="item__main"><div class="item__name">AI Concierge Chat</div><div class="item__desc">A tireless host that answers, qualifies and books — around the clock.</div></div><div class="item__dots"></div><div class="item__price">from $250</div></div>
+      <div class="item"><div class="item__main"><div class="item__name">Online Booking &amp; Scheduling</div><div class="item__desc">Let folks grab a time without the phone tag.</div></div><div class="item__dots"></div><div class="item__price">from $400</div></div>
+      <div class="item"><div class="item__main"><div class="item__name">Payments / Checkout</div><div class="item__desc">Take the money right there — Stripe, smooth as butter.</div></div><div class="item__dots"></div><div class="item__price">from $400</div></div>
+      <div class="item"><div class="item__main"><div class="item__name">Dashboard / CRM</div><div class="item__desc">Every lead, customer and job in one tidy place.</div></div><div class="item__dots"></div><div class="item__price">from $1,500</div></div>
+      <div class="item"><div class="item__main"><div class="item__name">Live Data Feed</div><div class="item__desc">Real-time numbers, pulled in fresh and hot.</div></div><div class="item__dots"></div><div class="item__price">from $500</div></div>
+      <div class="item"><div class="item__main"><div class="item__name">Blog + SEO Setup</div><div class="item__desc">Show up on Google and sound like a local.</div></div><div class="item__dots"></div><div class="item__price">from $400</div></div>
+      <div class="item"><div class="item__main"><div class="item__name">Client / Member Portal</div><div class="item__desc">Logins and accounts — the velvet rope for your regulars.</div></div><div class="item__dots"></div><div class="item__price">from $1,200</div></div>
+      <div class="item"><div class="item__main"><div class="item__name">Automations</div><div class="item__desc">Set it once; let the robots handle the busywork.</div></div><div class="item__dots"></div><div class="item__price">from $600</div></div>
+    </div>
+
+    <div class="menu-sec">
+      <div class="menu-sec__label">🍰 Desserts</div>
+      <div class="menu-sec__note">The sweet finish — small touches that make it memorable.</div>
+      <div class="item"><div class="item__main"><div class="item__name">Custom Logo / Brand Kit</div><div class="item__desc">A mark that actually looks like you — no clip-art.</div></div><div class="item__dots"></div><div class="item__price">from $300</div></div>
+      <div class="item"><div class="item__main"><div class="item__name">Animations &amp; "Make It Pop" Polish</div><div class="item__desc">The little moves that make it feel expensive.</div></div><div class="item__dots"></div><div class="item__price">from $250</div></div>
+      <div class="item"><div class="item__main"><div class="item__name">Custom Illustrations / Icons</div><div class="item__desc">Hand-drawn bits — zero stock-photo cheese.</div></div><div class="item__dots"></div><div class="item__price">from $400</div></div>
+      <div class="item"><div class="item__main"><div class="item__name">An Easter Egg 🥚</div><div class="item__desc">Something delightful, hidden just for the fun of it.</div></div><div class="item__dots"></div><div class="item__price">from $75</div></div>
+    </div>
+  </div>
+
+  <div class="menu-card house">
+    <div class="menu-sec__label">🥤 Refills · House Account</div>
+    <div class="house__price">$99<small> /month</small></div>
+    <p>The kitchen's always open. Send changes anytime — text us in plain English and we build the small stuff on the spot. No tickets, no templates, no waiting. Hosting &amp; backups included; bigger dishes quoted à la carte.</p>
+    <a href="/contact" class="btn">Open a House Account</a>
+  </div>
+
+  <div class="chefs">
+    <h2>🔔 The Chef's Table</h2>
+    <p>Don't see it on the menu? Describe it. If you can say it, we can cook it — custom work, priced to your spec. This is the whole point.</p>
+    <a href="/contact" class="btn">Ask the chef</a>
+  </div>
+
+  <p class="rooms-row">Smaller budget? Hit the <a href="/mckillswitches">drive-thru →</a> &nbsp;·&nbsp; Going big? Book <a href="/reserve">the Reserve →</a></p>
+</div>
+
+<section class="section section--cta" id="contact">
+  <div class="container contact">
+    <h2>Tell us what you need.</h2>
+    <p>One message and we'll send back a plan and a price. No pressure, no jargon.</p>
+    <form class="contact__form" id="contactForm">
+      <input type="text" placeholder="Name" required />
+      <input type="text" placeholder="Phone or email" required />
+      <input type="text" placeholder="Your business" />
+      <button class="btn btn--lg" type="submit">Get my plan</button>
+    </form>
+    <p class="contact__ok" id="contactOk" hidden>✓ Sent. We'll be in touch within one business day.</p>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container footer__grid">
+    <div class="footer__brand">
+      <span class="brand">⏻ KILLSWITCH</span>
+      <p>Custom software, disguised as a website. Built in Kansas City.</p>
+    </div>
+    <nav class="footer__links">
+      <a href="/services">Services</a>
+      <a href="/work">Work</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/contact">Start a project</a>
+    </nav>
+  </div>
+  <div class="container footer__bar">
+    <span>© 2026 KILLSWITCH</span>
+    <a href="#top">Back to top ↑</a>
+  </div>
+</footer>
+
+<button class="chat__launch" id="chatLaunch" aria-label="Open chat">
+  <span class="chat__launchicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3.5 20.5l1.4-5.2A8.5 8.5 0 1 1 21 11.5Z"/></svg></span>
+  <span class="chat__launchdot"></span>
+</button>
+<div class="chat" id="chatPanel" hidden>
+  <div class="chat__head">
+    <div><strong>KILLSWITCH Assistant</strong><small>Typically replies instantly</small></div>
+    <button class="chat__close" id="chatClose" aria-label="Close">✕</button>
+  </div>
+  <div class="chat__log" id="chatLog"></div>
+  <form class="chat__input" id="chatForm">
+    <input type="text" id="chatText" placeholder="Ask us anything…" autocomplete="off" />
+    <button type="submit" aria-label="Send">➤</button>
+  </form>
+</div>
+
+<script>
+/* Build-to-Order counter — live total, order summary, off-menu requests → inbox */
+(function () {
+  var sec = document.getElementById('byo'); if (!sec) return;
+  var KEY = 'fd068540-d6c4-44e3-9f5b-3d46da7c44ed';
+  var list = document.getElementById('byoList');
+  var totalEl = document.getElementById('byoTotal');
+  var inputs = sec.querySelectorAll('input[data-price]');
+  function money(n) { return '$' + n.toLocaleString('en-US'); }
+  function tally() {
+    var total = 0, items = [];
+    inputs.forEach(function (i) {
+      if (i.checked) { var p = +i.getAttribute('data-price'); total += p; items.push({ label: i.getAttribute('data-label'), price: p }); }
+    });
+    list.innerHTML = items.length
+      ? items.map(function (it) { return '<li><span>' + it.label + '</span><span>' + money(it.price) + '</span></li>'; }).join('')
+      : '<li class="byo-empty">Pick a base to start…</li>';
+    totalEl.textContent = money(total);
+    return { total: total, items: items };
+  }
+  inputs.forEach(function (i) { i.addEventListener('change', tally); });
+  tally();
+
+  var form = document.getElementById('byoForm');
+  var note = document.getElementById('byoNote');
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var b = tally();
+    var name = document.getElementById('byoName').value.trim();
+    var contact = document.getElementById('byoContact').value.trim();
+    var custom = document.getElementById('byoCustom').value.trim();
+    if (!name || !contact) { note.hidden = false; note.style.color = '#ef4444'; note.textContent = 'Add your name and a way to reach you.'; return; }
+    var order = b.items.map(function (it) { return '• ' + it.label + ' — ' + money(it.price); }).join('\n');
+    var message = 'BUILD-TO-ORDER\n' + order + '\n\nStarting estimate: ' + money(b.total) +
+      (custom ? ('\n\n— OFF-MENU / CUSTOM REQUEST —\n' + custom) : '');
+    note.hidden = false; note.style.color = ''; note.textContent = 'Sending to the chef…';
+    fetch('https://api.web3forms.com/submit', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        access_key: KEY,
+        subject: '🍽️ Build-to-Order — KILLSWITCH',
+        from_name: 'KILLSWITCH Build-to-Order',
+        name: name, contact: contact, message: message, source: 'build-to-order'
+      })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (d.success) { note.style.color = ''; note.textContent = '✓ Sent to the chef — we\'ll reply within one business day.'; form.reset(); tally(); }
+      else { note.style.color = '#ef4444'; note.textContent = '⚠ Not sent: ' + (d.message || 'please try again'); }
+    }).catch(function () { note.style.color = '#ef4444'; note.textContent = '⚠ Network error — please try again.'; });
+  });
+})();
+</script>
+<script src="script.js"></script>
+</body>
+</html>

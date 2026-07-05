@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
+    { "source": "/menu", "destination": "/pricing", "permanent": false },
+    { "source": "/mckillswitches", "destination": "/pricing", "permanent": false },
+    { "source": "/kitchen", "destination": "/pricing", "permanent": false },
+    { "source": "/reserve", "destination": "/pricing", "permanent": false }
+  ]
+}

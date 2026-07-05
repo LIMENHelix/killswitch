@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Menu — KILLSWITCH (Kansas City)</title>
+<meta name="description" content="Three kitchens, one chef. Pick the table that fits your budget — McKillswitch's drive-thru, the Killswitch Kitchen, or Killswitch Reserve. Every site fully custom." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%23cf1322'/%3E%3Ctext x='50' y='73' font-family='Georgia,serif' font-size='66' font-weight='700' text-anchor='middle' fill='%23ffffff'%3EK%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .tables { padding: 92px 0 110px; }
+  .tables__head { text-align: center; max-width: 680px; margin: 0 auto 52px; }
+  .tables__head h1 { font-size: clamp(34px, 6vw, 60px); line-height: 1.04; }
+  .tables__head .accent { color: var(--brand-red); }
+  .tables__head p { color: var(--muted); font-size: 19px; margin-top: 18px; }
+  .doors { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 22px; }
+  .door { position: relative; display: flex; flex-direction: column; border: 1px solid var(--line);
+    border-radius: var(--radius); background: var(--bg-alt); padding: 36px 30px; text-decoration: none;
+    color: var(--ink); transition: transform .22s var(--ease), border-color .22s, box-shadow .22s; overflow: hidden; }
+  .door::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--accent); opacity: .9; }
+  .door:hover { transform: translateY(-6px); border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); box-shadow: var(--shadow); }
+  .door__emoji { font-size: 44px; line-height: 1; margin-bottom: 16px; }
+  .door__name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 25px; margin-bottom: 4px; }
+  .door__sub { font-size: 13px; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); margin-bottom: 16px; }
+  .door__tag { color: var(--body); font-size: 15.5px; line-height: 1.5; margin-bottom: 22px; min-height: 70px; }
+  .door__band { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: .05em; color: var(--accent); margin-bottom: 22px; }
+  .door__go { margin-top: auto; font-weight: 600; color: var(--brand-red); display: inline-flex; align-items: center; gap: 7px; }
+  .door:hover .door__go { gap: 12px; }
+  /* drive-thru door: loud */
+  .door--mck::before { background: #ffb81c; }
+  .door--mck .door__name { color: #ffb81c; }
+  /* reserve door: refined */
+  .door--reserve { background: #0c0c0e; border-color: #2a2418; }
+  .door--reserve::before { background: linear-gradient(90deg, #b8923f, #e7cf94); }
+  .door--reserve .door__name { font-weight: 600; letter-spacing: .02em; }
+  .door--reserve .door__band { color: #d9c38a; }
+  .tables__foot { text-align: center; color: var(--muted); margin-top: 40px; font-size: 15.5px; }
+  .tables__foot b { color: var(--brand-red); }
+</style>
+</head>
+<body>
+
+<header class="nav" id="top">
+  <div class="container nav__inner">
+    <a href="/" class="brand">⏻ KILLSWITCH</a>
+    <nav class="nav__links" id="navLinks">
+      <a href="/services">Services</a>
+      <a href="/work">Work</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/contact" class="btn btn--sm nav__cta">Start a plan</a>
+    </nav>
+    <button class="nav__toggle" id="navToggle" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="23" height="23"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></button>
+  </div>
+</header>
+
+<section class="tables">
+  <div class="container">
+    <div class="tables__head">
+      <div class="eyebrow">Three kitchens · one chef</div>
+      <h1>Pick your <span class="accent">table</span>.</h1>
+      <p>Same chef, same "if you can describe it, we build it." Three very different rooms —
+        because a taco truck and a tasting menu are both dinner. Choose your budget; we'll cook.</p>
+    </div>
+
+    <div class="doors">
+      <a class="door door--mck" href="/mckillswitches">
+        <span class="door__emoji">🍔</span>
+        <div class="door__name">McKillswitch's</div>
+        <div class="door__sub">The Drive-Thru</div>
+        <p class="door__tag">Sites, served HOT. Pull up, grab a value meal, go live this week. Cheap, fast, zero fuss.</p>
+        <div class="door__band">$ · budget &amp; fast</div>
+        <span class="door__go">Hit the drive-thru →</span>
+      </a>
+
+      <a class="door door--kitchen" href="/kitchen">
+        <span class="door__emoji">🍽️</span>
+        <div class="door__name">Killswitch Kitchen</div>
+        <div class="door__sub">The Sit-Down</div>
+        <p class="door__tag">Pull up a chair. A real menu — mains, combos, sides &amp; desserts — all made to order. Our bread and butter.</p>
+        <div class="door__band">$$$ · the full menu</div>
+        <span class="door__go">See the menu →</span>
+      </a>
+
+      <a class="door door--reserve" href="/reserve">
+        <span class="door__emoji">🥂</span>
+        <div class="door__name">Killswitch Reserve</div>
+        <div class="door__sub">Fine Dining · By Reservation</div>
+        <p class="door__tag">For the ambitious build. A bespoke tasting menu of custom software, white-glove and unhurried.</p>
+        <div class="door__band">$$$$+ · bespoke</div>
+        <span class="door__go">Request a reservation →</span>
+      </a>
+    </div>
+
+    <p class="tables__foot">Not sure which room? <b>Just ask the chef</b> — <a href="/contact">tell us what you need →</a></p>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container footer__grid">
+    <div class="footer__brand">
+      <span class="brand">⏻ KILLSWITCH</span>
+      <p>Custom software, disguised as a website. Built in Kansas City.</p>
+    </div>
+    <nav class="footer__links">
+      <a href="/services">Services</a>
+      <a href="/work">Work</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/contact">Start a project</a>
+    </nav>
+  </div>
+  <div class="container footer__bar">
+    <span>© 2026 KILLSWITCH</span>
+    <a href="#top">Back to top ↑</a>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

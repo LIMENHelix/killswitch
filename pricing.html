@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pricing — KILLSWITCH (Web &amp; Software, Nationwide)</title>
+<meta name="description" content="Your website is free. Add booking, payments, an AI assistant, or a dashboard for a low monthly — or own any of it outright for a one-time build. Nationwide web &amp; software." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230a0b0e'/%3E%3Cg fill='none' stroke='%23cf1322' stroke-width='9' stroke-linecap='round'%3E%3Cpath d='M62.5 30.4 A25 25 0 1 1 37.5 30.4'/%3E%3Cpath d='M50 22 V52'/%3E%3C/g%3E%3C/svg%3E" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .price-hero { text-align: center; padding: 84px 0 10px; }
+  .price-hero h1 { font-size: clamp(34px, 5.5vw, 56px); }
+  .price-hero p { color: var(--muted); font-size: 18px; max-width: 600px; margin: 16px auto 0; }
+  .tier__price small { font-size: 15px; color: var(--muted); font-weight: 500; }
+  .tier__lead { color: var(--muted); font-size: 14.5px; margin: 2px 0 16px; line-height: 1.5; }
+  .tier ul { list-style: none; margin: 0 0 22px; padding: 0; }
+  .tier li { color: var(--body); font-size: 14.5px; padding: 7px 0 7px 24px; position: relative; }
+  .tier li::before { content: '✓'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+  .tier li strong { color: var(--ink); }
+  .tier .btn { margin-top: auto; }
+  .price-note { text-align: center; color: var(--muted); margin-top: 24px; font-size: 15px; }
+  .price-note a { color: var(--accent); font-weight: 600; }
+  /* configurator */
+  .byo__intro { max-width: 720px; margin: 0 auto 34px; text-align: center; }
+  .byo__intro p { color: var(--body); font-size: 16.5px; margin-top: 14px; line-height: 1.6; }
+  .byo__intro p b { color: var(--ink); }
+  .byo__grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 26px; align-items: start; }
+  .byo__menu { display: flex; flex-direction: column; gap: 20px; }
+  .byo__group { background: var(--bg-alt); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; }
+  .byo__group-h { font-family: 'Archivo', sans-serif; font-weight: 700; color: var(--accent); font-size: 12.5px; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 12px; }
+  .byo__opt { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; cursor: pointer; transition: background .15s; flex-wrap: wrap; }
+  .byo__opt:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .byo__opt input { width: 18px; height: 18px; accent-color: var(--accent); flex: 0 0 auto; cursor: pointer; }
+  .byo__opt-name { font-weight: 600; color: var(--ink); }
+  .byo__opt-price { margin-left: auto; font-family: 'Archivo', sans-serif; font-weight: 700; color: var(--accent); white-space: nowrap; }
+  .byo__opt-desc { color: var(--muted); font-size: 13px; flex: 1 1 100%; padding-left: 30px; margin-top: -2px; }
+  .byo__group textarea { width: 100%; min-height: 92px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; color: var(--ink); font: inherit; padding: 13px 15px; resize: vertical; }
+  .byo__group textarea::placeholder { color: var(--muted); }
+  .byo__group textarea:focus { outline: none; border-color: var(--accent); }
+  .byo__cart { position: sticky; top: 96px; background: var(--bg-alt); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); border-radius: var(--radius); padding: 24px; }
+  .byo__cart-h { font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); margin-bottom: 14px; }
+  .byo__cart ul { list-style: none; margin: 0 0 14px; padding: 0; }
+  .byo__cart li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; color: var(--body); }
+  .byo__cart li:first-child { border-top: none; }
+  .byo__cart li span:last-child { color: var(--ink); font-weight: 600; white-space: nowrap; }
+  .byo-empty { color: var(--muted); font-style: italic; }
+  .byo__total { display: flex; justify-content: space-between; align-items: baseline; border-top: 2px solid var(--accent); padding-top: 14px; margin-bottom: 6px; font-family: 'Archivo', sans-serif; font-weight: 700; color: var(--ink); font-size: 15px; }
+  .byo__total span { font-size: 28px; color: var(--accent); }
+  .byo__fine { color: var(--muted); font-size: 12.5px; line-height: 1.5; margin-bottom: 16px; }
+  .byo__cart input { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); font: inherit; padding: 12px 14px; margin-bottom: 10px; }
+  .byo__cart input:focus { outline: none; border-color: var(--accent); }
+  .byo__note { margin-top: 12px; font-size: 14px; min-height: 18px; }
+  @media (max-width: 860px) { .byo__grid { grid-template-columns: 1fr; } .byo__cart { position: static; } }
+  /* growth path ladder */
+  .path { max-width: 880px; margin: 0 auto; }
+  .path__rung { display: grid; grid-template-columns: 58px 1fr auto; gap: 20px; align-items: center; padding: 17px 22px; border-bottom: 1px solid var(--line); }
+  .path__rung:last-child { border-bottom: 0; }
+  .path__phase { font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 19px; color: var(--accent); text-align: center; letter-spacing: -0.01em; }
+  .path__body h5 { font-family: 'Archivo', sans-serif; font-size: 16.5px; color: var(--ink); font-weight: 700; margin-bottom: 2px; }
+  .path__stage { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); font-family: 'Archivo', sans-serif; font-weight: 600; }
+  .path__k { display: block; font-family: 'Archivo', sans-serif; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin: 10px 0 3px; }
+  .path__v { color: var(--body); font-size: 13.5px; line-height: 1.5; max-width: 54ch; }
+  .path__items { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .path__items span { font-size: 11.5px; color: var(--body); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; line-height: 1.4; }
+  .path__buy { display: inline-block; margin-top: 9px; font-family: 'Archivo', sans-serif; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--go-ink); background: var(--go); border: 1px solid var(--go); padding: 8px 16px; border-radius: 999px; font-weight: 700; transition: transform .15s, filter .2s; }
+  .path__buy:hover { filter: brightness(1.09); transform: translateY(-1px); }
+  .path__buy-alt { display: block; margin-top: 7px; font-size: 12px; color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+  .path__buy-alt:hover { color: var(--accent); }
+  .path__rung--flag .path__buy { background: var(--go); color: var(--go-ink); border-color: var(--go); }
+  .path__price { font-family: 'Archivo', sans-serif; font-weight: 700; color: var(--accent); font-size: 16px; white-space: nowrap; text-align: right; }
+  .path__price small { display: block; color: var(--muted); font-size: 11px; font-weight: 500; letter-spacing: 0; margin-top: 1px; }
+  .path__rung--free { background: color-mix(in srgb, var(--accent) 7%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--line)); border-radius: 12px; margin-bottom: 6px; }
+  .path__rung--flag { background: color-mix(in srgb, var(--brand-red) 8%, transparent); border: 1px solid color-mix(in srgb, var(--brand-red) 40%, var(--line)); border-radius: 12px; margin-top: 6px; }
+  .path__rung--flag .path__phase, .path__rung--flag .path__price { color: var(--go); }
+  .path__tag { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-ink); background: var(--accent); padding: 2px 8px; border-radius: 999px; margin-left: 8px; vertical-align: 2px; }
+  @media (max-width: 640px) { .path__rung { grid-template-columns: 42px 1fr; gap: 14px; padding: 15px 14px; } .path__price { grid-column: 2; text-align: left; margin-top: 6px; } .path__phase { font-size: 16px; } }
+  /* ladder checkboxes + plan cart */
+  .path__rung { grid-template-columns: 34px 52px 1fr auto; }
+  .path__pick { display: flex; align-items: center; justify-content: center; }
+  .path__pick input { width: 20px; height: 20px; accent-color: var(--go); cursor: pointer; }
+  .path__rung--sel { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+  .path__rung--flag.path__rung--sel { background: color-mix(in srgb, var(--brand-red) 12%, transparent); }
+  .path__cart-wrap { max-width: 520px; margin: 36px auto 0; }
+  .path__cart-wrap .byo__cart { position: static; }
+  @media (max-width: 640px) {
+    .path__rung { grid-template-columns: 26px 40px 1fr; gap: 12px; }
+    .path__price { grid-column: 2 / -1; text-align: left; margin-top: 6px; }
+  }
+  /* expandable "what you get" detail */
+  .path__more { margin-top: 13px; border-top: 1px solid var(--line); }
+  .path__more summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 11px 0 3px; font-family: 'Archivo', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--accent); }
+  .path__more summary::-webkit-details-marker { display: none; }
+  .path__more summary::after { content: '▾'; font-size: 10px; transition: transform .18s; }
+  .path__more[open] summary::after { transform: rotate(180deg); }
+  .path__more-body { padding: 4px 0 6px; }
+  .path__more-body p { margin: 10px 0 0; font-size: 13.5px; line-height: 1.55; color: var(--body); max-width: 60ch; }
+  .path__more-body p b { display: block; font-family: 'Archivo', sans-serif; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-bottom: 2px; }
+</style>
+</head>
+<body>
+
+<header class="nav" id="top">
+  <div class="container nav__inner">
+    <a href="/" class="brand"><svg class="brand-ic" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>KILLSWITCH</a>
+    <nav class="nav__links" id="navLinks">
+      <a href="/services">Services</a>
+      <a href="/work">Work</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/switch">AI Sales Rep</a>
+      <a href="/contact" class="btn btn--sm nav__cta">Start a project</a>
+    </nav>
+    <button class="nav__toggle" id="navToggle" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="23" height="23"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></button>
+  </div>
+</header>
+
+<section class="price-hero">
+  <div class="container">
+    <div class="eyebrow">Pricing</div>
+    <h1>The website's free.<br>Pay only for the power you add.</h1>
+    <p>We build your site free and hand you the keys — you own it. Add booking, payments, an AI assistant, or a dashboard for a low monthly, or buy any of it outright. No surprises, cancel anytime.</p>
+    <p style="margin-top:26px"><a class="btn" href="https://calendly.com/chrishubbel72/30min" target="_blank" rel="noopener">Talk to a real, live human</a></p>
+  </div>
+</section>
+
+<section class="section" style="padding-top:40px">
+  <div class="container">
+    <div class="tiers" style="grid-template-columns:repeat(auto-fit,minmax(225px,1fr))">
+      <div class="tier tier--featured">
+        <div class="tier__tag">Start here</div>
+        <h4>Free Site</h4>
+        <p class="tier__price">$0<small> — on the house</small></p>
+        <p class="tier__lead">A real, modern site on your own domain — live in days, and you own every bit of it. No contract, no catch.</p>
+        <ul>
+          <li><strong>Genuinely free — yours to keep</strong></li>
+          <li>Mobile-perfect, fast</li>
+          <li>Contact form + AI chat</li>
+          <li>Your own domain — you own it</li>
+        </ul>
+        <a href="https://calendly.com/chrishubbel72/30min" target="_blank" rel="noopener" class="btn btn--block">Claim your free site →</a>
+      </div>
+
+      <div class="tier">
+        <h4>Starter</h4>
+        <p class="tier__price">$199<small> one-time</small></p>
+        <p class="tier__lead">A sharp 1–3 page site that makes you look established — if you'd rather own it outright than run it monthly.</p>
+        <ul>
+          <li>One to three pages, mobile-perfect</li>
+          <li>Lead form straight to your inbox</li>
+          <li>AI concierge chat</li>
+          <li>On your own domain — you own it</li>
+        </ul>
+        <a href="https://calendly.com/chrishubbel72/30min" target="_blank" rel="noopener" class="btn btn--ghost btn--block">Get started →</a>
+      </div>
+
+      <div class="tier">
+        <h4>Business</h4>
+        <p class="tier__price">$999<small> one-time</small></p>
+        <p class="tier__lead">A full working site that books, sells, and brings in leads — everything wired in from day one.</p>
+        <ul>
+          <li><strong>Everything in Starter, plus:</strong></li>
+          <li>Multi-page site + blog</li>
+          <li>Online booking &amp; scheduling</li>
+          <li>Payments / e-commerce (Stripe)</li>
+          <li>Live data feeds</li>
+          <li>SEO setup + analytics</li>
+        </ul>
+        <a href="https://calendly.com/chrishubbel72/30min" target="_blank" rel="noopener" class="btn btn--ghost btn--block">Get started →</a>
+      </div>
+
+    </div>
+    <p class="price-note">Most people start free and add modules as they grow. Not sure which fits? <a href="/contact">Tell us your project and we'll map it out →</a></p>
+  </div>
+</section>
+
+<!-- GROWTH PATH LADDER -->
+<section class="section section--alt" id="path">
+  <div class="container">
+    <div class="byo__intro">
+      <div class="eyebrow">The growth path</div>
+      <h2 class="section__title">Start free. Add power as you grow.</h2>
+      <p>Every business moves through the same stages. Each Killswitch phase is built for one of them — check the ones you want and we'll put together your plan. Own any of it outright, or run it for a low monthly. Cancel anytime.</p>
+    </div>
+
+    <div class="path">
+      <div class="path__rung path__rung--free">
+        <div class="path__pick"></div>
+        <div class="path__phase">P0</div>
+        <div class="path__body">
+          <h5>Website &amp; Domain <span class="path__tag">You're here · free</span></h5>
+          <div class="path__stage">Root</div>
+          <span class="path__k">What it does</span>
+          <div class="path__v">Your own professional website, designed and built for you and yours to keep. No tech skills needed on your end, and there is nothing for you to install or figure out.</div>
+          <span class="path__k">Sold under it</span>
+          <div class="path__items"><span>Looks great on phones</span><span>Your own web address</span><span>Contact form</span><span>Built-in chat</span><span>You own all of it</span></div>
+          <details class="path__more"><summary>What you get, and who it's for</summary><div class="path__more-body"><p><b>The problem</b>You have no site, or an old one you can't edit, so customers can't find you or aren't sure you're real.</p><p><b>Who it's for</b>Any business that needs a real web presence without paying thousands up front.</p><p><b>What changes</b>A modern, fast site on your own domain, live in days, and the code, domain, and accounts are all yours to keep.</p></div></details>
+        </div>
+        <div class="path__price">$0<small>on the house</small>
+          <a class="path__buy" href="https://calendly.com/chrishubbel72/30min" target="_blank" rel="noopener">Claim free</a></div>
+      </div>
+
+      <div class="path__rung">
+        <div class="path__pick"><input type="checkbox" class="path__cb" data-phase="P1" data-name="SEO &amp; Local Listings" data-monthly="19" data-once="149" aria-label="Add P1 SEO and Local Listings"></div>
+        <div class="path__phase">P1</div>
+        <div class="path__body">
+          <h5>SEO &amp; Local Listings</h5>
+          <div class="path__stage">Beacon</div>
+          <span class="path__k">What it does</span>
+          <div class="path__v">When someone nearby searches Google for what you sell, your business shows up near the top instead of your competitors. This is how new customers find you online.</div>
+          <span class="path__k">Sold under it</span>
+          <div class="path__items"><span>Your Google business listing</span><span>Higher in search results</span><span>On the local map</span><span>Found for the right searches</span><span>Every page findable</span></div>
+          <details class="path__more"><summary>What you get, and who it's for</summary><div class="path__more-body"><p><b>The problem</b>You show up nowhere when people search for what you do, so the calls go to competitors instead.</p><p><b>Who it's for</b>Local businesses that live or die by "near me" searches.</p><p><b>What changes</b>Your Google Business Profile, map listings, and every page get tuned so you surface for the searches that actually bring customers.</p></div></details>
+        </div>
+        <div class="path__price">$19<small>/mo</small>
+          <a class="path__buy" href="https://buy.stripe.com/4gM8wR7M4gBr4XJcIR1ck05" target="_blank" rel="noopener">Buy now</a>
+          <a class="path__buy-alt" href="https://buy.stripe.com/bJe5kF8Q81Gx3TF8sB1ck0e" target="_blank" rel="noopener">or $149 once</a></div>
+      </div>
+
+      <div class="path__rung">
+        <div class="path__pick"><input type="checkbox" class="path__cb" data-phase="P2" data-name="Content &amp; Email Marketing" data-monthly="29" data-once="149" aria-label="Add P2 Content and Email Marketing"></div>
+        <div class="path__phase">P2</div>
+        <div class="path__body">
+          <h5>Content &amp; Email Marketing</h5>
+          <div class="path__stage">Cadence</div>
+          <span class="path__k">What it does</span>
+          <div class="path__v">We keep in touch with your customers for you. Helpful posts and emails go out on a regular schedule, written for you, so people remember you and come back.</div>
+          <span class="path__k">Sold under it</span>
+          <div class="path__items"><span>A news / updates page</span><span>Posts written for you</span><span>Email newsletter</span><span>Social posts scheduled</span><span>A simple plan of what goes out</span></div>
+          <details class="path__more"><summary>What you get, and who it's for</summary><div class="path__more-body"><p><b>The problem</b>You go quiet between jobs, so past customers forget you and referrals dry up.</p><p><b>Who it's for</b>Businesses with repeat customers or a slow season to fill.</p><p><b>What changes</b>Posts and a newsletter go out on a steady schedule, drafted for you, so you stay top of mind without doing the writing.</p></div></details>
+        </div>
+        <div class="path__price">$29<small>/mo</small>
+          <a class="path__buy" href="https://buy.stripe.com/7sY3cxc2k0CtfCn24d1ck06" target="_blank" rel="noopener">Buy now</a>
+          <a class="path__buy-alt" href="https://buy.stripe.com/cNi28t1nG1Gx4XJfV31ck0f" target="_blank" rel="noopener">or $149 once</a></div>
+      </div>
+
+      <div class="path__rung">
+        <div class="path__pick"><input type="checkbox" class="path__cb" data-phase="P3" data-name="Online Booking &amp; Scheduling" data-monthly="19" data-once="149" aria-label="Add P3 Online Booking and Scheduling"></div>
+        <div class="path__phase">P3</div>
+        <div class="path__body">
+          <h5>Online Booking &amp; Scheduling</h5>
+          <div class="path__stage">Intake</div>
+          <span class="path__k">What it does</span>
+          <div class="path__v">Customers pick a time and book you themselves, day or night, right from your website. No more phone tag, and automatic reminders mean fewer people forget to show up.</div>
+          <span class="path__k">Sold under it</span>
+          <div class="path__items"><span>Book online 24/7</span><span>Syncs with your calendar</span><span>Automatic reminders</span><span>Request & quote forms</span><span>Waitlist</span></div>
+          <details class="path__more"><summary>What you get, and who it's for</summary><div class="path__more-body"><p><b>The problem</b>You lose jobs to phone tag and after-hours calls you never get around to returning.</p><p><b>Who it's for</b>Salons, trades, clinics, anyone booked by appointment.</p><p><b>What changes</b>Customers self-book onto your calendar day or night, and automatic reminders cut down no-shows.</p></div></details>
+        </div>
+        <div class="path__price">$19<small>/mo</small>
+          <a class="path__buy" href="https://buy.stripe.com/00waEZ7M4bh71LxcIR1ck07" target="_blank" rel="noopener">Buy now</a>
+          <a class="path__buy-alt" href="https://buy.stripe.com/9B68wRc2k4SJ89V8sB1ck0g" target="_blank" rel="noopener">or $149 once</a></div>
+      </div>
+
+      <div class="path__rung">
+        <div class="path__pick"><input type="checkbox" class="path__cb" data-phase="P4" data-name="Hosting &amp; Maintenance" data-monthly="29" aria-label="Add P4 Hosting and Maintenance"></div>
+        <div class="path__phase">P4</div>
+        <div class="path__body">
+          <h5>Hosting &amp; Maintenance</h5>
+          <div class="path__stage">Uptime</div>
+          <span class="path__k">What it does</span>
+          <div class="path__v">We keep your website online, safe, and running smoothly while you run your business, and we make small changes for you whenever you ask, usually the same day.</div>
+          <span class="path__k">Sold under it</span>
+          <div class="path__items"><span>We keep it online</span><span>Daily backups</span><span>Kept secure</span><span>Watched around the clock</span><span>Same-day small changes</span></div>
+          <details class="path__more"><summary>What you get, and who it's for</summary><div class="path__more-body"><p><b>The problem</b>A site that breaks, gets hacked, or goes down costs you sales and makes you look unprofessional.</p><p><b>Who it's for</b>Any business whose site needs to just work while they run the business.</p><p><b>What changes</b>Hosting, backups, security, and monitoring are handled for you, and small edits go live the same day you ask.</p></div></details>
+        </div>
+        <div class="path__price">$29<small>/month</small>
+          <a class="path__buy" href="https://buy.stripe.com/7sY00l8Q870Rduf8sB1ck08" target="_blank" rel="noopener">Buy now</a></div>
+      </div>
+
+      <div class="path__rung">
+        <div class="path__pick"><input type="checkbox" class="path__cb" data-phase="P5" data-name="CRM &amp; Customer Database" data-monthly="29" data-once="499" aria-label="Add P5 CRM and Customer Database"></div>
+        <div class="path__phase">P5</div>
+        <div class="path__body">
+          <h5>CRM &amp; Customer Database</h5>
+          <div class="path__stage">Ledger</div>
+          <span class="path__k">What it does</span>
+          <div class="path__v">One simple place that remembers every customer and every person who reaches out, instead of notes scattered across your phone, your inbox, and sticky notes. Nobody gets forgotten.</div>
+          <span class="path__k">Sold under it</span>
+          <div class="path__items"><span>Your customer list</span><span>See each deal's stage</span><span>Full contact history</span><span>Simple overview screen</span><span>Reports you can save</span></div>
+          <details class="path__more"><summary>What you get, and who it's for</summary><div class="path__more-body"><p><b>The problem</b>Leads and customers live in texts, sticky notes, and your head, so the good ones slip through.</p><p><b>Who it's for</b>Businesses juggling more leads and repeat customers than they can track by memory.</p><p><b>What changes</b>Every contact, conversation, and job sits in one place, so nothing gets dropped and you can see your whole pipeline at a glance.</p></div></details>
+        </div>
+        <div class="path__price">$29<small>/mo</small>
+          <a class="path__buy" href="https://buy.stripe.com/aFafZj4zS5WN1Lx8sB1ck09" target="_blank" rel="noopener">Buy now</a>
+          <a class="path__buy-alt" href="https://buy.stripe.com/14A9AVeas1Gxeyj8sB1ck0h" target="_blank" rel="noopener">or $499 once</a></div>
+      </div>
+
+      <div class="path__rung">
+        <div class="path__pick"><input type="checkbox" class="path__cb" data-phase="P6" data-name="Marketing Automation" data-monthly="29" data-once="199" aria-label="Add P6 Marketing Automation"></div>
+        <div class="path__phase">P6</div>
+        <div class="path__body">
+          <h5>Marketing Automation</h5>
+          <div class="path__stage">Pipeline</div>
+          <span class="path__k">What it does</span>
+          <div class="path__v">The follow-up messages, reminders, and review requests that win you repeat business get sent automatically, so you never have to remember to do them yourself.</div>
+          <span class="path__k">Sold under it</span>
+          <div class="path__items"><span>Automatic follow-ups</span><span>Sends leads to the right person</span><span>Asks happy customers for reviews</span><span>Connects your other apps</span><span>Alerts you and your team</span></div>
+          <details class="path__more"><summary>What you get, and who it's for</summary><div class="path__more-body"><p><b>The problem</b>Follow-ups, review requests, and reminders eat your day, or they just don't happen.</p><p><b>Who it's for</b>Businesses that know follow-up wins deals but never have the time for it.</p><p><b>What changes</b>The routine outreach runs itself. Leads get routed, customers get nudged, and reviews get requested automatically.</p></div></details>
+        </div>
+        <div class="path__price">$29<small>/mo</small>
+          <a class="path__buy" href="https://buy.stripe.com/cNi7sN7M4fxn4XJ6kt1ck0a" target="_blank" rel="noopener">Buy now</a>
+          <a class="path__buy-alt" href="https://buy.stripe.com/aFaaEZ5DW5WNbm75gp1ck0i" target="_blank" rel="noopener">or $199 once</a></div>
+      </div>
+
+      <div class="path__rung">
+        <div class="path__pick"><input type="checkbox" class="path__cb" data-phase="P7" data-name="Payments &amp; Checkout" data-monthly="19" data-once="149" aria-label="Add P7 Payments and Checkout"></div>
+        <div class="path__phase">P7</div>
+        <div class="path__body">
+          <h5>Payments &amp; Checkout</h5>
+          <div class="path__stage">Gateway</div>
+          <span class="path__k">What it does</span>
+          <div class="path__v">Take card payments right on your website, so customers pay you on the spot instead of you having to chase them for the money later. You can also take deposits.</div>
+          <span class="path__k">Sold under it</span>
+          <div class="path__items"><span>Card payments</span><span>Send invoices</span><span>Recurring billing</span><span>List your products</span><span>Take deposits</span></div>
+          <details class="path__more"><summary>What you get, and who it's for</summary><div class="path__more-body"><p><b>The problem</b>Chasing invoices and taking payment by hand slows your cash flow and creates awkward conversations.</p><p><b>Who it's for</b>Anyone selling products, services, subscriptions, or taking deposits.</p><p><b>What changes</b>Customers pay on the spot with secure checkout built into your site, and you stop chasing money.</p></div></details>
+        </div>
+        <div class="path__price">$19<small>/mo</small>
+          <a class="path__buy" href="https://buy.stripe.com/4gM7sN1nGetjcqb9wF1ck0b" target="_blank" rel="noopener">Buy now</a>
+          <a class="path__buy-alt" href="https://buy.stripe.com/5kQbJ37M41Gx75R6kt1ck0j" target="_blank" rel="noopener">or $149 once</a></div>
+      </div>
+
+      <div class="path__rung">
+        <div class="path__pick"><input type="checkbox" class="path__cb" data-phase="P8" data-name="Analytics &amp; Reporting" data-monthly="19" aria-label="Add P8 Analytics and Reporting"></div>
+        <div class="path__phase">P8</div>
+        <div class="path__body">
+          <h5>Analytics &amp; Reporting</h5>
+          <div class="path__stage">Telemetry</div>
+          <span class="path__k">What it does</span>
+          <div class="path__v">Each month you get a short report in plain English that shows where your customers came from and what is bringing in business, so you know what is worth doing more of.</div>
+          <span class="path__k">Sold under it</span>
+          <div class="path__items"><span>Simple stats screen</span><span>See what becomes a sale</span><span>Plain-English monthly report</span><span>Track your goals</span><span>See where people click</span></div>
+          <details class="path__more"><summary>What you get, and who it's for</summary><div class="path__more-body"><p><b>The problem</b>You spend on marketing but can't tell what's actually bringing in customers.</p><p><b>Who it's for</b>Businesses investing in ads, SEO, or content who want to know what pays off.</p><p><b>What changes</b>Clear dashboards and a plain-English monthly report show where customers come from, so you can double down on what works.</p></div></details>
+        </div>
+        <div class="path__price">$19<small>/month</small>
+          <a class="path__buy" href="https://buy.stripe.com/eVqaEZ7M470Rai3cIR1ck0c" target="_blank" rel="noopener">Buy now</a></div>
+      </div>
+
+      <div class="path__rung">
+        <div class="path__pick"><input type="checkbox" class="path__cb" data-phase="P9" data-name="24/7 AI Assistant" data-monthly="29" data-once="99" aria-label="Add P9 24/7 AI Assistant"></div>
+        <div class="path__phase">P9</div>
+        <div class="path__body">
+          <h5>24/7 AI Assistant</h5>
+          <div class="path__stage">Edge</div>
+          <span class="path__k">What it does</span>
+          <div class="path__v">A friendly helper on your website that answers customers' questions and books them in any time, even overnight and on weekends when you are closed, so you stop losing after-hours customers.</div>
+          <span class="path__k">Sold under it</span>
+          <div class="path__items"><span>Answers 24/7</span><span>Answers & screens questions</span><span>Books appointments</span><span>Knows your business</span><span>Passes leads to you</span></div>
+          <details class="path__more"><summary>What you get, and who it's for</summary><div class="path__more-body"><p><b>The problem</b>Visitors show up after hours or while you're busy, get no answer, and leave.</p><p><b>Who it's for</b>Businesses that miss leads because they can't answer every message right away.</p><p><b>What changes</b>A concierge trained on your business answers, qualifies, and books appointments around the clock, so no lead slips away.</p></div></details>
+        </div>
+        <div class="path__price">$29<small>/mo</small>
+          <a class="path__buy" href="https://buy.stripe.com/8x29AVeas3OF9dZ6kt1ck0d" target="_blank" rel="noopener">Buy now</a>
+          <a class="path__buy-alt" href="https://buy.stripe.com/5kQaEZ8Q8fxneyj38h1ck0k" target="_blank" rel="noopener">or $99 once</a></div>
+      </div>
+
+      <div class="path__rung path__rung--flag">
+        <div class="path__pick"><input type="checkbox" class="path__cb" data-phase="P10" data-name="AI Sales Agent &amp; Custom Software" data-custom="1" aria-label="Add P10 AI Sales Agent and Custom Software"></div>
+        <div class="path__phase">P10</div>
+        <div class="path__body">
+          <h5>AI Sales Agent &amp; Custom Software <span class="path__tag" style="background:var(--go);color:var(--go-ink)">The Switch</span></h5>
+          <div class="path__stage">Engine</div>
+          <span class="path__k">What it does</span>
+          <div class="path__v">We build a system that goes out and finds new customers for you and reaches out to them on its own, plus any other custom software your business needs. We map it all out with you on a call.</div>
+          <span class="path__k">Sold under it</span>
+          <div class="path__items"><span>Automatic sales rep</span><span>Finds new prospects</span><span>Personal outreach</span><span>Follows up & books</span><span>Any custom software</span></div>
+          <details class="path__more"><summary>What you get, and who it's for</summary><div class="path__more-body"><p><b>The problem</b>Growth is capped by how many prospects you can find and follow up with by hand.</p><p><b>Who it's for</b>Businesses ready to scale outreach, or that need software built around how they actually work.</p><p><b>What changes</b>An autonomous rep finds and researches prospects, reaches out, follows up, and books meetings, plus any custom system you need. Scoped on a call.</p></div></details>
+        </div>
+        <div class="path__price">Custom<small>book a scope call</small>
+          <a class="path__buy" href="https://calendly.com/chrishubbel72/30min" target="_blank" rel="noopener">Book a call</a></div>
+      </div>
+    </div>
+
+    <div class="path__cart-wrap">
+      <aside class="byo__cart" id="ladderCart">
+        <div class="byo__cart-h">Your plan</div>
+        <ul id="ladderList"></ul>
+        <div class="byo__total">Monthly <span id="ladderMonthly">$0</span></div>
+        <button class="btn btn--block" id="ladderCheckout" type="button">Continue to secure checkout →</button>
+        <p class="byo__fine" id="ladderFine">Tick the phases you want and pay for the whole set in one secure Stripe checkout. To own a phase outright instead, use its "or $X once" link. The Engine is scoped on a call.</p>
+        <p class="byo__note" id="ladderNote" hidden></p>
+        <details class="path__more" style="border-top:none;margin-top:6px">
+          <summary>Prefer a plan by email first?</summary>
+          <form id="ladderForm" novalidate>
+            <input type="text" id="ladderName" placeholder="Your name" required>
+            <input type="text" id="ladderContact" placeholder="Phone or email" required>
+            <button class="btn btn--ghost btn--block" type="submit">Send me my plan</button>
+          </form>
+        </details>
+      </aside>
+    </div>
+
+    <p style="text-align:center;margin-top:34px"><a class="btn btn--ghost" href="https://calendly.com/chrishubbel72/30min" target="_blank" rel="noopener">Or map my path with a real, live human →</a></p>
+  </div>
+</section>
+
+<!-- MONTHLY CARE -->
+<section class="section section--alt" style="padding-top:70px">
+  <div class="container">
+    <h2 class="section__title">Keep it running</h2>
+    <p class="section__sub">Optional — covers hosting, backups, and changes. The build is yours either way.</p>
+    <div class="tiers" style="margin-top:44px">
+      <div class="tier tier--featured" style="grid-column:1 / -1; max-width:560px; margin:0 auto; text-align:center">
+        <h4>Care plan</h4>
+        <p class="tier__price">from $29<small> /month</small></p>
+        <p class="tier__lead" style="margin-left:auto;margin-right:auto;max-width:420px">Hosting, backups, and SSL handled. Text us small changes anytime and most go live the same day. Bigger work is quoted separately. Cancel whenever.</p>
+        <a href="https://calendly.com/chrishubbel72/30min" target="_blank" rel="noopener" class="btn">Add a care plan →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section section--alt">
+  <div class="container faq-wrap">
+    <h2 class="section__title">Questions, answered</h2>
+    <div class="faq">
+      <div class="faq__item"><button class="faq__q">Do I own everything? <span>+</span></button><div class="faq__a"><p>Yes. The site, the code, the domain, the accounts — all in your name. No lock-in, ever.</p></div></div>
+      <div class="faq__item"><button class="faq__q">How do payments work? <span>+</span></button><div class="faq__a"><p>A deposit to start, the balance at launch. Pay securely by card — we'll send a payment link or invoice. Card payments are handled by Stripe.</p></div></div>
+      <div class="faq__item"><button class="faq__q">How do I request changes? <span>+</span></button><div class="faq__a"><p>Text or email us in plain English. On a care plan, most small changes go live the same day.</p></div></div>
+      <div class="faq__item"><button class="faq__q">What if I already have a website? <span>+</span></button><div class="faq__a"><p>We rebuild or migrate it onto our stack so we can move fast, then improve it from there.</p></div></div>
+      <div class="faq__item"><button class="faq__q">How long does it take? <span>+</span></button><div class="faq__a"><p>Most sites launch in about a week. Larger custom systems are scoped on our first call.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="section section--cta" id="contact">
+  <div class="container contact">
+    <h2>Tell us what you need.</h2>
+    <p>One message and we'll send back a plan and a price. No pressure, no jargon — you'll talk to the person who builds it.</p>
+    <form class="contact__form" id="contactForm">
+      <input type="text" placeholder="Name" required />
+      <input type="text" placeholder="Phone or email" required />
+      <input type="text" placeholder="Your business" />
+      <button class="btn btn--lg" type="submit">Get my plan</button>
+    </form>
+    <p class="contact__ok" id="contactOk" hidden>✓ Sent. We'll be in touch within one business day.</p>
+    <p style="margin-top:20px"><a class="btn btn--ghost" href="https://calendly.com/chrishubbel72/30min" target="_blank" rel="noopener">Or talk to a real, live human →</a></p>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container footer__grid">
+    <div class="footer__brand">
+      <span class="brand"><svg class="brand-ic" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>KILLSWITCH</span>
+      <p>Custom software, disguised as a website. Built for businesses nationwide.</p>
+    </div>
+    <nav class="footer__links">
+      <a href="/services">Services</a>
+      <a href="/work">Work</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/switch">AI Sales Rep</a>
+      <a href="/contact">Start a project</a>
+    </nav>
+  </div>
+  <div class="container footer__bar">
+    <span>© 2026 KILLSWITCH</span>
+    <a href="#top">Back to top ↑</a>
+  </div>
+</footer>
+
+<button class="chat__launch" id="chatLaunch" aria-label="Open chat">
+  <span class="chat__launchicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3.5 20.5l1.4-5.2A8.5 8.5 0 1 1 21 11.5Z"/></svg></span>
+  <span class="chat__launchdot"></span>
+</button>
+<div class="chat" id="chatPanel" hidden>
+  <div class="chat__head">
+    <div><strong>KILLSWITCH Assistant</strong><small>Typically replies instantly</small></div>
+    <button class="chat__close" id="chatClose" aria-label="Close">✕</button>
+  </div>
+  <div class="chat__log" id="chatLog"></div>
+  <form class="chat__input" id="chatForm">
+    <input type="text" id="chatText" placeholder="Ask us anything…" autocomplete="off" />
+    <button type="submit" aria-label="Send">➤</button>
+  </form>
+</div>
+
+<script>
+/* Growth-path plan builder → check phases, emails us the plan */
+(function () {
+  var cbs = document.querySelectorAll('.path__cb'); if (!cbs.length) return;
+  var KEY = 'fd068540-d6c4-44e3-9f5b-3d46da7c44ed';
+  var list = document.getElementById('ladderList'), monthlyEl = document.getElementById('ladderMonthly'), fine = document.getElementById('ladderFine');
+  function money(n) { return '$' + n.toLocaleString('en-US'); }
+  function tally() {
+    var mo = 0, once = 0, hasOnce = false, hasCustom = false, items = [];
+    cbs.forEach(function (cb) {
+      var rung = cb.closest('.path__rung');
+      if (cb.checked) {
+        if (rung) rung.classList.add('path__rung--sel');
+        var custom = cb.getAttribute('data-custom');
+        var m = +cb.getAttribute('data-monthly') || 0;
+        var o = cb.getAttribute('data-once');
+        if (custom) hasCustom = true; else mo += m;
+        if (o) { once += +o; hasOnce = true; }
+        items.push({ phase: cb.getAttribute('data-phase'), name: cb.getAttribute('data-name'), mo: m, once: o ? +o : null, custom: !!custom });
+      } else if (rung) { rung.classList.remove('path__rung--sel'); }
+    });
+    list.innerHTML = items.length ? items.map(function (it) {
+      var price = it.custom ? 'Custom' : (money(it.mo) + '/mo');
+      return '<li><span>' + it.phase + ' · ' + it.name + '</span><span>' + price + '</span></li>';
+    }).join('') : '<li class="byo-empty">Check the phases above…</li>';
+    monthlyEl.textContent = money(mo) + '/mo';
+    if (!items.length) { fine.textContent = 'Tick the phases you want and pay for the whole set in one secure Stripe checkout. Nothing is charged until you confirm on the Stripe page.'; }
+    else {
+      var bits = [];
+      if (hasOnce) bits.push('Prefer to own them outright? Those phases are available one-time from ' + money(once) + ' via the "or once" link on each rung.');
+      if (hasCustom) bits.push('The Engine (P10) is a custom scope, so it is not in the checkout total; book a call for that one.');
+      bits.push('Checkout starts a monthly subscription you can cancel anytime.');
+      fine.textContent = bits.join(' ');
+    }
+    return { mo: mo, once: once, hasOnce: hasOnce, hasCustom: hasCustom, items: items };
+  }
+  cbs.forEach(function (cb) { cb.addEventListener('change', tally); });
+  tally();
+  var note = document.getElementById('ladderNote');
+  var checkoutBtn = document.getElementById('ladderCheckout');
+  if (checkoutBtn) {
+    checkoutBtn.addEventListener('click', function () {
+      var b = tally();
+      var buyable = b.items.filter(function (it) { return !it.custom; });
+      if (!buyable.length) {
+        note.hidden = false; note.style.color = '#ef4444';
+        note.textContent = b.items.length ? 'The Engine is a custom scope, so book a call for that one.' : 'Check at least one phase to check out.';
+        return;
+      }
+      var phases = buyable.map(function (it) { return it.phase; });
+      note.hidden = false; note.style.color = ''; note.textContent = 'Opening secure checkout…';
+      checkoutBtn.disabled = true;
+      fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phases: phases }) })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) {
+          if (res.ok && res.d && res.d.url) { window.location.href = res.d.url; return; }
+          note.style.color = '#ef4444';
+          note.textContent = '⚠ Could not start checkout (' + ((res.d && res.d.error) || 'try again') + '). You can still use Buy now on each phase.';
+          checkoutBtn.disabled = false;
+        })
+        .catch(function () {
+          note.style.color = '#ef4444';
+          note.textContent = '⚠ Network error. You can still use Buy now on each phase.';
+          checkoutBtn.disabled = false;
+        });
+    });
+  }
+  var form = document.getElementById('ladderForm');
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var b = tally(), name = document.getElementById('ladderName').value.trim(), contact = document.getElementById('ladderContact').value.trim();
+    if (!b.items.length) { note.hidden = false; note.style.color = '#ef4444'; note.textContent = 'Check at least one phase to build your plan.'; return; }
+    if (!name || !contact) { note.hidden = false; note.style.color = '#ef4444'; note.textContent = 'Add your name and a way to reach you.'; return; }
+    var order = b.items.map(function (it) {
+      if (it.custom) return '• ' + it.phase + ' ' + it.name + ' — Custom (scope call)';
+      return '• ' + it.phase + ' ' + it.name + ' — ' + money(it.mo) + '/mo' + (it.once ? (' (or ' + money(it.once) + ' once)') : '');
+    }).join('\n');
+    var message = 'GROWTH-PATH PLAN\n' + order + '\n\nMonthly total: ' + money(b.mo) + '/mo' + (b.hasOnce ? ('\nOne-time option: from ' + money(b.once)) : '') + (b.hasCustom ? '\nIncludes P10 Engine (custom scope).' : '');
+    note.hidden = false; note.style.color = ''; note.textContent = 'Sending…';
+    fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ access_key: KEY, subject: 'New growth-path plan — KILLSWITCH', from_name: 'KILLSWITCH Growth Path', name: name, contact: contact, message: message, source: 'growth-path' }) })
+      .then(function (r) { return r.json(); }).then(function (d) {
+        if (d.success) { note.style.color = ''; note.innerHTML = '✓ Sent! Skip the wait and <a href="https://calendly.com/chrishubbel72/30min" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600">talk to a real, live human →</a>'; form.reset(); }
+        else { note.style.color = '#ef4444'; note.textContent = '⚠ Not sent: ' + (d.message || 'please try again'); }
+      }).catch(function () { note.style.color = '#ef4444'; note.textContent = '⚠ Network error, please try again.'; });
+  });
+})();
+</script>
+<script src="script.js"></script>
+</body>
+</html>

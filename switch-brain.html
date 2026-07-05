@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Switch Brain — internal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230a0b0e'/%3E%3Cg fill='none' stroke='%23cf1322' stroke-width='9' stroke-linecap='round'%3E%3Cpath d='M62.5 30.4 A25 25 0 1 1 37.5 30.4'/%3E%3Cpath d='M50 22 V52'/%3E%3C/g%3E%3C/svg%3E" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .sb-wrap { max-width: 760px; margin: 0 auto; padding: 56px 22px 90px; }
+  .sb-wrap h1 { font-size: clamp(28px, 4vw, 40px); }
+  .sb-wrap .eyebrow { color: var(--accent); }
+  .sb-sub { color: var(--muted); margin: 10px 0 32px; font-size: 15.5px; }
+  .sb-form { display: grid; gap: 14px; background: var(--bg-alt); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+  .sb-form label { font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-family: 'Space Grotesk', sans-serif; font-weight: 700; margin-bottom: -6px; }
+  .sb-form input, .sb-form select { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); font: inherit; padding: 12px 14px; }
+  .sb-form input:focus, .sb-form select:focus { outline: none; border-color: var(--accent); }
+  .sb-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .sb-note { color: var(--muted); font-size: 13px; min-height: 18px; margin-top: 4px; }
+  .sb-out { margin-top: 34px; display: none; }
+  .sb-angle { background: color-mix(in srgb, var(--accent) 10%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 22px; }
+  .sb-angle .lab { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+  .sb-angle .ang { font-size: 18px; color: var(--ink); font-weight: 600; margin: 8px 0 10px; line-height: 1.4; }
+  .sb-angle .why { color: var(--body); font-size: 14.5px; }
+  .sb-email { background: var(--bg-alt); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 16px; }
+  .sb-email .day { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+  .sb-email .subj { font-weight: 700; color: var(--ink); margin: 6px 0 12px; font-size: 16px; }
+  .sb-email .bd { color: var(--body); font-size: 14.5px; line-height: 1.6; white-space: pre-wrap; }
+  .sb-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  @media (max-width: 560px) { .sb-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="sb-wrap">
+  <div class="eyebrow">Killswitch · internal</div>
+  <h1>Switch Brain 🧠</h1>
+  <p class="sb-sub">Drop in a target business. Switch finds the angle and writes a personalized cold-outreach sequence — the AI core of the $1,000/mo sales rep.</p>
+
+  <form class="sb-form" id="sbForm">
+    <label for="name">Business name</label>
+    <input id="name" required placeholder="e.g. Brightway Plumbing" />
+    <div class="sb-row">
+      <div style="display:grid;gap:6px"><label for="area">Area</label><input id="area" placeholder="e.g. Olathe, KS" /></div>
+      <div style="display:grid;gap:6px"><label for="trade">Trade / category</label><input id="trade" placeholder="e.g. plumber" /></div>
+    </div>
+    <label for="site">Website situation</label>
+    <select id="site">
+      <option value="No website at all — just a Google listing">No website at all</option>
+      <option value="On a free Wix/Squarespace subdomain — looks unfinished">Free Wix / Squarespace site</option>
+      <option value="Has an old, ugly, not-mobile-friendly site">Old / ugly / not mobile-friendly</option>
+      <option value="Has a decent site but it's outdated">Decent but outdated</option>
+    </select>
+    <label for="url">Their URL (optional)</label>
+    <input id="url" placeholder="e.g. brightwayplumbing.wixsite.com" />
+    <label for="email">Their email (optional — pre-fills the "To")</label>
+    <input id="email" placeholder="e.g. joe@joesdrainkc.com" />
+    <label for="token">Access token</label>
+    <input id="token" type="password" placeholder="Switch token" />
+    <button type="submit" class="btn btn--block" id="sbGo">Generate the pitch →</button>
+    <div class="sb-note" id="sbNote"></div>
+  </form>
+
+  <div class="sb-out" id="sbOut"></div>
+</div>
+
+<script>
+const f = document.getElementById('sbForm');
+const note = document.getElementById('sbNote');
+const out = document.getElementById('sbOut');
+const go = document.getElementById('sbGo');
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+f.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  note.style.color = ''; note.textContent = 'Switch is thinking…'; go.disabled = true; out.style.display = 'none';
+  try {
+    const r = await fetch('/api/switch-brain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: name.value, area: area.value, trade: trade.value,
+        site: site.value, url: url.value, token: token.value,
+      }),
+    });
+    const d = await r.json();
+    if (!r.ok || d.error) {
+      note.style.color = '#ef4444';
+      note.textContent = r.status === 401 ? 'Wrong access token.' :
+        r.status === 503 ? 'Not configured yet (token/key missing).' :
+        'Error: ' + (d.error || r.status);
+      go.disabled = false; return;
+    }
+    let html = '<div class="sb-angle"><div class="lab">The angle</div><div class="ang">' + esc(d.angle) +
+      '</div><div class="why"><strong>Why it lands:</strong> ' + esc(d.why) + '</div></div>';
+    const leadEmail = document.getElementById('email').value.trim();
+    (d.emails || []).forEach((em, i) => {
+      const mailto = 'mailto:' + leadEmail
+        + '?subject=' + encodeURIComponent(em.subject)
+        + '&body=' + encodeURIComponent(em.body);
+      html += '<div class="sb-email"><div class="day">Day ' + esc(em.day) + '</div><div class="subj">' +
+        esc(em.subject) + '</div><div class="bd">' + esc(em.body) + '</div>' +
+        '<div class="sb-actions">' +
+        '<a class="btn btn--sm" href="' + mailto + '">📨 Compose email</a>' +
+        '<button type="button" class="btn btn--sm btn--ghost" data-copy="' + i + '">Copy</button>' +
+        '</div></div>';
+    });
+    out.innerHTML = html; out.style.display = 'block';
+    out.querySelectorAll('[data-copy]').forEach(b => {
+      b.addEventListener('click', () => {
+        const em = d.emails[+b.getAttribute('data-copy')];
+        navigator.clipboard.writeText(em.subject + '\n\n' + em.body).then(() => {
+          const orig = b.textContent; b.textContent = 'Copied ✓';
+          setTimeout(() => { b.textContent = orig; }, 1400);
+        });
+      });
+    });
+    note.textContent = ''; go.disabled = false;
+    out.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (err) {
+    note.style.color = '#ef4444'; note.textContent = 'Network error — try again.'; go.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

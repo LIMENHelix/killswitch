@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KILLSWITCH · Free Websites, Built Nationwide</title>
+<meta name="description" content="KILLSWITCH builds local service businesses a real website, free. You own it. Add booking, payments, and a 24/7 AI assistant when you're ready. Serving businesses in all 50 states." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230a0b0e'/%3E%3Cg fill='none' stroke='%23FF3826' stroke-width='9' stroke-linecap='round'%3E%3Cpath d='M62.5 30.4 A25 25 0 1 1 37.5 30.4'/%3E%3Cpath d='M50 22 V52'/%3E%3C/g%3E%3C/svg%3E" />
+<meta name="google-site-verification" content="y-rQyRpN8xyv4gVq61auWfMm8tfURu-bQkqDbiYz3Pg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#121214;
+    --panel:#1a1a1e;
+    --metal:#232328;
+    --metal-hi:#2c2c33;
+    --line:#34343c;
+    --line-soft:#26262c;
+    --ink:#FFFFFF;
+    --mute:#b6bac2;
+    --mute-2:#888c96;
+    --amber:#FFC42E;     /* hazard / standby, brighter gold */
+    --amber-dim:#c79a34;
+    --red:#FF5546;       /* live / emergency, brighter */
+    --red-deep:#d21f10;
+    --go:#1BA45A;        /* go / buy, green (solid, not too bright) */
+    --go-ink:#ffffff;
+    --ok:#3ad17a;
+    --maxw:1140px;
+    --r:14px;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:
+      radial-gradient(900px 520px at 80% -14%, rgba(37,199,102,.10), transparent 66%),
+      radial-gradient(720px 460px at 8% 2%, rgba(255,196,46,.06), transparent 64%),
+      var(--bg);
+    background-attachment:fixed;
+    color:var(--ink);
+    font-family:"Inter",system-ui,sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  a{color:inherit;text-decoration:none}
+
+  .mono{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.16em;font-size:.72rem;color:var(--mute)}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  .display{font-family:"Archivo",sans-serif;font-weight:900;line-height:.96;letter-spacing:-.02em}
+
+  /* hazard stripe */
+  .hazard{
+    height:10px;
+    background:repeating-linear-gradient(-45deg,var(--amber) 0 16px,#161616 16px 32px);
+    opacity:.85;
+  }
+
+  /* ---- NAV ---- */
+  header.nav{position:sticky;top:0;z-index:60;background:rgba(18,18,20,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--line-soft)}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .brand{font-family:"Archivo",sans-serif;font-weight:900;letter-spacing:.04em;font-size:1.15rem;display:flex;align-items:center;gap:9px}
+  .brand-ic{width:1.12em;height:1.12em;color:var(--red);flex:0 0 auto}
+  .nav-links{display:flex;gap:26px;align-items:center}
+  .nav-links a{font-size:.9rem;color:var(--mute);transition:color .2s}
+  .nav-links a:hover{color:var(--ink)}
+  .nav-cta{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.1em;font-size:.74rem;padding:9px 16px;border:1px solid var(--amber);color:var(--amber);border-radius:8px;transition:.2s}
+  .nav-cta:hover{background:var(--amber);color:#111}
+  @media(max-width:760px){.nav-links a:not(.nav-cta){display:none}}
+
+  /* ---- HERO ---- */
+  .hero{position:relative;padding:74px 0 64px}
+  .hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:56px;align-items:center}
+  .eyebrow{display:inline-flex;align-items:center;gap:10px;margin-bottom:26px}
+  .eyebrow::before{content:"";width:26px;height:1px;background:var(--amber)}
+  h1.hero-h{font-size:clamp(2rem,5vw,3.4rem)}
+  .hero-sub{margin-top:24px;font-size:1.12rem;color:var(--mute);max-width:30em}
+  .hero-sub strong{color:var(--ink);font-weight:700}
+  h1.hero-h .free{color:var(--amber);position:relative;text-shadow:0 0 22px rgba(255,196,46,.55)}
+  .hero-actions{margin-top:34px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+
+  .btn{
+    font-family:"Archivo",sans-serif;font-weight:700;letter-spacing:.01em;
+    font-size:1rem;padding:16px 26px;border-radius:11px;cursor:pointer;border:none;
+    display:inline-flex;align-items:center;gap:10px;transition:transform .15s ease, box-shadow .25s ease, background .25s, opacity .25s;
+  }
+  .btn-primary{background:var(--go);color:var(--go-ink);border:1px solid var(--go);box-shadow:0 6px 20px -10px rgba(0,0,0,.55)}
+  .btn-primary.armed{box-shadow:0 8px 26px -8px rgba(27,164,90,.55)}
+  .btn-primary:hover{transform:translateY(-2px);filter:brightness(1.09)}
+  /* standby (default) = transparent outline like the ghost button; fills solid with black text on hover */
+  .btn-primary.standby{background:transparent;color:var(--go);border:1px solid var(--go);box-shadow:none}
+  .btn-primary.standby:hover{background:color-mix(in srgb, var(--go) 14%, transparent);color:var(--go);border-color:var(--go)}
+  .btn-primary.standby .arrow{opacity:.55}
+  .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:600;font-family:"Inter",sans-serif;font-size:.95rem;padding:15px 22px}
+  .btn-ghost:hover{background:var(--amber);border-color:var(--amber);color:#111}
+
+  .hero-fine{margin-top:18px;font-size:.85rem;color:var(--mute-2);display:flex;align-items:center;gap:8px}
+  .hero-fine .pip{width:6px;height:6px;border-radius:50%;background:var(--ok)}
+
+  /* ---- THE SWITCH PANEL ---- */
+  .panel-unit{
+    background:linear-gradient(180deg,var(--metal-hi),var(--metal));
+    border:1px solid var(--line);border-radius:18px;overflow:hidden;
+    box-shadow:0 30px 60px -30px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .panel-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line-soft)}
+  .panel-head .lbl{font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.18em;color:var(--mute);text-transform:uppercase}
+  .status{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;display:flex;align-items:center;gap:8px;color:var(--amber);transition:color .3s}
+  .status .sdot{width:9px;height:9px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);transition:.3s}
+  .status.live{color:var(--go)}
+  .status.live .sdot{background:var(--go);box-shadow:0 0 12px var(--go);animation:pulse 1.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+
+  .panel-body{padding:30px 18px 26px;display:flex;flex-direction:column;align-items:center;gap:18px;position:relative}
+  .panel-body .top-haz,.panel-body .bot-haz{position:absolute;left:0;right:0;height:7px;background:repeating-linear-gradient(-45deg,var(--amber-dim) 0 12px,transparent 12px 24px);opacity:.5}
+  .panel-body .top-haz{top:0}.panel-body .bot-haz{bottom:0}
+
+  /* the power button, round, click on/off */
+  .switch{
+    width:116px;height:116px;border-radius:50%;padding:0;
+    background:radial-gradient(circle at 50% 36%,#2a2a31,#0d0d11 72%);
+    border:1px solid #34343c;position:relative;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;color:var(--amber);
+    box-shadow:inset 0 3px 12px rgba(0,0,0,.8), inset 0 -4px 12px rgba(0,0,0,.5), 0 10px 26px -12px rgba(0,0,0,.85);
+    transition:box-shadow .3s, border-color .3s, color .3s, background .3s;
+  }
+  .switch::after{content:"\23FB";font-size:44px;line-height:1;text-shadow:0 0 10px rgba(255,196,46,.45);transition:color .3s, text-shadow .3s}
+  .switch:hover{border-color:var(--amber)}
+  .switch:focus-visible{outline:2px solid var(--amber);outline-offset:4px}
+  .switch.on{
+    color:#fff;border-color:rgba(37,199,102,.6);
+    background:radial-gradient(circle at 50% 40%,#123a20,#0a120c 74%);
+    box-shadow:inset 0 3px 12px rgba(0,0,0,.7), 0 0 42px -4px rgba(37,199,102,.7), 0 0 0 1px rgba(37,199,102,.4);
+  }
+  .switch.on::after{color:#fff;text-shadow:0 0 12px rgba(255,255,255,.95), 0 0 26px rgba(37,199,102,.9)}
+
+  .switch-caption{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.14em;font-size:.74rem;color:var(--mute);text-align:center}
+  .switch-caption b{color:var(--amber);font-weight:600}
+  .switch.on ~ .switch-caption b{color:var(--go)}
+
+  /* ---- SECTION SCAFFOLD ---- */
+  section.s{padding:88px 0;border-top:1px solid var(--line-soft)}
+  .s-head{max-width:34em}
+  .s-head h2{font-family:"Archivo",sans-serif;font-weight:900;font-size:clamp(1.5rem,3.2vw,2.2rem);line-height:1.05;letter-spacing:-.02em;margin-top:18px}
+  .s-head p.lead{margin-top:18px;color:#c2c2bb;font-size:1.08rem}
+
+  /* catch */
+  .catch{background:var(--panel)}
+  .catch-card{margin-top:30px;border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:12px;padding:30px 30px;background:var(--metal);max-width:46em}
+  .catch-card p{color:#cfcfc8}
+  .catch-card p+p{margin-top:14px}
+  .catch-card .pun{color:var(--amber);font-weight:600}
+
+  /* modules grid */
+  .mods{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:42px}
+  .mod{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px 20px;
+    position:relative;transition:transform .2s, border-color .2s;
+  }
+  .mod:hover{transform:translateY(-3px);border-color:var(--amber)}
+  .mod .ix{font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.14em;color:var(--mute-2)}
+  .mod h3{font-family:"Archivo",sans-serif;font-weight:700;font-size:1.18rem;margin:10px 0 8px}
+  .mod p{font-size:.92rem;color:var(--mute);line-height:1.5}
+  .mod .price{margin-top:16px;font-family:"IBM Plex Mono",monospace;font-size:.8rem;letter-spacing:.06em;color:var(--ink)}
+  .mod.free{border-color:var(--amber);background:linear-gradient(180deg,rgba(244,163,0,.07),var(--panel))}
+  .mod.free .ix{color:var(--amber)}
+  .mod.free .price{color:var(--amber)}
+  .mod .light{position:absolute;top:18px;right:18px;width:8px;height:8px;border-radius:50%;background:#3a3a42;transition:.2s}
+  .mod:hover .light{background:var(--red);box-shadow:0 0 8px var(--red)}
+  .mod.free .light{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+  .mods-note{margin-top:20px;font-size:.85rem;color:var(--mute-2);font-family:"IBM Plex Mono",monospace;letter-spacing:.04em}
+  .mods-note a{color:var(--amber)}
+  .mods-note a:hover{text-decoration:underline}
+
+  /* most-popular starter bundle */
+  .starter{margin-top:34px;border:1px solid var(--go);border-radius:14px;padding:24px 26px;background:linear-gradient(180deg,rgba(27,164,90,.10),var(--panel));display:flex;flex-wrap:wrap;align-items:center;gap:20px 28px;position:relative}
+  .starter .badge{position:absolute;top:-11px;left:22px;font-family:"IBM Plex Mono",monospace;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--go-ink);background:var(--go);padding:4px 12px;border-radius:999px;font-weight:600}
+  .starter-main{flex:1 1 300px;min-width:260px}
+  .starter-main h3{font-family:"Archivo",sans-serif;font-weight:900;font-size:1.35rem;letter-spacing:-.01em}
+  .starter-main p{margin-top:8px;color:var(--mute);font-size:.96rem;max-width:34em}
+  .starter-price{text-align:right;white-space:nowrap}
+  .starter-price .amt{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:1.7rem;color:var(--go)}
+  .starter-price .amt small{font-size:.8rem;color:var(--mute-2);font-weight:400}
+  .starter-price .sub{font-size:.72rem;color:var(--mute-2);margin-top:2px}
+  .starter .btn{margin-top:12px}
+  @media(max-width:620px){.starter{flex-direction:column;align-items:flex-start}.starter-price{text-align:left}}
+
+  /* growth-path ladder */
+  .ladder{margin-top:24px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
+  .rung{display:grid;grid-template-columns:64px 1fr auto;gap:20px;align-items:start;padding:19px 22px;border-top:1px solid var(--line-soft)}
+  .rung:first-child{border-top:none}
+  .rung .px{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:1.12rem;color:var(--amber);letter-spacing:.02em}
+  .rung h3{font-family:"Archivo",sans-serif;font-weight:700;font-size:1.14rem;margin:0}
+  .rung .stage{font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--mute-2);margin-top:3px}
+  .rung .k{display:block;font-family:"IBM Plex Mono",monospace;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mute-2);margin:11px 0 3px}
+  .rung .v{color:var(--mute);font-size:.93rem}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+  .chips span{font-size:.72rem;color:var(--mute);background:var(--metal);border:1px solid var(--line-soft);border-radius:6px;padding:3px 9px;line-height:1.4}
+  .rung .amt{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:.96rem;color:var(--amber);text-align:right;white-space:nowrap}
+  .rung .amt small{display:block;color:var(--mute-2);font-size:.66rem;font-weight:400;margin-top:2px;letter-spacing:.03em}
+  .rung.free{background:linear-gradient(180deg,rgba(255,196,46,.06),transparent)}
+  .rung.flag{background:linear-gradient(180deg,rgba(37,199,102,.07),transparent)}
+  .rung.flag .px,.rung.flag .amt{color:var(--go)}
+  .rung .tag{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:#111;background:var(--amber);padding:2px 8px;border-radius:999px;margin-left:8px;vertical-align:3px}
+  .rung .buy{display:inline-block;margin-top:9px;font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--go-ink);background:var(--go);border:1px solid var(--go);padding:7px 15px;border-radius:8px;font-weight:600;transition:transform .15s,filter .2s}
+  .rung .buy:hover{filter:brightness(1.09);transform:translateY(-1px)}
+  .rung .buy-alt{display:block;margin-top:7px;font-size:.68rem;color:var(--mute-2);text-decoration:underline;text-underline-offset:2px}
+  .rung .buy-alt:hover{color:var(--amber)}
+  .rung.flag .buy{background:var(--go);color:var(--go-ink);border-color:var(--go)}
+  .rung{grid-template-columns:30px 1fr auto}
+  .pick{display:flex;align-items:center;justify-content:center}
+  .pick input{width:19px;height:19px;accent-color:var(--go);cursor:pointer}
+  .rung.sel{background:rgba(255,196,46,.08)}
+  .pcart{max-width:560px;margin:26px auto 0;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px}
+  .pcart-row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;margin-bottom:14px;font-size:.9rem;color:var(--mute)}
+  .pcart-row strong{font-family:"IBM Plex Mono",monospace;color:var(--amber);font-size:1.3rem;white-space:nowrap}
+  .pcart .btn{width:100%;justify-content:center}
+  .pcart-note{margin-top:10px;font-size:.8rem;min-height:16px;color:var(--mute-2)}
+  @media(max-width:880px){.rung{grid-template-columns:24px 1fr;gap:12px;padding:17px 15px}.rung .amt{grid-column:2 / -1;text-align:left;margin-top:8px}}
+
+  /* proof */
+  .proof-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:42px}
+  .pcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px;display:flex;flex-direction:column;min-height:210px;transition:.2s}
+  .pcard:hover{border-color:var(--line);transform:translateY(-3px);background:var(--metal)}
+  .pcard .tag{font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber)}
+  .pcard h3{font-family:"Archivo",sans-serif;font-weight:700;font-size:1.3rem;margin:12px 0 8px}
+  .pcard p{font-size:.92rem;color:var(--mute);flex:1}
+  .pcard .go{margin-top:14px;font-size:.85rem;color:var(--ink);font-weight:500}
+  .pcard .go .arrow{color:var(--amber)}
+
+  /* assurance row */
+  .assure{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:42px}
+  .acell{border:1px solid var(--line-soft);border-radius:12px;padding:22px}
+  .acell .k{font-family:"Archivo",sans-serif;font-weight:900;font-size:1.5rem;color:var(--amber)}
+  .acell .v{margin-top:8px;color:var(--mute);font-size:.92rem}
+
+  /* final cta */
+  .final{position:relative;text-align:center;padding:96px 0}
+  .final h2{font-family:"Archivo",sans-serif;font-weight:900;font-size:clamp(1.7rem,4.2vw,2.7rem);line-height:1.02;letter-spacing:-.02em}
+  .final h2 .free{color:var(--amber)}
+  .final p{margin:22px auto 0;color:#c2c2bb;max-width:32em;font-size:1.08rem}
+  .final .hero-actions{justify-content:center}
+
+  footer{border-top:1px solid var(--line-soft);padding:46px 0 40px}
+  .foot-in{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:flex-start}
+  .foot-brand{font-family:"Archivo",sans-serif;font-weight:900;font-size:1.1rem;letter-spacing:.04em;display:inline-flex;align-items:center;gap:8px}
+  .foot-brand .dot{width:9px;height:9px;border-radius:50%;background:var(--red);display:inline-block;margin-left:4px}
+  .foot-tag{color:var(--mute);font-size:.88rem;margin-top:8px;max-width:24em}
+  .foot-tag .lh{color:var(--mute-2);display:block;margin-top:6px;font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase}
+  .foot-links{display:flex;gap:22px;flex-wrap:wrap}
+  .foot-links a{color:var(--mute);font-size:.88rem;transition:.2s}
+  .foot-links a:hover{color:var(--amber)}
+  .copy{margin-top:30px;color:var(--mute-2);font-size:.8rem;font-family:"IBM Plex Mono",monospace;letter-spacing:.06em}
+
+  /* reveal */
+  .reveal{opacity:0;transform:translateY(18px);transition:opacity .7s ease, transform .7s ease}
+  .reveal.in{opacity:1;transform:none}
+
+  @media(max-width:880px){
+    .hero-grid{grid-template-columns:1fr;gap:40px}
+    .panel-unit{max-width:340px;margin:0 auto;width:100%}
+    .mods,.proof-grid,.assure{grid-template-columns:1fr}
+    .mods{gap:12px}
+  }
+  @media(prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+    .reveal{opacity:1;transform:none}
+  }
+  /* subtle technical grid, fading out (behind all content) */
+  body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
+    background-size:46px 46px;
+    -webkit-mask-image:radial-gradient(120% 78% at 50% 0%,#000 42%,transparent 82%);
+    mask-image:radial-gradient(120% 78% at 50% 0%,#000 42%,transparent 82%)}
+</style>
+</head>
+<body>
+<div class="hazard" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a href="https://killswitch.domains/" class="brand"><svg class="brand-ic" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>KILLSWITCH</a>
+    <nav class="nav-links">
+      <a href="https://killswitch.domains/work">Work</a>
+      <a href="#modules">Pricing</a>
+      <a href="https://killswitch.domains/switch">Ask the AI</a>
+      <a href="https://calendly.com/chrishubbel72/30min" class="nav-cta">Get my free site</a>
+    </nav>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow"><span class="mono">For local service businesses · trades, salons, clinics, shops · Nationwide</span></div>
+      <h1 class="display hero-h">We'll build your<br>website. <span class="free">Free.</span></h1>
+      <p class="hero-sub">A real, modern site on <strong>your</strong> domain, built by a real, live human, live in minutes by end of call. You own every bit of it. No contract, no catch. <strong>Flip the switch and we'll get started.</strong></p>
+      <div class="hero-actions">
+        <a href="https://calendly.com/chrishubbel72/30min" id="primaryCta" class="btn btn-primary standby">
+          <span class="label">Flip the switch to start</span><span class="arrow">→</span>
+        </a>
+        <a href="https://killswitch.domains/switch" class="btn btn-ghost">Ask the AI first</a>
+      </div>
+      <div class="hero-fine"><span class="pip"></span> Now booking new builds · usually replies same day</div>
+    </div>
+
+    <div>
+      <div class="panel-unit">
+        <div class="panel-head">
+          <span class="lbl">KS-01 · Your site</span>
+          <span class="status" id="status"><span class="sdot"></span><span id="statusText">Offline</span></span>
+        </div>
+        <div class="panel-body">
+          <span class="top-haz" aria-hidden="true"></span>
+          <button class="switch" id="killSwitch" role="switch" aria-checked="false" aria-label="Power on your free website"></button>
+          <p class="switch-caption">Status: <b id="capState">Standby</b><br><span style="color:var(--mute-2);font-size:.68rem">tap to power on</span></p>
+          <span class="bot-haz" aria-hidden="true"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- THE CATCH -->
+<section class="s catch" id="catch">
+  <div class="wrap">
+    <div class="s-head reveal">
+      <span class="mono">The catch</span>
+      <h2>There isn't one.<br>Here's how we actually make money.</h2>
+    </div>
+    <div class="catch-card reveal">
+      <p>The website is <strong>genuinely free and yours</strong>: your domain, your content, your code. We hand you the keys and walk away if that's all you want.</p>
+      <p>We're betting you won't want to. Once it's pulling in customers, most folks want the stuff that turns a nice site into a machine: online booking, card payments, an AI that answers at 2&nbsp;a.m., a dashboard that catches every lead. <span class="pun">That's the part we charge for</span>, and it's always optional. We'll never switch on anything you didn't ask for.</p>
+      <p style="color:var(--mute);font-size:.92rem">Translation: we earn the free site back by being good enough that you <em>choose</em> to buy more. That's the whole deal.</p>
+    </div>
+  </div>
+</section>
+
+<!-- P0-P10 GROWTH PATH -->
+<section class="s" id="modules">
+  <div class="wrap">
+    <div class="s-head reveal">
+      <span class="mono">The growth path</span>
+      <h2>Start free. Add power as you grow.</h2>
+      <p class="lead">Every business grows the same way. Each add-on does one job, switch it on when you need it. Own it outright or run it monthly.</p>
+    </div>
+
+    <div class="starter reveal">
+      <span class="badge">Most popular</span>
+      <div class="starter-main">
+        <h3>The Starter Machine</h3>
+        <p>Your free website, plus the two things a new customer needs to find you and book you: <strong>get found on Google</strong> and <strong>online booking</strong>. Everything else stays optional.</p>
+      </div>
+      <div class="starter-price">
+        <div class="amt">$38<small>/mo</small></div>
+        <div class="sub">free site + both add-ons</div>
+        <button class="btn btn-primary armed" id="starterAdd" type="button">Add the Starter set →</button>
+      </div>
+    </div>
+
+    <div class="ladder reveal">
+      <div class="rung free">
+        <div class="pick"></div>
+        <div>
+          <h3>Website &amp; Domain <span class="tag">You're here · free</span></h3>
+          <span class="k">What it does</span><div class="v">Your own professional website, built for you and yours to keep.</div>
+          <span class="k">Sold under it</span><div class="chips"><span>Looks great on phones</span><span>Your own web address</span><span>Contact form</span><span>Built-in chat</span><span>You own all of it</span></div>
+        </div>
+        <div class="amt">$0<small>on the house</small>
+          <a class="buy" href="https://calendly.com/chrishubbel72/30min" target="_blank" rel="noopener">Claim free</a></div>
+      </div>
+
+      <div class="rung">
+        <label class="pick"><input type="checkbox" class="mcb" data-phase="P1" data-name="Get Found on Google" data-monthly="19" data-once="149" aria-label="Add Get Found on Google"></label>
+        <div>
+          <h3>Get Found on Google</h3>
+          <span class="k">What it does</span><div class="v">Show up on Google when nearby customers search for what you sell.</div>
+          <span class="k">Sold under it</span><div class="chips"><span>Your Google business listing</span><span>Higher in search results</span><span>On the local map</span><span>Found for the right searches</span><span>Every page findable</span></div>
+        </div>
+        <div class="amt">$19<small>/mo</small>
+          <a class="buy" href="https://buy.stripe.com/4gM8wR7M4gBr4XJcIR1ck05" target="_blank" rel="noopener">Start</a>
+          <a class="buy-alt" href="https://buy.stripe.com/bJe5kF8Q81Gx3TF8sB1ck0e" target="_blank" rel="noopener">or $149 once</a></div>
+      </div>
+
+      <div class="rung">
+        <label class="pick"><input type="checkbox" class="mcb" data-phase="P2" data-name="Content & Email Marketing" data-monthly="29" data-once="149" aria-label="Add P2 Content and Email Marketing"></label>
+        <div>
+          <h3>Content &amp; Email Marketing</h3>
+          <span class="k">What it does</span><div class="v">We post and email your customers on a schedule so they don't forget you.</div>
+          <span class="k">Sold under it</span><div class="chips"><span>A news / updates page</span><span>Posts written for you</span><span>Email newsletter</span><span>Social posts scheduled</span><span>A simple plan of what goes out</span></div>
+        </div>
+        <div class="amt">$29<small>/mo</small>
+          <a class="buy" href="https://buy.stripe.com/7sY3cxc2k0CtfCn24d1ck06" target="_blank" rel="noopener">Start</a>
+          <a class="buy-alt" href="https://buy.stripe.com/cNi28t1nG1Gx4XJfV31ck0f" target="_blank" rel="noopener">or $149 once</a></div>
+      </div>
+
+      <div class="rung">
+        <label class="pick"><input type="checkbox" class="mcb" data-phase="P3" data-name="Online Booking & Scheduling" data-monthly="19" data-once="149" aria-label="Add P3 Online Booking and Scheduling"></label>
+        <div>
+          <h3>Online Booking &amp; Scheduling</h3>
+          <span class="k">What it does</span><div class="v">Customers book their own appointments online, day or night, no phone tag.</div>
+          <span class="k">Sold under it</span><div class="chips"><span>Book online 24/7</span><span>Syncs with your calendar</span><span>Automatic reminders</span><span>Request & quote forms</span><span>Waitlist</span></div>
+        </div>
+        <div class="amt">$19<small>/mo</small>
+          <a class="buy" href="https://buy.stripe.com/00waEZ7M4bh71LxcIR1ck07" target="_blank" rel="noopener">Start</a>
+          <a class="buy-alt" href="https://buy.stripe.com/9B68wRc2k4SJ89V8sB1ck0g" target="_blank" rel="noopener">or $149 once</a></div>
+      </div>
+
+      <div class="rung">
+        <label class="pick"><input type="checkbox" class="mcb" data-phase="P4" data-name="Hosting & Maintenance" data-monthly="29" aria-label="Add P4 Hosting and Maintenance"></label>
+        <div>
+          <h3>Hosting &amp; Maintenance</h3>
+          <span class="k">What it does</span><div class="v">We keep your site online and safe, and make small changes whenever you ask.</div>
+          <span class="k">Sold under it</span><div class="chips"><span>We keep it online</span><span>Daily backups</span><span>Kept secure</span><span>Watched around the clock</span><span>Same-day small changes</span></div>
+        </div>
+        <div class="amt">$29<small>/month</small>
+          <a class="buy" href="https://buy.stripe.com/7sY00l8Q870Rduf8sB1ck08" target="_blank" rel="noopener">Start</a></div>
+      </div>
+
+      <div class="rung">
+        <label class="pick"><input type="checkbox" class="mcb" data-phase="P5" data-name="CRM & Customer Database" data-monthly="29" data-once="499" aria-label="Add P5 CRM and Customer Database"></label>
+        <div>
+          <h3>CRM &amp; Customer Database</h3>
+          <span class="k">What it does</span><div class="v">One simple place that remembers every customer, so nobody slips through.</div>
+          <span class="k">Sold under it</span><div class="chips"><span>Your customer list</span><span>See each deal's stage</span><span>Full contact history</span><span>Simple overview screen</span><span>Reports you can save</span></div>
+        </div>
+        <div class="amt">$29<small>/mo</small>
+          <a class="buy" href="https://buy.stripe.com/aFafZj4zS5WN1Lx8sB1ck09" target="_blank" rel="noopener">Start</a>
+          <a class="buy-alt" href="https://buy.stripe.com/14A9AVeas1Gxeyj8sB1ck0h" target="_blank" rel="noopener">or $499 once</a></div>
+      </div>
+
+      <div class="rung">
+        <label class="pick"><input type="checkbox" class="mcb" data-phase="P6" data-name="Marketing Automation" data-monthly="29" data-once="199" aria-label="Add P6 Marketing Automation"></label>
+        <div>
+          <h3>Marketing Automation</h3>
+          <span class="k">What it does</span><div class="v">Follow-ups and reminders that win business get sent automatically for you.</div>
+          <span class="k">Sold under it</span><div class="chips"><span>Automatic follow-ups</span><span>Sends leads to the right person</span><span>Asks happy customers for reviews</span><span>Connects your other apps</span><span>Alerts you and your team</span></div>
+        </div>
+        <div class="amt">$29<small>/mo</small>
+          <a class="buy" href="https://buy.stripe.com/cNi7sN7M4fxn4XJ6kt1ck0a" target="_blank" rel="noopener">Start</a>
+          <a class="buy-alt" href="https://buy.stripe.com/aFaaEZ5DW5WNbm75gp1ck0i" target="_blank" rel="noopener">or $199 once</a></div>
+      </div>
+
+      <div class="rung">
+        <label class="pick"><input type="checkbox" class="mcb" data-phase="P7" data-name="Payments & Checkout" data-monthly="19" data-once="149" aria-label="Add P7 Payments and Checkout"></label>
+        <div>
+          <h3>Payments &amp; Checkout</h3>
+          <span class="k">What it does</span><div class="v">Take card payments on your site, so you get paid on the spot.</div>
+          <span class="k">Sold under it</span><div class="chips"><span>Card payments</span><span>Send invoices</span><span>Recurring billing</span><span>List your products</span><span>Take deposits</span></div>
+        </div>
+        <div class="amt">$19<small>/mo</small>
+          <a class="buy" href="https://buy.stripe.com/4gM7sN1nGetjcqb9wF1ck0b" target="_blank" rel="noopener">Start</a>
+          <a class="buy-alt" href="https://buy.stripe.com/5kQbJ37M41Gx75R6kt1ck0j" target="_blank" rel="noopener">or $149 once</a></div>
+      </div>
+
+      <div class="rung">
+        <label class="pick"><input type="checkbox" class="mcb" data-phase="P8" data-name="Analytics & Reporting" data-monthly="19" aria-label="Add P8 Analytics and Reporting"></label>
+        <div>
+          <h3>Analytics &amp; Reporting</h3>
+          <span class="k">What it does</span><div class="v">A simple plain-English report each month showing what's bringing you business.</div>
+          <span class="k">Sold under it</span><div class="chips"><span>Simple stats screen</span><span>See what becomes a sale</span><span>Plain-English monthly report</span><span>Track your goals</span><span>See where people click</span></div>
+        </div>
+        <div class="amt">$19<small>/month</small>
+          <a class="buy" href="https://buy.stripe.com/eVqaEZ7M470Rai3cIR1ck0c" target="_blank" rel="noopener">Start</a></div>
+      </div>
+
+      <div class="rung">
+        <label class="pick"><input type="checkbox" class="mcb" data-phase="P9" data-name="24/7 AI Assistant" data-monthly="29" data-once="99" aria-label="Add P9 24/7 AI Assistant"></label>
+        <div>
+          <h3>24/7 AI Assistant</h3>
+          <span class="k">What it does</span><div class="v">A friendly helper that answers questions and books customers any time, even overnight.</div>
+          <span class="k">Sold under it</span><div class="chips"><span>Answers 24/7</span><span>Answers & screens questions</span><span>Books appointments</span><span>Knows your business</span><span>Passes leads to you</span></div>
+        </div>
+        <div class="amt">$29<small>/mo</small>
+          <a class="buy" href="https://buy.stripe.com/8x29AVeas3OF9dZ6kt1ck0d" target="_blank" rel="noopener">Start</a>
+          <a class="buy-alt" href="https://buy.stripe.com/5kQaEZ8Q8fxneyj38h1ck0k" target="_blank" rel="noopener">or $99 once</a></div>
+      </div>
+
+      <div class="rung flag">
+        <label class="pick"><input type="checkbox" class="mcb" data-phase="P10" data-name="AI Sales Agent & Custom Software" data-custom="1" aria-label="Add P10 AI Sales Agent"></label>
+        <div>
+          <h3>AI Sales Agent &amp; Custom Software <span class="tag" style="background:var(--go);color:var(--go-ink)">The Switch</span></h3>
+          <span class="k">What it does</span><div class="v">We build a system that finds and reaches new customers for you, plus any custom software you need.</div>
+          <span class="k">Sold under it</span><div class="chips"><span>Automatic sales rep</span><span>Finds new prospects</span><span>Personal outreach</span><span>Follows up & books</span><span>Any custom software</span></div>
+        </div>
+        <div class="amt">Custom<small>book a scope call</small>
+          <a class="buy" href="https://calendly.com/chrishubbel72/30min" target="_blank" rel="noopener">Book a call</a></div>
+      </div>
+    </div>
+    <div class="pcart reveal" id="mcart">
+      <div class="pcart-row"><span id="mcartList">No phases selected yet.</span><strong id="mcartTotal">$0/mo</strong></div>
+      <button class="btn btn-primary" id="mcheckout" type="button">Continue to secure checkout →</button>
+      <p class="pcart-note" id="mnote"></p>
+    </div>
+    <p class="mods-note reveal">// The website is free and yours · tick the add-ons you want and check out right here · one-time buys use each row's "or once" link · <a href="/pricing">full details on everything →</a></p>
+    <div class="hero-actions reveal" style="margin-top:30px">
+      <a href="https://calendly.com/chrishubbel72/30min" class="btn btn-primary armed">Book a call to map your path <span class="arrow">→</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- PROOF -->
+<section class="s" id="work">
+  <div class="wrap">
+    <div class="s-head reveal">
+      <span class="mono">Work we're proud of</span>
+      <h2>Real businesses. Real sites. Live right now.</h2>
+      <p class="lead">Three sites built and running today, click any of them and see for yourself. No mockups, no "coming soon."</p>
+    </div>
+    <div class="proof-grid">
+      <a class="pcard reveal" href="https://allaccesskc.com" target="_blank" rel="noopener">
+        <span class="tag">Live · Kansas City</span>
+        <h3>AllAccessKC</h3>
+        <p>A local guide business, city listings, game-day toolkits, food, and an ask-a-local chat, all on one site people actually use.</p>
+        <span class="go">Visit the site <span class="arrow">→</span></span>
+      </a>
+      <a class="pcard reveal" href="https://recursivelove.com" target="_blank" rel="noopener">
+        <span class="tag">Live · Community</span>
+        <h3>Recursive Love</h3>
+        <p>A resource hub for families, guides, a forum, and a 24/7 AI helper, the kind of site that keeps people coming back.</p>
+        <span class="go">Visit the site <span class="arrow">→</span></span>
+      </a>
+      <a class="pcard reveal" href="https://killswitch.domains/work">
+        <span class="tag">Our own build</span>
+        <h3>LIMEN Helix</h3>
+        <p>The bigger custom software we build in-house. Proof we can go well past a website when a business needs it.</p>
+        <span class="go">See the case <span class="arrow">→</span></span>
+      </a>
+    </div>
+
+    <div class="assure">
+      <div class="acell reveal"><div class="k">You own it</div><div class="v">Your domain, your code, your content. No hostage situations, ever.</div></div>
+      <div class="acell reveal"><div class="k">No contract</div><div class="v">Add-ons are month-to-month. Cancel any of them anytime.</div></div>
+      <div class="acell reveal"><div class="k">A few a month</div><div class="v">We only take a handful of free builds at a time so each one's done right.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final" id="start">
+  <div class="hazard" aria-hidden="true" style="opacity:.5;margin-bottom:60px"></div>
+  <div class="wrap">
+    <h2 class="reveal">Your free site is one<br>switch away.</h2>
+    <p class="reveal">Hop on a 30-minute call with a real, live human. We'll figure out what you need, what's free, and what's worth adding, no script, no pressure.</p>
+    <div class="hero-actions reveal">
+      <a href="https://calendly.com/chrishubbel72/30min" class="btn btn-primary armed">Book my free build <span class="arrow">→</span></a>
+      <a href="https://killswitch.domains/switch" class="btn btn-ghost">Or ask the AI anything</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div>
+      <div class="foot-brand"><svg class="brand-ic" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>KILLSWITCH</div>
+      <div class="foot-tag">Custom software, disguised as a website. Built for businesses nationwide.
+        <span class="lh">A Limen Helix company</span></div>
+    </div>
+    <div class="foot-links">
+      <a href="https://killswitch.domains/work">Work</a>
+      <a href="#modules">Pricing</a>
+      <a href="https://killswitch.domains/switch">Ask the AI</a>
+      <a href="https://calendly.com/chrishubbel72/30min">Book a call</a>
+    </div>
+  </div>
+  <div class="wrap copy">© 2026 KILLSWITCH · Serving all 50 states</div>
+</footer>
+
+<script>
+  (function(){
+    var sw = document.getElementById('killSwitch');
+    var status = document.getElementById('status');
+    var statusText = document.getElementById('statusText');
+    var capState = document.getElementById('capState');
+    var cta = document.getElementById('primaryCta');
+    var ctaLabel = cta.querySelector('.label');
+    var on = false;
+
+    function flip(){
+      on = !on;
+      sw.classList.toggle('on', on);
+      sw.setAttribute('aria-checked', on ? 'true' : 'false');
+      status.classList.toggle('live', on);
+      statusText.textContent = on ? 'Live' : 'Offline';
+      capState.textContent = on ? 'Powered on' : 'Standby';
+      if(on){
+        cta.classList.remove('standby');
+        cta.classList.add('armed');
+        ctaLabel.textContent = 'Claim my free build';
+      } else {
+        cta.classList.add('standby');
+        cta.classList.remove('armed');
+        ctaLabel.textContent = 'Flip the switch to start';
+      }
+    }
+
+    sw.addEventListener('click', flip);
+    sw.addEventListener('keydown', function(e){
+      if(e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); flip(); }
+    });
+    // clicking the CTA while in standby flips it on first, then proceeds
+    cta.addEventListener('click', function(e){
+      if(!on){ e.preventDefault(); flip(); setTimeout(function(){ window.location.href = cta.getAttribute('href'); }, 350); }
+    });
+
+    // scroll reveal
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target);} });
+    }, {threshold:.12});
+    document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  })();
+
+  /* Growth-path checkout — tick phases, buy the set in one Stripe checkout, right here */
+  (function(){
+    var cbs = document.querySelectorAll('.mcb'); if(!cbs.length) return;
+    var listEl = document.getElementById('mcartList'), totEl = document.getElementById('mcartTotal'),
+        note = document.getElementById('mnote'), btn = document.getElementById('mcheckout');
+    function money(n){ return '$' + n.toLocaleString('en-US'); }
+    function tally(){
+      var mo = 0, items = [], hasCustom = false;
+      cbs.forEach(function(cb){
+        var rung = cb.closest('.rung');
+        if(cb.checked){
+          if(rung) rung.classList.add('sel');
+          var custom = cb.getAttribute('data-custom');
+          if(custom) hasCustom = true; else mo += (+cb.getAttribute('data-monthly') || 0);
+          items.push({ phase: cb.getAttribute('data-phase'), name: cb.getAttribute('data-name'), custom: !!custom });
+        } else if(rung){ rung.classList.remove('sel'); }
+      });
+      listEl.textContent = items.length ? items.map(function(it){ return it.name; }).join(' + ') : 'No add-ons selected yet.';
+      totEl.textContent = money(mo) + '/mo';
+      return { mo: mo, items: items, hasCustom: hasCustom };
+    }
+    cbs.forEach(function(cb){ cb.addEventListener('change', tally); });
+    tally();
+
+    // "Add the Starter set" — pre-tick Get Found on Google (P1) + Online Booking (P3)
+    var starter = document.getElementById('starterAdd');
+    if(starter){
+      starter.addEventListener('click', function(){
+        cbs.forEach(function(cb){
+          var p = cb.getAttribute('data-phase');
+          if(p === 'P1' || p === 'P3') cb.checked = true;
+        });
+        tally();
+        var cart = document.getElementById('mcart');
+        if(cart) cart.scrollIntoView({ behavior:'smooth', block:'center' });
+      });
+    }
+    btn.addEventListener('click', function(){
+      var b = tally(), buyable = b.items.filter(function(it){ return !it.custom; });
+      if(!buyable.length){
+        note.style.color = 'var(--red)';
+        note.textContent = b.items.length ? 'The AI Sales Agent is a custom build, so book a call for that one.' : 'Tick at least one add-on to check out.';
+        return;
+      }
+      var phases = buyable.map(function(it){ return it.phase; });
+      note.style.color = ''; note.textContent = 'Opening secure checkout…'; btn.disabled = true;
+      fetch('/api/checkout', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ phases: phases }) })
+        .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, d: d }; }); })
+        .then(function(res){
+          if(res.ok && res.d && res.d.url){ window.location.href = res.d.url; return; }
+          note.style.color = 'var(--red)';
+          note.textContent = 'Could not start checkout (' + ((res.d && res.d.error) || 'try again') + '). You can still use Buy now on each rung.';
+          btn.disabled = false;
+        })
+        .catch(function(){
+          note.style.color = 'var(--red)';
+          note.textContent = 'Network error. You can still use Buy now on each rung.';
+          btn.disabled = false;
+        });
+    });
+  })();
+</script>
+</body>
+</html>
