@@ -1,1 +1,5 @@
 _archive
+_playbook
+_outreach
+# Operator automation control surface - internal Claude Code config, never deployed.
+.claude/

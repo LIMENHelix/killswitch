@@ -1,0 +1,9 @@
+{
+  "_doc": "On-demand automation state for this site. Persists between operator-invoked runs; no daemon. Commands read/write this. Decisions are NEVER acted on until awaiting_operator=false. Deploy is manual Vercel CLI (not git-connected).",
+  "project": "killswitch",
+  "updated": "2026-07-12",
+  "open_requests": [],
+  "built": [],
+  "pending_decisions": [],
+  "guardrails_tripped": []
+}
