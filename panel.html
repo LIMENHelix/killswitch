@@ -400,15 +400,22 @@
 
   document.getElementById('saveBtn').addEventListener('click', function(){
     if(LIVE){
-      // Real customer: commit the whole set at once. Turn on = everything now
-      // 'active'; anything moved off is dropped. One checkout for all new adds.
-      var desired = MODULES.filter(function(m){ return !m.custom && m.id!=='P0' && m.state==='active'; }).map(function(m){ return m.id; });
+      // Real customer: commit the whole set at once, with a clear "you're about to
+      // be charged, and past charges aren't refunded" gate before anything new.
+      var desired = paidOn();
+      var baseSet = {}; baselineOn.forEach(function(p){ baseSet[p]=1; });
+      var newlyOn = desired.filter(function(id){ return !baseSet[id]; });
+      if(newlyOn.length){
+        var names=[], total=0;
+        newlyOn.forEach(function(id){ var mm=MODULES.find(function(x){ return x.id===id; }); if(mm){ names.push(mm.name); total+=(mm.price||0); } });
+        if(!confirm('Start '+names.join(', ')+' — $'+total+'/mo.\n\nYour card is charged for the first month now. You can switch anything off anytime and it keeps working until your next billing date, then stops — but payments already made are not refunded.\n\nContinue to secure checkout?')) return;
+      }
       var btn=document.getElementById('saveBtn'); btn.disabled=true;
       saveNote.style.color=''; saveNote.textContent='Saving your changes...';
       sw('apply',{on:desired}).then(function(r){
         if(r.url){ window.location.href=r.url; return; }   // first-time adds -> one checkout
         btn.disabled=false;
-        if(r.ok){ applyState(r); render(); saveNote.style.color='var(--ok)'; saveNote.textContent='Saved. Your plan is up to date.'; }
+        if(r.ok){ applyState(r); baselineOn = paidOn(); render(); saveNote.style.color='var(--ok)'; saveNote.textContent='Saved. Your plan is up to date.'; }
         else { saveNote.style.color='var(--red)'; saveNote.textContent='Could not save: '+(r.error||'error'); }
       });
       return;
@@ -423,7 +430,7 @@
   // the customer's real switches read live from Stripe, and toggles hit billing.
   var qs = new URLSearchParams(location.search);
   var acctEmail = qs.get('e'), acctToken = qs.get('t'), sessionId = qs.get('session_id');
-  var LIVE = false;
+  var LIVE = false, baselineOn = [];
 
   function sw(action, extra){
     var payload = { action: action, e: acctEmail, t: acctToken };
@@ -447,9 +454,10 @@
     });
   }
   // batch commit lives in the Save button handler below (toggles just stage state)
+  function paidOn(){ return MODULES.filter(function(m){ return !m.custom && m.id!=='P0' && m.state==='active'; }).map(function(m){ return m.id; }); }
   function loadState(){
     return sw('state').then(function(d){
-      if(d && !d.error){ applyState(d); LIVE=true; }
+      if(d && !d.error){ applyState(d); LIVE=true; baselineOn = paidOn(); }
       render();
     });
   }
