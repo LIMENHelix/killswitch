@@ -253,7 +253,7 @@
     if(m.locked) return '<span class="pill locked">Always on</span>';
     if(m.custom) return '<span class="pill off">Book to add</span>';
     if(m.state==='active') return '<span class="pill on">On</span>';
-    if(m.state==='ending') return '<span class="pill ending">Off · runs to '+billLabel+'</span>';
+    if(m.state==='ending') return '<span class="pill ending">Off · runs to '+endLabel(m)+'</span>';
     return '<span class="pill off">Off</span>';
   }
   function swClass(m){
@@ -265,7 +265,7 @@
   function sub(m){
     if(m.locked) return 'free, forever';
     if(m.custom) return '';
-    if(m.state==='ending') return 'off, but runs until '+billLabel+' (already paid)';
+    if(m.state==='ending') return 'off, but runs until '+endLabel(m)+' (already paid)';
     if(m.state==='active') return 'min. one billing cycle';
     return '';
   }
@@ -299,6 +299,7 @@
   function toggle(id){
     var m = MODULES.find(function(x){ return x.id===id; });
     if(!m || m.locked || m.custom) return;
+    if(LIVE){ liveToggle(m); return; }             // real customer: hit Stripe
     if(m.state==='off') m.state='active';          // turn on
     else if(m.state==='active') m.state='ending';  // schedule off at cycle end
     else if(m.state==='ending') m.state='active';  // keep it on
@@ -406,27 +407,66 @@
     saveNote.textContent = 'Saved. ' + (ending.length ? (ending.join(', ') + ' will stop after ' + billLabel + '.') : 'Your active modules keep running.');
   });
 
-  // ---- load THIS customer's real account (from their portal link ?e=&t=) ----
-  // No token => stays a preview so /panel still demos. With a valid token the
-  // panel shows the customer's real plan (free P0 on; paid switches from Stripe).
+  // ---- load THIS customer's real, LIVE plan from Stripe (portal link ?e=&t=) ----
+  // No token => preview so /panel still demos. With a valid token the panel shows
+  // the customer's real switches read live from Stripe, and toggles hit billing.
   var qs = new URLSearchParams(location.search);
-  var acctEmail = qs.get('e'), acctToken = qs.get('t');
-  function applyPlan(plan){
-    var on = {}; (plan||[]).forEach(function(p){ on[p]=true; });
+  var acctEmail = qs.get('e'), acctToken = qs.get('t'), sessionId = qs.get('session_id');
+  var LIVE = false;
+
+  function sw(action, extra){
+    var payload = { action: action, e: acctEmail, t: acctToken };
+    if(extra){ for(var k in extra) payload[k] = extra[k]; }
+    return fetch('/api/switch', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+      .then(function(r){ return r.json().catch(function(){ return {}; }); });
+  }
+  function endLabel(m){
+    if(m && m.endsAt){ try{ return new Date(m.endsAt*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }catch(e){} }
+    return billLabel;
+  }
+  function applyState(d){
+    if(d && d.site) document.getElementById('siteName').textContent = d.site;
+    var mods = (d && d.modules) || {};
     MODULES.forEach(function(m){
-      if(m.id==='P0'){ m.state='active'; return; }   // free site always on
+      if(m.id==='P0'){ m.state='active'; return; }
       if(m.custom){ m.state='off'; return; }
-      m.state = on[m.id] ? 'active' : 'off';
+      var s = mods[m.id];
+      if(s){ m.state = (s.state==='ending') ? 'ending' : 'active'; m.endsAt = s.endsAt || null; }
+      else { m.state='off'; m.endsAt=null; }
+    });
+  }
+  function liveToggle(m){
+    if(m.state==='off'){
+      if(!confirm('Turn on '+m.name+(m.price?' ($'+m.price+'/mo)':'')+'? You will go to secure checkout to start it.')) return;
+      saveNote.style.color=''; saveNote.textContent='Opening secure checkout...';
+      sw('on',{phase:m.id}).then(function(r){
+        if(r.url){ window.location.href=r.url; return; }
+        if(r.ok){ m.state='active'; render(); saveNote.style.color='var(--ok)'; saveNote.textContent=m.name+' is on.'; return; }
+        saveNote.style.color='var(--red)'; saveNote.textContent='Could not start: '+(r.error||'error');
+      });
+    } else if(m.state==='active'){
+      if(!confirm('Turn off '+m.name+'? It keeps working until your next billing date, then stops. No further charge.')) return;
+      sw('off',{phase:m.id}).then(function(r){
+        if(r.ok){ m.state='ending'; m.endsAt=r.endsAt||m.endsAt; render(); saveNote.style.color='var(--ok)'; saveNote.textContent=m.name+' will stop after '+endLabel(m)+'.'; }
+        else { saveNote.style.color='var(--red)'; saveNote.textContent='Could not turn off: '+(r.error||'error'); }
+      });
+    } else if(m.state==='ending'){
+      sw('on',{phase:m.id}).then(function(r){
+        if(r.ok){ m.state='active'; m.endsAt=null; render(); saveNote.style.color='var(--ok)'; saveNote.textContent=m.name+' is back on.'; }
+        else if(r.url){ window.location.href=r.url; }
+        else { saveNote.style.color='var(--red)'; saveNote.textContent='Could not reactivate: '+(r.error||'error'); }
+      });
+    }
+  }
+  function loadState(){
+    return sw('state').then(function(d){
+      if(d && !d.error){ applyState(d); LIVE=true; var sb=document.getElementById('saveBtn'); if(sb) sb.style.display='none'; }
+      render();
     });
   }
   if(acctEmail && acctToken){
-    fetch('/api/account?e='+encodeURIComponent(acctEmail)+'&t='+encodeURIComponent(acctToken))
-      .then(function(r){ return r.ok ? r.json() : null; })
-      .then(function(a){
-        if(a){ if(a.site) document.getElementById('siteName').textContent = a.site; applyPlan(a.plan); }
-        render();
-      })
-      .catch(function(){ render(); });
+    if(sessionId){ sw('link',{session_id:sessionId}).then(loadState); }
+    else { loadState(); }
   } else {
     render();
   }
