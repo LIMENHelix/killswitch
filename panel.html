@@ -117,7 +117,11 @@
   .savenote{width:100%;font-size:.8rem;color:var(--mute-2);min-height:14px}
 
   /* AI change box */
-  .aibox{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--panel);margin-top:8px}
+  .aibox{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--panel);margin-top:8px;transition:opacity .2s,filter .2s}
+  .aibox.locked{opacity:.5;filter:grayscale(.4);pointer-events:none}
+  .edits-lock{border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:12px;padding:14px 18px;background:var(--metal);color:var(--mute);font-size:.9rem;margin-bottom:12px}
+  .edits-lock b{color:var(--ink)}
+  .edits-lock a{color:var(--go);cursor:pointer;font-weight:600}
   .aibox-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line-soft);background:linear-gradient(180deg,var(--metal-hi),var(--metal))}
   .aibox-head .t{font-family:"Archivo",sans-serif;font-weight:700;font-size:1rem;display:flex;align-items:center;gap:9px}
   .aibox-head .t svg{width:18px;height:18px;color:var(--go)}
@@ -188,6 +192,7 @@
 
   <section class="s">
     <div class="s-lbl">Ask for a change</div>
+    <div class="edits-lock" id="editsLock" hidden><b>Site edits are a switch.</b> Turn on <b>Site Edits &amp; Updates</b> in your modules above, then request changes anytime, hours, text, photos, new pages, and we make them. <a id="editsTurnOn">Turn it on &rarr;</a></div>
     <div class="aibox">
       <div class="aibox-head">
         <div class="t"><svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>Change my site</div>
@@ -231,6 +236,7 @@
     { id:'P2', name:'Content & Email Marketing', desc:'Posts and a newsletter on a schedule.', price:29, state:'off' },
     { id:'P3', name:'Online Booking & Scheduling', desc:'Customers self-book, day or night.', price:19, state:'active' },
     { id:'P4', name:'Hosting & Maintenance', desc:'We keep it online, safe, and updated.', price:29, state:'off' },
+    { id:'P11', name:'Site Edits & Updates', desc:'Request changes anytime: hours, text, photos, new pages. We make them.', price:29, state:'off' },
     { id:'P5', name:'CRM & Customer Database', desc:'Every lead and customer in one place.', price:29, state:'off' },
     { id:'P6', name:'Marketing Automation', desc:'Follow-ups and review requests, automatic.', price:29, state:'off' },
     { id:'P7', name:'Payments & Checkout', desc:'Take card payments on your site.', price:19, state:'off' },
@@ -287,6 +293,7 @@
       btn.addEventListener('click', function(){ toggle(btn.getAttribute('data-id')); });
     });
     total();
+    gateEdits();
   }
 
   function toggle(id){
@@ -302,6 +309,21 @@
     if(el){ el.classList.add('flash'); setTimeout(function(){ el.classList.remove('flash'); }, 460); }
     if(on){ document.body.classList.add('zap'); setTimeout(function(){ document.body.classList.remove('zap'); }, 220); }
   }
+
+  // ---- gate the "Ask for a change" box behind the Site Edits switch (P11) ----
+  function editsActive(){
+    var m = MODULES.find(function(x){ return x.id==='P11'; });
+    return !!(m && m.state==='active');
+  }
+  function gateEdits(){
+    var box = document.querySelector('.aibox');
+    var lock = document.getElementById('editsLock');
+    var on = editsActive();
+    if(box) box.classList.toggle('locked', !on);
+    if(lock) lock.hidden = on;
+    ['aiInput','aiSend','aiDeliver'].forEach(function(id){ var el=document.getElementById(id); if(el) el.disabled = !on; });
+  }
+  (function(){ var t=document.getElementById('editsTurnOn'); if(t) t.addEventListener('click', function(){ toggle('P11'); window.scrollTo({top:0,behavior:'smooth'}); }); })();
 
   /* ---- electric sound, generated on-device (Web Audio, no files) ---- */
   var muted = false; try{ muted = localStorage.getItem('ks-muted')==='1'; }catch(e){}
