@@ -115,6 +115,11 @@
   .savebtn{font-family:"Archivo",sans-serif;font-weight:700;font-size:.92rem;background:var(--go);color:var(--go-ink);border:1px solid var(--go);border-radius:10px;padding:11px 18px;cursor:pointer;transition:.15s}
   .savebtn:hover{filter:brightness(1.08);transform:translateY(-1px)}
   .savenote{width:100%;font-size:.8rem;color:var(--mute-2);min-height:14px}
+  .unsaved{width:100%;font-size:.82rem;color:var(--amber);font-weight:600}
+  .unsaved b{color:var(--ink)}
+  .savebtn.dirty{box-shadow:0 0 0 2px var(--amber)}
+  @media(prefers-reduced-motion:no-preference){.savebtn.dirty{animation:pulseAmber 1.5s infinite}}
+  @keyframes pulseAmber{0%,100%{box-shadow:0 0 0 2px rgba(255,196,46,.95)}50%{box-shadow:0 0 0 5px rgba(255,196,46,.25)}}
 
   /* AI change box */
   .aibox{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--panel);margin-top:8px;transition:opacity .2s,filter .2s}
@@ -186,6 +191,7 @@
         <div class="t-amt" id="tAmt">$0<small>/mo</small></div>
         <button class="savebtn" id="saveBtn" type="button">Save changes</button>
       </div>
+      <p class="unsaved" id="unsavedFlag" hidden>&#9679; You have unsaved changes. Click <b>Save changes</b> to apply. Nothing changes on your bill until you do.</p>
       <p class="savenote" id="saveNote"></p>
     </div>
   </section>
@@ -294,6 +300,8 @@
     });
     total();
     gateEdits();
+    var uf=document.getElementById('unsavedFlag'); if(uf) uf.hidden = !isDirty();
+    var sbtn=document.getElementById('saveBtn'); if(sbtn) sbtn.classList.toggle('dirty', isDirty());
   }
 
   function toggle(id){
@@ -415,7 +423,7 @@
       sw('apply',{on:desired}).then(function(r){
         if(r.url){ window.location.href=r.url; return; }   // first-time adds -> one checkout
         btn.disabled=false;
-        if(r.ok){ applyState(r); baselineOn = paidOn(); render(); saveNote.style.color='var(--ok)'; saveNote.textContent='Saved. Your plan is up to date.'; }
+        if(r.ok){ applyState(r); baselineOn = paidOn(); committedState = snapshot(); render(); saveNote.style.color='var(--ok)'; saveNote.textContent='Saved. Your plan is up to date.'; }
         else { saveNote.style.color='var(--red)'; saveNote.textContent='Could not save: '+(r.error||'error'); }
       });
       return;
@@ -430,7 +438,7 @@
   // the customer's real switches read live from Stripe, and toggles hit billing.
   var qs = new URLSearchParams(location.search);
   var acctEmail = qs.get('e'), acctToken = qs.get('t'), sessionId = qs.get('session_id');
-  var LIVE = false, baselineOn = [];
+  var LIVE = false, baselineOn = [], committedState = {};
 
   function sw(action, extra){
     var payload = { action: action, e: acctEmail, t: acctToken };
@@ -455,9 +463,11 @@
   }
   // batch commit lives in the Save button handler below (toggles just stage state)
   function paidOn(){ return MODULES.filter(function(m){ return !m.custom && m.id!=='P0' && m.state==='active'; }).map(function(m){ return m.id; }); }
+  function snapshot(){ var o={}; MODULES.forEach(function(m){ if(!m.custom && m.id!=='P0') o[m.id]=m.state; }); return o; }
+  function isDirty(){ if(!LIVE) return false; for(var i=0;i<MODULES.length;i++){ var m=MODULES[i]; if(m.custom||m.id==='P0') continue; if(committedState[m.id]!==m.state) return true; } return false; }
   function loadState(){
     return sw('state').then(function(d){
-      if(d && !d.error){ applyState(d); LIVE=true; baselineOn = paidOn(); }
+      if(d && !d.error){ applyState(d); LIVE=true; baselineOn = paidOn(); committedState = snapshot(); }
       render();
     });
   }
@@ -467,6 +477,7 @@
   } else {
     render();
   }
+  window.addEventListener('beforeunload', function(e){ if(isDirty()){ e.preventDefault(); e.returnValue=''; } });
 
   // ---- AI change box ----
   var log = document.getElementById('ailog'), input = document.getElementById('aiInput'),
