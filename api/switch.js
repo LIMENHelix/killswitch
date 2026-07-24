@@ -54,7 +54,7 @@ function itemsByPhase(subs) {
     for (const it of (s.items && s.items.data) || []) {
       const phase = PRICE_TO_PHASE[it.price && it.price.id];
       if (!phase) continue;
-      map[phase] = { subId: s.id, itemId: it.id, endsAt: s.current_period_end || null, cancelAtEnd: !!s.cancel_at_period_end };
+      map[phase] = { subId: s.id, itemId: it.id, endsAt: it.current_period_end || s.current_period_end || null, cancelAtEnd: !!s.cancel_at_period_end };
     }
   }
   return map;
