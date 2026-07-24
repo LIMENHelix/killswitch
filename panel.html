@@ -310,7 +310,7 @@
     if(on){ document.body.classList.add('zap'); setTimeout(function(){ document.body.classList.remove('zap'); }, 220); }
   }
 
-  // ---- gate the "Ask for a change" box behind the Site Edits switch (P11) ----
+  // ---- gate the "Ask for a change" box behind the Care Plan switch (P11) ----
   function editsActive(){
     var m = MODULES.find(function(x){ return x.id==='P11'; });
     return !!(m && m.state==='active');
