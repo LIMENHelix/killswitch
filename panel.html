@@ -299,7 +299,6 @@
   function toggle(id){
     var m = MODULES.find(function(x){ return x.id===id; });
     if(!m || m.locked || m.custom) return;
-    if(LIVE){ liveToggle(m); return; }             // real customer: hit Stripe
     if(m.state==='off') m.state='active';          // turn on
     else if(m.state==='active') m.state='ending';  // schedule off at cycle end
     else if(m.state==='ending') m.state='active';  // keep it on
@@ -400,8 +399,20 @@
   }
 
   document.getElementById('saveBtn').addEventListener('click', function(){
-    // In the live version this calls the billing backend to add/remove
-    // subscriptions (respecting the minimum cycle). For now it confirms the plan.
+    if(LIVE){
+      // Real customer: commit the whole set at once. Turn on = everything now
+      // 'active'; anything moved off is dropped. One checkout for all new adds.
+      var desired = MODULES.filter(function(m){ return !m.custom && m.id!=='P0' && m.state==='active'; }).map(function(m){ return m.id; });
+      var btn=document.getElementById('saveBtn'); btn.disabled=true;
+      saveNote.style.color=''; saveNote.textContent='Saving your changes...';
+      sw('apply',{on:desired}).then(function(r){
+        if(r.url){ window.location.href=r.url; return; }   // first-time adds -> one checkout
+        btn.disabled=false;
+        if(r.ok){ applyState(r); render(); saveNote.style.color='var(--ok)'; saveNote.textContent='Saved. Your plan is up to date.'; }
+        else { saveNote.style.color='var(--red)'; saveNote.textContent='Could not save: '+(r.error||'error'); }
+      });
+      return;
+    }
     var ending = MODULES.filter(function(m){ return m.state==='ending'; }).map(function(m){ return m.name; });
     saveNote.style.color = 'var(--ok)';
     saveNote.textContent = 'Saved. ' + (ending.length ? (ending.join(', ') + ' will stop after ' + billLabel + '.') : 'Your active modules keep running.');
@@ -435,32 +446,10 @@
       else { m.state='off'; m.endsAt=null; }
     });
   }
-  function liveToggle(m){
-    if(m.state==='off'){
-      if(!confirm('Turn on '+m.name+(m.price?' ($'+m.price+'/mo)':'')+'? You will go to secure checkout to start it.')) return;
-      saveNote.style.color=''; saveNote.textContent='Opening secure checkout...';
-      sw('on',{phase:m.id}).then(function(r){
-        if(r.url){ window.location.href=r.url; return; }
-        if(r.ok){ m.state='active'; render(); saveNote.style.color='var(--ok)'; saveNote.textContent=m.name+' is on.'; return; }
-        saveNote.style.color='var(--red)'; saveNote.textContent='Could not start: '+(r.error||'error');
-      });
-    } else if(m.state==='active'){
-      if(!confirm('Turn off '+m.name+'? It keeps working until your next billing date, then stops. No further charge.')) return;
-      sw('off',{phase:m.id}).then(function(r){
-        if(r.ok){ m.state='ending'; m.endsAt=r.endsAt||m.endsAt; render(); saveNote.style.color='var(--ok)'; saveNote.textContent=m.name+' will stop after '+endLabel(m)+'.'; }
-        else { saveNote.style.color='var(--red)'; saveNote.textContent='Could not turn off: '+(r.error||'error'); }
-      });
-    } else if(m.state==='ending'){
-      sw('on',{phase:m.id}).then(function(r){
-        if(r.ok){ m.state='active'; m.endsAt=null; render(); saveNote.style.color='var(--ok)'; saveNote.textContent=m.name+' is back on.'; }
-        else if(r.url){ window.location.href=r.url; }
-        else { saveNote.style.color='var(--red)'; saveNote.textContent='Could not reactivate: '+(r.error||'error'); }
-      });
-    }
-  }
+  // batch commit lives in the Save button handler below (toggles just stage state)
   function loadState(){
     return sw('state').then(function(d){
-      if(d && !d.error){ applyState(d); LIVE=true; var sb=document.getElementById('saveBtn'); if(sb) sb.style.display='none'; }
+      if(d && !d.error){ applyState(d); LIVE=true; }
       render();
     });
   }

@@ -1,16 +1,15 @@
-// Phase 2 billing engine for the customer panel. Each paid switch is its own
-// Stripe subscription, so "off" is cancel_at_period_end (runs to the date, then
-// stops, no surprise charge) and Stripe itself is the source of truth.
-//
-// POST /api/switch  body: { action, e, t, ... }   (auth = passwordless portal token)
-//   'state'  -> { site, name, modules:{ P1:{state,endsAt}, ... } }   live from Stripe
-//   'on'     -> { url } (go to Stripe checkout) OR { ok, reactivated|already }
-//   'off'    -> { ok, endsAt }  (cancel_at_period_end on that switch's sub)
-//   'link'   -> { ok }          (attach the Stripe customer after checkout returns)
+// Phase 2 billing engine for the customer panel. BATCH: the panel sends the full
+// desired set of paid switches ("on") and the server reconciles it against Stripe
+// in one shot, add what's newly on, stop what's newly off, one checkout for all
+// first-time adds. Each customer keeps ONE subscription with a line item per
+// switch. Turning a switch off removes its item with no proration (the current
+// paid cycle is kept, no new charge next cycle); turning off everything cancels
+// the subscription at period end. "ending" (off but paid through a date) is shown
+// from a small per-account map so the promise stays visible.
 import { getAccount, upsertAccount } from '../lib/store.js';
 import { verifyPanel, panelToken } from '../lib/panel-auth.js';
 import { MONTHLY, PRICE_TO_PHASE } from '../lib/prices.js';
-import { stripeGet, stripePost } from '../lib/stripe.js';
+import { stripeGet, stripePost, stripeDelete } from '../lib/stripe.js';
 
 const LIVE_STATUSES = ['active', 'trialing', 'past_due'];
 
@@ -33,8 +32,7 @@ export default async function handler(req, res) {
 
   try {
     if (action === 'state') { res.status(200).json(await readState(account)); return; }
-    if (action === 'on')    { res.status(200).json(await turnOn(account, body.phase, host, email)); return; }
-    if (action === 'off')   { res.status(200).json(await turnOff(account, body.phase)); return; }
+    if (action === 'apply') { res.status(200).json(await applyChanges(account, body.on, host, email)); return; }
     if (action === 'link')  { res.status(200).json(await link(account, body.session_id)); return; }
     res.status(400).json({ error: 'unknown_action' });
   } catch (err) {
@@ -50,20 +48,13 @@ async function liveSubs(customerId) {
   return data.filter((s) => LIVE_STATUSES.includes(s.status));
 }
 
-// price -> { subId, state, endsAt } for this customer's live subscriptions
-function indexByPhase(subs) {
+function itemsByPhase(subs) {
   const map = {};
   for (const s of subs) {
-    const items = (s.items && s.items.data) || [];
-    for (const it of items) {
-      const priceId = it.price && it.price.id;
-      const phase = PRICE_TO_PHASE[priceId];
+    for (const it of (s.items && s.items.data) || []) {
+      const phase = PRICE_TO_PHASE[it.price && it.price.id];
       if (!phase) continue;
-      map[phase] = {
-        subId: s.id,
-        state: s.cancel_at_period_end ? 'ending' : 'active',
-        endsAt: s.current_period_end || null,
-      };
+      map[phase] = { subId: s.id, itemId: it.id, endsAt: s.current_period_end || null, cancelAtEnd: !!s.cancel_at_period_end };
     }
   }
   return map;
@@ -71,57 +62,83 @@ function indexByPhase(subs) {
 
 async function readState(account) {
   const subs = await liveSubs(account.stripeCustomerId);
-  const idx = indexByPhase(subs);
+  const items = itemsByPhase(subs);
+  const now = Math.floor(Date.now() / 1000);
+  const ending = account.ending || {};
   const modules = {};
-  for (const phase of Object.keys(idx)) modules[phase] = { state: idx[phase].state, endsAt: idx[phase].endsAt };
+  for (const phase of Object.keys(items)) {
+    modules[phase] = { state: items[phase].cancelAtEnd ? 'ending' : 'active', endsAt: items[phase].endsAt };
+  }
+  for (const phase of Object.keys(ending)) {
+    if (modules[phase]) continue;
+    if (ending[phase] && ending[phase] > now) modules[phase] = { state: 'ending', endsAt: ending[phase] };
+  }
   return { site: account.site || '', name: account.name || '', linked: !!account.stripeCustomerId, modules };
 }
 
-async function turnOn(account, phase, host, email) {
-  const priceId = MONTHLY[phase];
-  if (!priceId) return { error: 'unknown_switch' };
+async function applyChanges(account, on, host, email) {
+  const desired = new Set((Array.isArray(on) ? on : []).filter((p) => MONTHLY[p]));
+  let subs = await liveSubs(account.stripeCustomerId);
+  let items = itemsByPhase(subs);
+  const ending = { ...(account.ending || {}) };
+  const now = Math.floor(Date.now() / 1000);
 
-  // Already have a live sub for this price? Reactivate it instead of a new charge.
-  const subs = await liveSubs(account.stripeCustomerId);
-  const existing = subs.find((s) => (s.items && s.items.data || []).some((it) => it.price && it.price.id === priceId));
-  if (existing) {
-    if (existing.cancel_at_period_end) {
-      const upd = await stripePost('/subscriptions/' + existing.id, { cancel_at_period_end: false });
-      if (upd.error) return { error: upd.error };
-      return { ok: true, reactivated: true };
+  // 1) Reactivate any cancel-at-period-end subscription holding a desired phase.
+  const uncancel = new Set();
+  for (const phase of Object.keys(items)) if (desired.has(phase) && items[phase].cancelAtEnd) uncancel.add(items[phase].subId);
+  for (const subId of uncancel) await stripePost('/subscriptions/' + subId, { cancel_at_period_end: false });
+  if (uncancel.size) { subs = await liveSubs(account.stripeCustomerId); items = itemsByPhase(subs); }
+
+  // 2) Removals, grouped per subscription so removing all of one cancels it cleanly.
+  const bySub = {};
+  for (const phase of Object.keys(items)) {
+    if (items[phase].cancelAtEnd) continue; // already ending
+    const g = (bySub[items[phase].subId] = bySub[items[phase].subId] || { endsAt: items[phase].endsAt, phases: [] });
+    g.phases.push(phase);
+  }
+  for (const subId of Object.keys(bySub)) {
+    const g = bySub[subId];
+    const remove = g.phases.filter((p) => !desired.has(p));
+    if (!remove.length) continue;
+    if (remove.length === g.phases.length) {
+      const r = await stripePost('/subscriptions/' + subId, { cancel_at_period_end: true });
+      if (!r.error) remove.forEach((p) => { ending[p] = r.current_period_end || g.endsAt || now; });
+    } else {
+      for (const p of remove) {
+        const r = await stripeDelete('/subscription_items/' + items[p].itemId, { proration_behavior: 'none' });
+        if (!r.error) ending[p] = items[p].endsAt || now;
+      }
     }
-    return { ok: true, already: true };
   }
 
-  // No sub yet: Stripe Checkout (collects/reuses card). Reuse customer if known.
-  const tok = panelToken(email);
-  const back = '/panel?e=' + encodeURIComponent(email) + '&t=' + tok;
-  const params = {
-    mode: 'subscription',
-    'line_items[0][price]': priceId,
-    'line_items[0][quantity]': 1,
-    success_url: host + back + '&session_id={CHECKOUT_SESSION_ID}',
-    cancel_url: host + back,
-    allow_promotion_codes: 'true',
-  };
-  if (account.stripeCustomerId) params.customer = account.stripeCustomerId;
-  else params.customer_email = email;
+  // 3) Additions.
+  const toAdd = [...desired].filter((p) => !items[p]);
+  toAdd.forEach((p) => { delete ending[p]; });
 
-  const sess = await stripePost('/checkout/sessions', params);
-  if (sess.error || !sess.url) return { error: sess.error || 'checkout_failed' };
-  return { url: sess.url };
-}
+  let url = null;
+  if (toAdd.length) {
+    const existingSub = subs.find((s) => LIVE_STATUSES.includes(s.status) && !s.cancel_at_period_end);
+    if (account.stripeCustomerId && existingSub) {
+      for (const p of toAdd) await stripePost('/subscription_items', { subscription: existingSub.id, price: MONTHLY[p], proration_behavior: 'none' });
+    } else {
+      // First purchase (or no live sub): ONE checkout bundling all adds.
+      const tok = panelToken(email);
+      const back = '/panel?e=' + encodeURIComponent(email) + '&t=' + tok;
+      const params = { mode: 'subscription', success_url: host + back + '&session_id={CHECKOUT_SESSION_ID}', cancel_url: host + back, allow_promotion_codes: 'true' };
+      toAdd.forEach((p, i) => { params['line_items[' + i + '][price]'] = MONTHLY[p]; params['line_items[' + i + '][quantity]'] = 1; });
+      if (account.stripeCustomerId) params.customer = account.stripeCustomerId; else params.customer_email = email;
+      const sess = await stripePost('/checkout/sessions', params);
+      if (sess.error || !sess.url) return { error: sess.error || 'checkout_failed' };
+      url = sess.url;
+    }
+  }
 
-async function turnOff(account, phase) {
-  const priceId = MONTHLY[phase];
-  if (!priceId) return { error: 'unknown_switch' };
-  const subs = await liveSubs(account.stripeCustomerId);
-  const sub = subs.find((s) => (s.items && s.items.data || []).some((it) => it.price && it.price.id === priceId));
-  if (!sub) return { error: 'not_active' };
-  if (sub.cancel_at_period_end) return { ok: true, endsAt: sub.current_period_end };
-  const upd = await stripePost('/subscriptions/' + sub.id, { cancel_at_period_end: true });
-  if (upd.error) return { error: upd.error };
-  return { ok: true, endsAt: upd.current_period_end || sub.current_period_end };
+  for (const p of Object.keys(ending)) if (!(ending[p] > now)) delete ending[p];
+  await upsertAccount({ email: account.email, ending });
+
+  if (url) return { url };
+  const st = await readState({ ...account, ending });
+  return { ok: true, ...st };
 }
 
 async function link(account, sessionId) {
