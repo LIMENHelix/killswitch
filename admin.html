@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>KILLSWITCH · Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230a0b0e'/%3E%3Cg fill='none' stroke='%23FF3826' stroke-width='9' stroke-linecap='round'%3E%3Cpath d='M62.5 30.4 A25 25 0 1 1 37.5 30.4'/%3E%3Cpath d='M50 22 V52'/%3E%3C/g%3E%3C/svg%3E" />
+<style>
+  :root{--bg:#121214;--panel:#1a1a1e;--metal:#232328;--line:#34343c;--ink:#fff;--mute:#b6bac2;--mute2:#888c96;--amber:#FFC42E;--red:#FF5546;--go:#1BA45A;--blue:#9db0ff}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:"Inter",system-ui,sans-serif;line-height:1.5}
+  .wrap{max-width:1240px;margin:0 auto;padding:22px}
+  h1{font-family:"Archivo",sans-serif;font-weight:900;font-size:1.4rem}
+  .sub{color:var(--mute2);font-size:.82rem;margin-top:3px}
+  /* login */
+  #login{max-width:360px;margin:14vh auto;text-align:center}
+  #login h1{margin-bottom:8px}
+  #login input{width:100%;margin:16px 0 10px;background:var(--metal);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:13px 15px;font:inherit}
+  .btn{font-family:"Archivo",sans-serif;font-weight:700;background:var(--go);color:#fff;border:1px solid var(--go);border-radius:10px;padding:12px 20px;cursor:pointer;font-size:.95rem}
+  .btn:hover{filter:brightness(1.09)}
+  .btn[disabled]{opacity:.5;cursor:default}
+  .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+  .btn.sm{padding:6px 12px;font-size:.8rem}
+  .err{color:var(--red);font-size:.85rem;min-height:18px;margin-top:6px}
+  /* app */
+  #app{display:none}
+  .top{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+  /* live board */
+  .board{background:linear-gradient(180deg,#17171b,#141416);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:18px}
+  .board-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+  .live{display:flex;align-items:center;gap:8px;font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--go)}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--go);box-shadow:0 0 0 0 rgba(27,164,90,.6);animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(27,164,90,.55)}70%{box-shadow:0 0 0 9px rgba(27,164,90,0)}100%{box-shadow:0 0 0 0 rgba(27,164,90,0)}}
+  @media (prefers-reduced-motion:reduce){.dot{animation:none}}
+  .spend{color:var(--mute2);font-size:.82rem}
+  .spend b{color:var(--ink);font-family:"IBM Plex Mono",monospace;font-size:1rem;margin-left:4px}
+  .prog-top{display:flex;align-items:baseline;gap:10px;margin-bottom:7px}
+  .prog-top .pct{font-family:"Archivo",sans-serif;font-weight:900;font-size:2rem;color:var(--go);font-variant-numeric:tabular-nums}
+  .prog-top .cap{color:var(--mute);font-size:.85rem}
+  .track{height:12px;background:#0c0c0e;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .fill{height:100%;width:0;background:linear-gradient(90deg,#158a4c,#1BA45A,#2fce77);border-radius:999px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+  .prog-sub{margin-top:7px;color:var(--mute2);font-size:.8rem;font-family:"IBM Plex Mono",monospace}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:10px;margin-top:16px}
+  .tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+  .tile .k{font-family:"IBM Plex Mono",monospace;font-size:1.5rem;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+  .tile .l{font-size:.63rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mute2);margin-top:3px}
+  .tile.go .k{color:var(--go)} .tile.amber .k{color:var(--amber)} .tile.red .k{color:var(--red)} .tile.blue .k{color:var(--blue)} .tile.gold .k{color:#ffd85c}
+  /* autopilot panel */
+  .autopanel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:18px}
+  .ap-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .ap-title{font-family:"Archivo",sans-serif;font-weight:700;font-size:1.02rem;display:flex;align-items:center;gap:10px}
+  .ap-state{font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.1em;padding:3px 8px;border-radius:999px}
+  .ap-state.on{background:rgba(27,164,90,.16);color:var(--go)} .ap-state.off{background:rgba(150,150,160,.15);color:var(--mute2)}
+  .ap-sub{color:var(--mute2);font-size:.82rem;margin:7px 0 13px}
+  .ap-grid{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+  .ap-f{display:flex;flex-direction:column;gap:5px;font-size:.66rem;letter-spacing:.05em;text-transform:uppercase;color:var(--mute2)}
+  .ap-f input{width:150px}
+  .ap-last{color:var(--mute2);font-size:.78rem;font-family:"IBM Plex Mono",monospace;margin-top:11px;min-height:16px}
+  .switch{position:relative;display:inline-block;width:52px;height:28px;flex:none}
+  .switch input{opacity:0;width:0;height:0}
+  .slider{position:absolute;inset:0;background:var(--metal);border:1px solid var(--line);border-radius:999px;cursor:pointer;transition:.2s}
+  .slider:before{content:"";position:absolute;height:20px;width:20px;left:3px;top:3px;background:var(--mute);border-radius:50%;transition:.2s}
+  .switch input:checked+.slider{background:rgba(27,164,90,.3);border-color:var(--go)}
+  .switch input:checked+.slider:before{transform:translateX(24px);background:var(--go)}
+  /* filters + table */
+  .bar{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:12px}
+  select,input.f{background:var(--metal);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 11px;font:inherit;font-size:.85rem}
+  input.f{min-width:200px}
+  .toolbar{display:flex;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:12px;flex-wrap:wrap}
+  .toolbar .n{color:var(--mute2);font-size:.85rem}
+  .wrapt{overflow-x:auto;border:1px solid var(--line);border-radius:12px;max-height:66vh;overflow-y:auto}
+  table{width:100%;border-collapse:collapse;font-size:.85rem}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);white-space:nowrap}
+  td.notes-c{white-space:normal;min-width:170px}
+  th{color:var(--mute2);font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;position:sticky;top:0;background:#0e0e10;z-index:2}
+  tr:hover td{background:var(--panel)}
+  td.name{font-weight:600;white-space:normal;max-width:210px}
+  .pill{font-size:.64rem;font-weight:700;padding:3px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+  .pill.queued{background:rgba(255,196,46,.14);color:var(--amber)}
+  .pill.mailed{background:rgba(27,164,90,.16);color:var(--go)}
+  .pill.bad_address{background:rgba(255,85,70,.16);color:var(--red)}
+  .pill.noaddr{background:rgba(150,150,160,.15);color:var(--mute2)}
+  a{color:var(--amber)}
+  select.stage{background:var(--metal);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:5px 7px;font:inherit;font-size:.78rem}
+  select.stage.s-responded{border-color:var(--go);color:var(--go)}
+  select.stage.s-won{border-color:#ffd85c;color:#ffd85c}
+  select.stage.s-called{border-color:var(--blue);color:var(--blue)}
+  select.stage.s-dead{opacity:.5}
+  input.note{background:var(--metal);border:1px solid var(--line);border-radius:6px;color:var(--ink);font:inherit;font-size:.8rem;padding:4px 8px;width:100%}
+  .msg{font-size:.85rem;color:var(--mute);min-height:18px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="login">
+    <h1>KILLSWITCH Admin</h1>
+    <div class="sub">Enter your admin key.</div>
+    <input id="key" type="password" placeholder="Admin key" autocomplete="current-password" />
+    <button class="btn" id="loginBtn" style="width:100%">Sign in</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+
+  <div id="app">
+    <div class="top">
+      <div><h1>Outreach autopilot</h1><div class="sub">Mail runs on your approval, then work the calls. Board updates live as postcards go out.</div></div>
+      <button class="btn ghost sm" id="signout">Sign out</button>
+    </div>
+
+    <!-- LIVE STATUS BOARD -->
+    <section class="board">
+      <div class="board-head">
+        <div class="live"><span class="dot"></span> <span id="liveLabel">Live · auto-refreshing</span></div>
+        <div class="spend">Spend to date<b id="spend">$0</b></div>
+      </div>
+      <div class="prog-top">
+        <span class="pct" id="pct">0%</span>
+        <span class="cap">of your mailable list reached by postcard</span>
+      </div>
+      <div class="track"><div class="fill" id="fill"></div></div>
+      <div class="prog-sub"><span id="mailedN">0</span> mailed · <span id="queueN">0</span> still in queue</div>
+      <div class="tiles" id="tiles"></div>
+    </section>
+
+    <!-- AUTOPILOT CONTROL -->
+    <section class="autopanel">
+      <div class="ap-head">
+        <div class="ap-title">Mailing autopilot <span class="ap-state off" id="apState">OFF</span></div>
+        <label class="switch"><input type="checkbox" id="apEnabled"><span class="slider"></span></label>
+      </div>
+      <div class="ap-sub" id="apSub">Off. Set a daily cap and a budget ceiling, then flip the switch. It mails on its own, every day, and stops itself the instant it hits the ceiling.</div>
+      <div class="ap-grid">
+        <label class="ap-f">Postcards / day<input type="number" id="apCap" min="0" step="10" class="f" placeholder="0"></label>
+        <label class="ap-f">Budget ceiling $ total<input type="number" id="apBudget" min="0" step="50" class="f" placeholder="0"></label>
+        <button class="btn sm" id="apSave">Save settings</button>
+        <button class="btn ghost sm" id="apRun">Run a batch now</button>
+      </div>
+      <div class="ap-last" id="apLast"></div>
+    </section>
+
+    <div class="bar">
+      <input class="f" id="q" placeholder="Search business...">
+      <select id="fTrade"><option value="">All trades</option></select>
+      <select id="fState"><option value="">All states</option></select>
+      <select id="fStatus"><option value="">All mail states</option></select>
+      <select id="fStage"><option value="">All stages</option></select>
+    </div>
+    <div class="toolbar">
+      <button class="btn ghost sm" id="selAll">Select all shown &amp; mailable</button>
+      <button class="btn ghost sm" id="selNone">Clear</button>
+      <span class="n" id="selCount">0 selected</span>
+      <button class="btn sm" id="mailBtn" disabled>📮 Approve &amp; mail selected</button>
+      <span class="n" id="count"></span>
+    </div>
+    <div class="msg" id="msg"></div>
+    <div class="wrapt" id="wrapt"><table><thead><tr>
+      <th style="cursor:default"><input type="checkbox" id="chkAll"></th>
+      <th data-k="trade">Trade</th><th data-k="name">Business</th><th data-k="phone">Phone</th>
+      <th data-k="address">Address</th><th data-k="status">Mail</th>
+      <th style="cursor:default">Stage</th><th style="cursor:default">Notes</th>
+    </tr></thead><tbody id="tb"></tbody></table></div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let KEY=localStorage.getItem('ks-admin-key')||'';
+let LEADS=[], sortK='trade', sortDir=1;
+const sel=new Set();
+const STAGES=[['','— stage'],['called','Called'],['responded','Responded'],['won','Won'],['dead','Dead']];
+const COST=0.94;
+
+async function api(action,extra){
+  const r=await fetch('/api/admin',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action,token:KEY,...(extra||{})})});
+  const d=await r.json().catch(()=>({}));
+  return {status:r.status,ok:r.ok&&d.ok,d};
+}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+function addr(r){return [r.street,r.city,r.state,r.zip].filter(Boolean).join(' ')}
+function hasAddr(r){return !!(r.street&&r.state&&r.zip)}
+function isMailed(r){return r.status==='mailed'||!!r.lob_id}
+function isBad(r){return r.status==='bad_address'}
+function inQueue(r){return hasAddr(r)&&!isMailed(r)&&!isBad(r)}
+function mailState(r){return isMailed(r)?'mailed':isBad(r)?'bad_address':hasAddr(r)?'queued':'noaddr'}
+
+function showLogin(m){ $('app').style.display='none'; $('login').style.display='block'; $('loginErr').textContent=m||''; }
+async function boot(){
+  if(!KEY){ showLogin(); return; }
+  const res=await api('list');
+  if(res.status===401){ showLogin('Wrong admin key.'); return; }
+  if(res.status===503){ showLogin(res.d.message||'Store not configured yet.'); return; }
+  if(!res.ok){ showLogin('Error: '+(res.d.error||res.status)); return; }
+  LEADS=res.d.leads||[];
+  $('login').style.display='none'; $('app').style.display='block';
+  fillFilters(); render(); loadCfg();
+}
+
+// ---- autopilot config ----
+let CFG={enabled:false,dailyCap:0,budgetCeiling:0};
+async function loadCfg(){ const r=await api('config'); if(r.ok){ CFG=r.d.config||CFG; paintCfg(); } }
+function paintCfg(){
+  $('apEnabled').checked=!!CFG.enabled;
+  if(document.activeElement!==$('apCap')) $('apCap').value=CFG.dailyCap||'';
+  if(document.activeElement!==$('apBudget')) $('apBudget').value=CFG.budgetCeiling||'';
+  $('apState').textContent=CFG.enabled?'ON':'OFF';
+  $('apState').className='ap-state '+(CFG.enabled?'on':'off');
+  $('apSub').textContent=CFG.enabled
+    ? `On. Mailing up to ${CFG.dailyCap}/day, halting at $${(CFG.budgetCeiling||0).toLocaleString()} total. ${CFG.mailedToday||0} sent today.`
+    : 'Off. Set a daily cap and a budget ceiling, then flip the switch. It mails on its own, every day, and stops itself the instant it hits the ceiling.';
+  const L=CFG.lastRun;
+  $('apLast').textContent=L?`Last run: ${L.mailed||0} mailed`+(L.bad?`, ${L.bad} bad-addr`:'')+(L.note?` — ${L.note}`:'')+(L.when?`  ·  ${new Date(L.when).toLocaleString()}`:''):'';
+}
+async function saveCfg(extra){ const r=await api('setconfig',{dailyCap:+$('apCap').value||0,budgetCeiling:+$('apBudget').value||0,...(extra||{})}); if(r.ok){CFG=r.d.config;paintCfg();} return r; }
+function uniq(k){return [...new Set(LEADS.map(r=>r[k]).filter(Boolean))].sort()}
+function fillFilters(){
+  uniq('trade').forEach(t=>$('fTrade').insertAdjacentHTML('beforeend',`<option>${esc(t)}</option>`));
+  uniq('state').forEach(s=>$('fState').insertAdjacentHTML('beforeend',`<option>${esc(s)}</option>`));
+  [['queued','queued'],['mailed','mailed'],['bad_address','bad address'],['noaddr','no address']]
+    .forEach(([v,l])=>$('fStatus').insertAdjacentHTML('beforeend',`<option value="${v}">${l}</option>`));
+  STAGES.slice(1).forEach(([v,l])=>$('fStage').insertAdjacentHTML('beforeend',`<option value="${v}">${l}</option>`));
+}
+function filtered(){
+  const q=$('q').value.toLowerCase();
+  return LEADS.filter(r=>(!q||(r.name||'').toLowerCase().includes(q))
+    &&(!$('fTrade').value||r.trade===$('fTrade').value)
+    &&(!$('fState').value||r.state===$('fState').value)
+    &&(!$('fStatus').value||mailState(r)===$('fStatus').value)
+    &&(!$('fStage').value||(r.stage||'')===$('fStage').value))
+    .sort((a,b)=>String(a[sortK==='address'?'city':sortK]||'').localeCompare(String(b[sortK==='address'?'city':sortK]||''))*sortDir);
+}
+
+let lastMailed=0;
+function board(){
+  const total=LEADS.length;
+  const mailed=LEADS.filter(isMailed).length;
+  const queue=LEADS.filter(inQueue).length;
+  const bad=LEADS.filter(isBad).length;
+  const called=LEADS.filter(r=>['called','responded','won'].includes(r.stage)).length;
+  const responded=LEADS.filter(r=>['responded','won'].includes(r.stage)).length;
+  const won=LEADS.filter(r=>r.stage==='won').length;
+  const denom=mailed+queue, pct=denom?Math.round(mailed/denom*100):0;
+  $('pct').textContent=pct+'%';
+  $('fill').style.width=pct+'%';
+  $('mailedN').textContent=mailed.toLocaleString();
+  $('queueN').textContent=queue.toLocaleString();
+  $('spend').textContent='$'+(mailed*COST).toLocaleString(undefined,{maximumFractionDigits:0});
+  $('tiles').innerHTML=[
+    ['go',mailed,'Mailed'],['amber',queue,'In queue'],['blue',called,'Called'],
+    ['go',responded,'Responded'],['gold',won,'Won'],['red',bad,'Bad addr'],['',total,'Total leads']
+  ].map(([c,k,l])=>`<div class="tile ${c}"><div class="k">${(k||0).toLocaleString()}</div><div class="l">${l}</div></div>`).join('');
+  lastMailed=mailed;
+}
+function render(){
+  const list=filtered();
+  $('count').textContent=list.length.toLocaleString()+' shown';
+  const wt=$('wrapt'), sc=wt.scrollTop;
+  $('tb').innerHTML=list.map(r=>{
+    const ms=mailState(r), stg=r.stage||'';
+    const canSel=inQueue(r);
+    const tel=r.phone?`<a href="tel:${esc(r.phone)}">${esc(r.phone)}</a>`:'';
+    const opts=STAGES.map(([v,l])=>`<option value="${v}" ${stg===v?'selected':''}>${l}</option>`).join('');
+    return `<tr>
+      <td><input type="checkbox" class="rc" data-id="${esc(r.id)}" ${sel.has(r.id)?'checked':''} ${canSel?'':'disabled'}></td>
+      <td>${esc(r.trade)}</td><td class="name">${esc(r.name)}</td><td>${tel}</td>
+      <td>${esc(addr(r))}</td>
+      <td><span class="pill ${ms}">${ms==='bad_address'?'bad addr':ms==='noaddr'?'no addr':ms}</span></td>
+      <td><select class="stage s-${stg} " data-stage="${esc(r.id)}">${opts}</select></td>
+      <td class="notes-c"><input class="note" data-note="${esc(r.id)}" value="${esc(r.notes||'')}" placeholder="notes..."></td>
+    </tr>`;
+  }).join('');
+  wt.scrollTop=sc;
+  board(); updSel();
+}
+function updSel(){ $('selCount').textContent=sel.size+' selected'; $('mailBtn').disabled=sel.size===0; }
+
+// events
+$('loginBtn').onclick=async()=>{ KEY=$('key').value.trim(); localStorage.setItem('ks-admin-key',KEY); boot(); };
+$('key').onkeydown=e=>{ if(e.key==='Enter') $('loginBtn').click(); };
+$('signout').onclick=()=>{ localStorage.removeItem('ks-admin-key'); KEY=''; showLogin(); };
+['q','fTrade','fState','fStatus','fStage'].forEach(id=>$(id).oninput=render);
+document.querySelectorAll('th[data-k]').forEach(th=>th.onclick=()=>{const k=th.dataset.k;sortDir=(k===sortK)?-sortDir:1;sortK=k;render();});
+$('tb').addEventListener('change',async e=>{
+  if(e.target.classList.contains('rc')){ const id=e.target.dataset.id; e.target.checked?sel.add(id):sel.delete(id); updSel(); return; }
+  if(e.target.dataset.stage){ const id=e.target.dataset.stage; const r=LEADS.find(x=>x.id===id);
+    if(r){ r.stage=e.target.value; await api('update',{id,stage:r.stage}); render(); } }
+});
+$('tb').addEventListener('blur',async e=>{
+  if(e.target.dataset.note){ const id=e.target.dataset.note; const r=LEADS.find(x=>x.id===id);
+    if(r&&r.notes!==e.target.value){ r.notes=e.target.value; await api('update',{id,notes:r.notes}); } }
+},true);
+$('chkAll').onchange=e=>{ filtered().forEach(r=>{ if(inQueue(r)){ e.target.checked?sel.add(r.id):sel.delete(r.id);} }); render(); };
+$('selAll').onclick=()=>{ filtered().forEach(r=>{ if(inQueue(r)) sel.add(r.id); }); render(); };
+$('selNone').onclick=()=>{ sel.clear(); render(); };
+$('mailBtn').onclick=async()=>{
+  const ids=[...sel]; if(!ids.length) return;
+  const cost=(ids.length*COST).toFixed(2);
+  if(!confirm(`Send ${ids.length} postcard(s) via Lob for about $${cost}? Undeliverable ones are skipped automatically.`)) return;
+  $('mailBtn').disabled=true; $('msg').textContent='Sending '+ids.length+'...';
+  const res=await api('mail',{ids});
+  if(res.ok){
+    const r2=await api('list'); if(r2.ok) LEADS=r2.d.leads;
+    sel.clear();
+    $('msg').textContent=`Done: ${res.d.sent} mailed, ${res.d.bad} bad-address skipped`+(res.d.failed.length?`, ${res.d.failed.length} error(s)`:'')+'.';
+    render();
+  } else { $('msg').textContent='Error: '+(res.d.error||res.status); $('mailBtn').disabled=false; }
+};
+
+// autopilot controls
+$('apSave').onclick=async()=>{ await saveCfg(); $('msg').textContent='Autopilot settings saved.'; };
+$('apEnabled').onchange=async()=>{
+  const on=$('apEnabled').checked;
+  if(on){
+    const cap=+$('apCap').value, bud=+$('apBudget').value;
+    if(!(cap>0)||!(bud>0)){ $('msg').textContent='Set a daily cap and a budget ceiling before switching on.'; $('apEnabled').checked=false; return; }
+    if(!confirm(`Turn autopilot ON?\n\nIt will mail up to ${cap} postcards/day automatically and switch itself OFF at $${bud.toLocaleString()} total spend.`)){ $('apEnabled').checked=false; return; }
+  }
+  await saveCfg({enabled:on});
+  $('msg').textContent=on?'Autopilot ON.':'Autopilot OFF.';
+};
+$('apRun').onclick=async()=>{
+  $('msg').textContent='Running a batch now...';
+  const r=await api('run-autopilot');
+  if(r.ok){ const R=r.d.result; $('msg').textContent=R.ran?`Batch done: ${R.mailed} mailed, ${R.bad||0} bad-address skipped.`:`Did not run: ${R.reason}.`;
+    await loadCfg(); await refresh(); }
+  else $('msg').textContent='Error: '+(r.d.error||r.status);
+};
+
+// live auto-refresh (skip if typing a note or holding a dropdown open)
+async function refresh(){
+  if(!KEY||$('app').style.display==='none') return;
+  const a=document.activeElement;
+  if(a&&(a.classList.contains('note')||a.classList.contains('stage'))) return;
+  const res=await api('list');
+  if(res.ok){ LEADS=res.d.leads||[]; render();
+    const t=new Date(); $('liveLabel').textContent='Live · updated '+t.toLocaleTimeString(); }
+  loadCfg();
+}
+setInterval(refresh,20000);
+
+boot();
+</script>
+</body>
+</html>

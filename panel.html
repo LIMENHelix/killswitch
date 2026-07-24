@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Your control panel · KILLSWITCH</title>
+<meta name="robots" content="noindex" />
+<meta name="description" content="Your KILLSWITCH control panel — flip your modules on and off, and ask for changes to your site." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230a0b0e'/%3E%3Cg fill='none' stroke='%23FF3826' stroke-width='9' stroke-linecap='round'%3E%3Cpath d='M62.5 30.4 A25 25 0 1 1 37.5 30.4'/%3E%3Cpath d='M50 22 V52'/%3E%3C/g%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#121214;--panel:#1a1a1e;--metal:#232328;--metal-hi:#2c2c33;
+    --line:#34343c;--line-soft:#26262c;--ink:#fff;--mute:#b6bac2;--mute-2:#888c96;
+    --amber:#FFC42E;--amber-dim:#c79a34;--red:#FF5546;--go:#1BA45A;--go-ink:#fff;--ok:#3ad17a;
+    --maxw:900px;--r:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:radial-gradient(900px 520px at 80% -14%,rgba(37,199,102,.10),transparent 66%),var(--bg);
+    background-attachment:fixed;color:var(--ink);font-family:"Inter",system-ui,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .mono{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.16em;font-size:.72rem;color:var(--mute)}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+  .hazard{height:10px;background:repeating-linear-gradient(-45deg,var(--amber) 0 16px,#161616 16px 32px);opacity:.85}
+
+  header.nav{position:sticky;top:0;z-index:60;background:rgba(18,18,20,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line-soft)}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{font-family:"Archivo",sans-serif;font-weight:900;letter-spacing:.04em;font-size:1.08rem;display:flex;align-items:center;gap:9px}
+  .brand-ic{width:1.12em;height:1.12em;color:var(--red);flex:0 0 auto}
+  .nav-in a.back{font-size:.86rem;color:var(--mute)}
+  .nav-in a.back:hover{color:var(--ink)}
+
+  .head{padding:38px 0 8px}
+  .head h1{font-family:"Archivo",sans-serif;font-weight:900;font-size:clamp(1.5rem,4vw,2.1rem);letter-spacing:-.02em}
+  .head .site{margin-top:6px;color:var(--mute);font-size:1rem}
+  .head .site b{color:var(--amber);font-weight:600}
+  .head .rule{margin-top:18px;border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:12px;padding:14px 18px;background:var(--metal);color:var(--mute);font-size:.9rem;max-width:44em}
+  .head .rule b{color:var(--ink)}
+
+  section.s{padding:30px 0}
+  .s-lbl{font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--mute-2);margin-bottom:14px}
+
+  /* module rows */
+  .mlist{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
+  .mrow{display:grid;grid-template-columns:56px 1fr auto;gap:16px;align-items:center;padding:16px 20px;border-top:1px solid var(--line-soft)}
+  .mrow:first-child{border-top:none}
+  .mrow .m-main h3{font-family:"Archivo",sans-serif;font-weight:700;font-size:1.06rem;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .mrow .m-main p{color:var(--mute);font-size:.88rem;margin-top:3px}
+  .pill{font-family:"IBM Plex Mono",monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .pill.on{background:rgba(27,164,90,.16);color:var(--ok);border:1px solid rgba(27,164,90,.5)}
+  .pill.ending{background:rgba(255,85,70,.12);color:#ff8f84;border:1px solid rgba(255,85,70,.42)}
+  .pill.off{background:rgba(255,85,70,.12);color:#ff8f84;border:1px solid rgba(255,85,70,.42)}
+  .pill.locked{background:rgba(27,164,90,.16);color:var(--ok);border:1px solid rgba(27,164,90,.5)}
+  .m-right{text-align:right;white-space:nowrap}
+  .m-price{font-family:"IBM Plex Mono",monospace;font-size:.9rem;color:var(--ink)}
+  .m-price small{color:var(--mute-2);font-size:.68rem}
+  .m-sub{font-size:.68rem;color:var(--mute-2);margin-top:3px;min-height:12px}
+
+  /* ---- big up/down KILL-SWITCH lever ---- */
+  .klsw{background:linear-gradient(180deg,#2a2a31,#141418);border:1px solid #3a3a42;border-radius:11px;
+    width:48px;height:94px;position:relative;cursor:pointer;padding:0;
+    box-shadow:inset 0 2px 7px rgba(0,0,0,.78),0 0 15px -5px rgba(255,85,70,.5);transition:box-shadow .3s,border-color .3s}
+  .klsw .slot{position:absolute;left:50%;top:8px;bottom:8px;width:14px;transform:translateX(-50%);
+    background:#0b0b0e;border-radius:8px;box-shadow:inset 0 2px 5px rgba(0,0,0,.95)}
+  /* half-H handle: a thin stem in the slot + a wide grip bar (the ::before) */
+  .klsw .lever{position:absolute;left:50%;transform:translateX(-50%);width:12px;height:44px;border-radius:6px;top:25px;
+    background:linear-gradient(180deg,#9a9ea8,#5e626c);border:1px solid #4a4e58;box-shadow:0 2px 5px rgba(0,0,0,.6);
+    transition:background .25s,box-shadow .25s;z-index:2}
+  .klsw .lever::before{content:"";position:absolute;top:-9px;left:50%;transform:translateX(-50%);width:34px;height:15px;border-radius:7px;
+    background:linear-gradient(180deg,#d2d6df,#868a94);border:1px solid #5a5e68;box-shadow:0 2px 5px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.4);transition:top .32s cubic-bezier(.2,1.7,.42,1),background .25s,box-shadow .25s}
+  .klsw .led{position:absolute;left:50%;top:-4px;transform:translateX(-50%);width:7px;height:7px;border-radius:50%;
+    background:var(--red);box-shadow:0 0 7px rgba(255,85,70,.6);transition:.25s;z-index:4}
+  .klsw:hover{border-color:#565a64}
+  .klsw:focus-visible{outline:2px solid var(--go);outline-offset:4px}
+  /* ON = handle thrown DOWN, green, glowing */
+  .klsw.on{border-color:var(--go);box-shadow:inset 0 2px 7px rgba(0,0,0,.5),0 0 22px -3px rgba(27,164,90,.78)}
+  .klsw.on .lever{background:linear-gradient(180deg,#38c877,#158f4e);border-color:#0f7a40;box-shadow:0 0 12px rgba(27,164,90,.8)}
+  .klsw.on .lever::before{top:38px;background:linear-gradient(180deg,#8effb9,#1BA45A);border-color:#0f7a40;box-shadow:0 0 16px rgba(27,164,90,.95),inset 0 1px 0 rgba(255,255,255,.4)}
+  .klsw.on .led{background:var(--go);box-shadow:0 0 9px var(--go),0 0 18px var(--go)}
+  /* ENDING = handle UP (off), but amber "still running until cycle end" */
+  .klsw.ending{border-color:rgba(255,85,70,.4);box-shadow:inset 0 2px 7px rgba(0,0,0,.5),0 0 16px -6px rgba(255,85,70,.5)}
+  .klsw.ending .lever{background:linear-gradient(180deg,#9a9ea8,#5e626c)}
+  .klsw.ending .lever::before{background:linear-gradient(180deg,#ffb3ab,#d21f10);border-color:#8f150a;box-shadow:0 0 12px rgba(255,85,70,.7)}
+  .klsw.ending .led{background:var(--red);box-shadow:0 0 9px var(--red)}
+  /* LOCKED = handle down, green (always on) */
+  .klsw.locked{cursor:default;border-color:var(--go);box-shadow:inset 0 2px 7px rgba(0,0,0,.5),0 0 18px -4px rgba(27,164,90,.5)}
+  .klsw.locked .lever{background:linear-gradient(180deg,#38c877,#158f4e)}
+  .klsw.locked .lever::before{top:38px;background:linear-gradient(180deg,#8effb9,#1BA45A);border-color:#0f7a40}
+  .klsw.locked .led{background:var(--go);box-shadow:0 0 8px var(--go)}
+  .klsw.flash::before{content:"";position:absolute;inset:-7px;border-radius:15px;pointer-events:none;
+    box-shadow:0 0 30px 7px rgba(140,255,190,.95);animation:sparkflash .45s ease-out forwards;z-index:1}
+  @keyframes sparkflash{0%{opacity:1}100%{opacity:0}}
+
+  /* cumulative power glow: the whole background brightens with each switch on */
+  #pglow{position:fixed;inset:0;z-index:-1;pointer-events:none;transition:background .55s ease;
+    background:
+      radial-gradient(145% 110% at 50% 0%, rgba(40,220,135,calc(var(--power,0)*.12)), transparent 62%),
+      radial-gradient(115% 90% at 50% 100%, rgba(27,164,90,calc(var(--power,0)*.08)), transparent 70%)}
+  body.zap{animation:zapflick .17s}
+  @keyframes zapflick{0%,100%{filter:none}45%{filter:brightness(1.15)}}
+  .sound-btn{background:none;border:1px solid var(--line);border-radius:8px;color:var(--mute);font-size:.95rem;padding:5px 10px;cursor:pointer;line-height:1}
+  .sound-btn:hover{color:var(--ink);border-color:var(--go)}
+  .m-book{font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--go-ink);background:var(--go);padding:7px 13px;border-radius:8px;font-weight:600;display:inline-block}
+  .m-book:hover{filter:brightness(1.09)}
+
+  /* total bar */
+  .totalbar{position:sticky;bottom:14px;margin:22px auto 0;background:linear-gradient(180deg,var(--metal-hi),var(--metal));border:1px solid var(--line);border-radius:14px;padding:16px 20px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 20px 44px -22px rgba(0,0,0,.8)}
+  .totalbar .t-l{font-size:.86rem;color:var(--mute)}
+  .totalbar .t-l b{color:var(--ink)}
+  .totalbar .t-amt{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:1.5rem;color:var(--go)}
+  .totalbar .t-amt small{font-size:.8rem;color:var(--mute-2);font-weight:400}
+  .savebtn{font-family:"Archivo",sans-serif;font-weight:700;font-size:.92rem;background:var(--go);color:var(--go-ink);border:1px solid var(--go);border-radius:10px;padding:11px 18px;cursor:pointer;transition:.15s}
+  .savebtn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  .savenote{width:100%;font-size:.8rem;color:var(--mute-2);min-height:14px}
+
+  /* AI change box */
+  .aibox{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--panel);margin-top:8px}
+  .aibox-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line-soft);background:linear-gradient(180deg,var(--metal-hi),var(--metal))}
+  .aibox-head .t{font-family:"Archivo",sans-serif;font-weight:700;font-size:1rem;display:flex;align-items:center;gap:9px}
+  .aibox-head .t svg{width:18px;height:18px;color:var(--go)}
+  .aibox-head .sub{font-family:"IBM Plex Mono",monospace;font-size:.56rem;letter-spacing:.12em;text-transform:uppercase;color:var(--go);display:flex;align-items:center;gap:6px}
+  .aibox-head .sub .d{width:7px;height:7px;border-radius:50%;background:var(--go);box-shadow:0 0 8px var(--go)}
+  .ailog{max-height:340px;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:11px}
+  .msg{max-width:86%;padding:11px 14px;border-radius:14px;font-size:.92rem;line-height:1.5;word-wrap:break-word}
+  .msg.bot{align-self:flex-start;background:var(--metal);border:1px solid var(--line-soft);border-bottom-left-radius:5px}
+  .msg.me{align-self:flex-end;background:var(--go);color:var(--go-ink);border-bottom-right-radius:5px}
+  .msg.typing{color:var(--mute-2);font-style:italic}
+  .aibox-foot{border-top:1px solid var(--line-soft);padding:12px 14px;display:flex;flex-direction:column;gap:9px}
+  .aibox-foot .row{display:flex;gap:9px;align-items:center}
+  .aibox-foot input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--ink);font-family:inherit;font-size:.92rem;padding:11px 13px;outline:none}
+  .aibox-foot input:focus{border-color:var(--go)}
+  .aibox-foot .send{background:var(--go);color:var(--go-ink);border:none;border-radius:10px;width:42px;height:42px;font-size:1.15rem;cursor:pointer;flex:0 0 auto}
+  .aibox-foot .send:hover{filter:brightness(1.09)}
+  .aibox-foot .deliver{font-family:"Archivo",sans-serif;font-weight:700;font-size:.86rem;background:transparent;color:var(--go);border:1px solid var(--go);border-radius:10px;padding:10px 14px;cursor:pointer;transition:.15s}
+  .aibox-foot .deliver:hover{background:color-mix(in srgb,var(--go) 14%,transparent)}
+  .aibox-foot .dnote{font-size:.78rem;color:var(--mute-2);min-height:14px}
+
+  footer{border-top:1px solid var(--line-soft);padding:36px 0;margin-top:24px;color:var(--mute-2);font-size:.8rem;font-family:"IBM Plex Mono",monospace;letter-spacing:.05em}
+
+  @media(max-width:640px){
+    .mrow{grid-template-columns:50px 1fr;gap:12px}
+    .m-right{grid-column:2/-1;text-align:left;margin-top:4px;display:flex;align-items:center;gap:14px}
+    .m-sub{margin-top:0}
+  }
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="pglow" aria-hidden="true"></div>
+<div class="hazard" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a href="https://killswitch.domains/" class="brand"><svg class="brand-ic" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>KILLSWITCH</a>
+    <a href="https://killswitch.domains/" class="back">← Back to site</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="head">
+    <span class="mono">Your control panel</span>
+    <h1>Flip on only what you need.</h1>
+    <p class="site">Site: <b id="siteName">yourbusiness.com</b> · billing renews <b id="billDate">the 1st</b></p>
+    <div class="rule">
+      <b>How it works:</b> turn a module on and it's live right away. Each module runs a
+      <b>minimum of one billing cycle</b>, so turning it off keeps it working until your next
+      billing date, then stops. No contracts beyond the cycle you're in. Your free website is
+      always on.
+    </div>
+  </div>
+
+  <section class="s">
+    <div class="s-lbl">Your modules</div>
+    <div class="mlist" id="mlist"></div>
+
+    <div class="totalbar">
+      <div class="t-l">This billing cycle<br><b id="tCount">1 module on</b></div>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div class="t-amt" id="tAmt">$0<small>/mo</small></div>
+        <button class="savebtn" id="saveBtn" type="button">Save changes</button>
+      </div>
+      <p class="savenote" id="saveNote"></p>
+    </div>
+  </section>
+
+  <section class="s">
+    <div class="s-lbl">Ask for a change</div>
+    <div class="aibox">
+      <div class="aibox-head">
+        <div class="t"><svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>Change my site</div>
+        <div class="sub"><span class="d"></span>Real human follows up</div>
+      </div>
+      <div class="ailog" id="ailog" aria-live="polite"></div>
+      <div class="aibox-foot">
+        <div class="row">
+          <input id="aiInput" autocomplete="off" placeholder="e.g. change my hours to 8-5, add my new phone number…" aria-label="Describe the change you want" />
+          <button class="send" id="aiSend" type="button" aria-label="Send">→</button>
+        </div>
+        <button class="deliver" id="aiDeliver" type="button">Send this request to my builder →</button>
+        <p class="dnote" id="aiDnote"></p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap">KILLSWITCH · a Limen Helix company · your site, your controls</div>
+</footer>
+
+<script>
+(function(){
+  var WEB3FORMS_KEY = 'fd068540-d6c4-44e3-9f5b-3d46da7c44ed';
+  var CALENDLY = 'https://calendly.com/chrishubbel72/30min';
+
+  // ---- billing date: 1st of next month ----
+  var now = new Date();
+  var next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  var billLabel = next.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  document.getElementById('billDate').textContent = billLabel;
+
+  // ---- modules ----
+  // state: 'active' (on, billed) | 'ending' (on until billDate, then off) | 'off'
+  // A real customer panel loads THIS from their account/Stripe; here it starts
+  // with the free site + the Starter set so the operator can preview the UX.
+  var MODULES = [
+    { id:'P0', name:'Website & Domain', desc:'Your live website, yours to keep.', price:0, locked:true, state:'active' },
+    { id:'P1', name:'Get Found on Google', desc:'Show up when nearby customers search.', price:19, state:'active' },
+    { id:'P2', name:'Content & Email Marketing', desc:'Posts and a newsletter on a schedule.', price:29, state:'off' },
+    { id:'P3', name:'Online Booking & Scheduling', desc:'Customers self-book, day or night.', price:19, state:'active' },
+    { id:'P4', name:'Hosting & Maintenance', desc:'We keep it online, safe, and updated.', price:29, state:'off' },
+    { id:'P5', name:'CRM & Customer Database', desc:'Every lead and customer in one place.', price:29, state:'off' },
+    { id:'P6', name:'Marketing Automation', desc:'Follow-ups and review requests, automatic.', price:29, state:'off' },
+    { id:'P7', name:'Payments & Checkout', desc:'Take card payments on your site.', price:19, state:'off' },
+    { id:'P8', name:'Analytics & Reporting', desc:'A plain-English monthly report.', price:19, state:'off' },
+    { id:'P9', name:'24/7 AI Assistant', desc:'An AI that answers and books any time.', price:29, state:'off' },
+    { id:'P10', name:'AI Sales Agent & Custom Software', desc:'Custom, scoped on a quick call.', price:null, custom:true, state:'off' }
+  ];
+
+  var listEl = document.getElementById('mlist');
+  var tAmt = document.getElementById('tAmt'), tCount = document.getElementById('tCount');
+  var saveNote = document.getElementById('saveNote');
+
+  function pill(m){
+    if(m.locked) return '<span class="pill locked">Always on</span>';
+    if(m.custom) return '<span class="pill off">Book to add</span>';
+    if(m.state==='active') return '<span class="pill on">On</span>';
+    if(m.state==='ending') return '<span class="pill ending">Off · runs to '+billLabel+'</span>';
+    return '<span class="pill off">Off</span>';
+  }
+  function swClass(m){
+    if(m.locked) return 'klsw locked';
+    if(m.state==='active') return 'klsw on';
+    if(m.state==='ending') return 'klsw ending';
+    return 'klsw';
+  }
+  function sub(m){
+    if(m.locked) return 'free, forever';
+    if(m.custom) return '';
+    if(m.state==='ending') return 'off, but runs until '+billLabel+' (already paid)';
+    if(m.state==='active') return 'min. one billing cycle';
+    return '';
+  }
+  function priceHTML(m){
+    if(m.custom) return 'Custom<small> scope call</small>';
+    if(m.price===0) return '$0<small> free</small>';
+    return '$'+m.price+'<small>/mo</small>';
+  }
+
+  function render(){
+    listEl.innerHTML = MODULES.map(function(m){
+      var control = m.custom
+        ? '<a class="m-book" href="'+CALENDLY+'" target="_blank" rel="noopener">Book a call</a>'
+        : '<button class="'+swClass(m)+'" data-id="'+m.id+'" role="switch" aria-checked="'+(m.state!=='off')+'" aria-label="Toggle '+m.name+'"><span class="led"></span><span class="slot"></span><span class="lever"></span></button>';
+      return ''+
+      '<div class="mrow">'+
+        '<div>'+control+'</div>'+
+        '<div class="m-main"><h3>'+m.name+' '+pill(m)+'</h3><p>'+m.desc+'</p></div>'+
+        '<div class="m-right"><div class="m-price">'+priceHTML(m)+'</div><div class="m-sub">'+sub(m)+'</div></div>'+
+      '</div>';
+    }).join('');
+    // wire switches
+    listEl.querySelectorAll('.klsw').forEach(function(btn){
+      if(btn.classList.contains('locked')) return;
+      btn.addEventListener('click', function(){ toggle(btn.getAttribute('data-id')); });
+    });
+    total();
+  }
+
+  function toggle(id){
+    var m = MODULES.find(function(x){ return x.id===id; });
+    if(!m || m.locked || m.custom) return;
+    if(m.state==='off') m.state='active';          // turn on
+    else if(m.state==='active') m.state='ending';  // schedule off at cycle end
+    else if(m.state==='ending') m.state='active';  // keep it on
+    render();
+    saveNote.textContent = '';
+    var on = (m.state === 'active');
+    var el = listEl.querySelector('.klsw[data-id="'+id+'"]');
+    if(el){ el.classList.add('flash'); setTimeout(function(){ el.classList.remove('flash'); }, 460); }
+    if(on){ document.body.classList.add('zap'); setTimeout(function(){ document.body.classList.remove('zap'); }, 220); }
+  }
+
+  /* ---- electric sound, generated on-device (Web Audio, no files) ---- */
+  var muted = false; try{ muted = localStorage.getItem('ks-muted')==='1'; }catch(e){}
+  var actx;
+  function ac(){ if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ actx=null; } } if(actx && actx.state==='suspended'){ try{ actx.resume(); }catch(e){} } return actx; }
+  function powerCount(){ var n=0; MODULES.forEach(function(m){ if(!m.custom && (m.state==='active'||m.state==='ending')) n++; }); return n; }
+  function zap(){
+    var c = ac(); if(!c || muted) return;
+    var t = c.currentTime, lvl = powerCount();
+    // SNAP — short mechanical throw click
+    var sn = c.createOscillator(); sn.type='square'; sn.frequency.setValueAtTime(340,t); sn.frequency.exponentialRampToValueAtTime(80,t+0.03);
+    var sg = c.createGain(); sg.gain.setValueAtTime(0.30,t); sg.gain.exponentialRampToValueAtTime(0.0001,t+0.05);
+    sn.connect(sg).connect(c.destination); sn.start(t); sn.stop(t+0.06);
+    // BUZZ — longer sustained electric hum, begins right after the snap
+    var bt = t+0.04, dur = 1.25 + lvl*0.06;
+    var o = c.createOscillator(); o.type='sawtooth'; var base = 84 + lvl*7;
+    o.frequency.setValueAtTime(base*1.3, bt); o.frequency.linearRampToValueAtTime(base, bt+dur);
+    var lfo = c.createOscillator(); lfo.type='square'; lfo.frequency.value = 26 + lvl*4;
+    var lfg = c.createGain(); lfg.gain.value = 20; lfo.connect(lfg).connect(o.frequency);
+    var g = c.createGain(); g.gain.setValueAtTime(0.0001,bt); g.gain.exponentialRampToValueAtTime(0.2,bt+0.02); g.gain.setValueAtTime(0.2,bt+dur-0.14); g.gain.exponentialRampToValueAtTime(0.0001,bt+dur);
+    o.connect(g).connect(c.destination);
+    var len = Math.floor(c.sampleRate*dur), buf = c.createBuffer(1,len,c.sampleRate), d = buf.getChannelData(0);
+    for(var i=0;i<len;i++){ d[i] = (Math.random()*2-1) * (0.45 + 0.55*Math.pow(1 - i/len, 1.3)) * 0.6; }
+    var ns = c.createBufferSource(); ns.buffer = buf;
+    var bp = c.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1500+lvl*120; bp.Q.value=0.7;
+    var ng = c.createGain(); ng.gain.value=0.22;
+    ns.connect(bp).connect(ng).connect(c.destination);
+    o.start(bt); lfo.start(bt); o.stop(bt+dur); lfo.stop(bt+dur); ns.start(bt); ns.stop(bt+dur);
+  }
+  function thunk(){
+    var c = ac(); if(!c || muted) return;
+    var t = c.currentTime;
+    var o = c.createOscillator(); o.type='square'; o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(58,t+0.09);
+    var g = c.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.13,t+0.006); g.gain.exponentialRampToValueAtTime(0.0001,t+0.14);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t+0.15);
+  }
+  /* white lightning burst — a "short circuit" thrown off the switch on ON */
+  function ksSparks(el){
+    if(!el || !el.getBoundingClientRect) return;
+    var r=el.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2, S=150, c=S/2;
+    var ns='http://www.w3.org/2000/svg';
+    var svg=document.createElementNS(ns,'svg');
+    svg.setAttribute('width',S); svg.setAttribute('height',S); svg.setAttribute('viewBox','0 0 '+S+' '+S);
+    svg.style.cssText='position:fixed;left:'+(cx-c)+'px;top:'+(cy-c)+'px;z-index:95;pointer-events:none;overflow:visible';
+    var N=8;
+    for(var i=0;i<N;i++){
+      var ang=(360/N)*i+(Math.random()*38-19), seg=30+Math.random()*36, n=4, pts=[c+','+c], x=c, y=c;
+      for(var j=1;j<=n;j++){ y=c-(seg/n)*j; x=c+(Math.random()*12-6); pts.push(x.toFixed(1)+','+y.toFixed(1)); }
+      var pl=document.createElementNS(ns,'polyline');
+      pl.setAttribute('points',pts.join(' ')); pl.setAttribute('fill','none'); pl.setAttribute('stroke','#fff');
+      pl.setAttribute('stroke-width',(1.4+Math.random()*1.3).toFixed(1)); pl.setAttribute('stroke-linecap','round'); pl.setAttribute('stroke-linejoin','round');
+      pl.setAttribute('transform','rotate('+ang.toFixed(0)+' '+c+' '+c+')');
+      pl.style.filter='drop-shadow(0 0 3px #fff) drop-shadow(0 0 8px #8effb9)';
+      svg.appendChild(pl);
+    }
+    document.body.appendChild(svg);
+    try{ svg.animate([{opacity:1,transform:'scale(.45)'},{opacity:1,transform:'scale(1)'},{opacity:0,transform:'scale(1.4)'}],{duration:300,easing:'ease-out'}); }catch(e){}
+    setTimeout(function(){ svg.remove(); }, 320);
+  }
+
+  function total(){
+    // Only ACTIVE (fully on) modules count toward the price, so turning one off
+    // drops the total right away. An "ending" module is off in the total but keeps
+    // running until the billing date (you already paid for this cycle).
+    var mo=0, onCount=0;
+    MODULES.forEach(function(m){
+      if(m.custom) return;
+      if(m.state==='active'){ mo += (m.price||0); onCount++; }
+    });
+    tAmt.innerHTML = '$'+mo.toLocaleString('en-US')+'<small>/mo</small>';
+    tCount.textContent = onCount + (onCount===1?' module on':' modules on');
+    document.body.style.setProperty('--power', onCount);
+  }
+
+  document.getElementById('saveBtn').addEventListener('click', function(){
+    // In the live version this calls the billing backend to add/remove
+    // subscriptions (respecting the minimum cycle). For now it confirms the plan.
+    var ending = MODULES.filter(function(m){ return m.state==='ending'; }).map(function(m){ return m.name; });
+    saveNote.style.color = 'var(--ok)';
+    saveNote.textContent = 'Saved. ' + (ending.length ? (ending.join(', ') + ' will stop after ' + billLabel + '.') : 'Your active modules keep running.');
+  });
+
+  // ---- load THIS customer's real account (from their portal link ?e=&t=) ----
+  // No token => stays a preview so /panel still demos. With a valid token the
+  // panel shows the customer's real plan (free P0 on; paid switches from Stripe).
+  var qs = new URLSearchParams(location.search);
+  var acctEmail = qs.get('e'), acctToken = qs.get('t');
+  function applyPlan(plan){
+    var on = {}; (plan||[]).forEach(function(p){ on[p]=true; });
+    MODULES.forEach(function(m){
+      if(m.id==='P0'){ m.state='active'; return; }   // free site always on
+      if(m.custom){ m.state='off'; return; }
+      m.state = on[m.id] ? 'active' : 'off';
+    });
+  }
+  if(acctEmail && acctToken){
+    fetch('/api/account?e='+encodeURIComponent(acctEmail)+'&t='+encodeURIComponent(acctToken))
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(a){
+        if(a){ if(a.site) document.getElementById('siteName').textContent = a.site; applyPlan(a.plan); }
+        render();
+      })
+      .catch(function(){ render(); });
+  } else {
+    render();
+  }
+
+  // ---- AI change box ----
+  var log = document.getElementById('ailog'), input = document.getElementById('aiInput'),
+      sendBtn = document.getElementById('aiSend'), deliver = document.getElementById('aiDeliver'),
+      dnote = document.getElementById('aiDnote');
+  var history = [];
+
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function bubble(text, who){
+    var d = document.createElement('div');
+    d.className = 'msg ' + (who||'bot');
+    d.textContent = text;
+    log.appendChild(d); log.scrollTop = log.scrollHeight;
+    return d;
+  }
+  bubble("Hi! Tell me what you'd like changed on your site (hours, services, text, a photo, a new page) and I'll get it to your builder. What needs changing?", 'bot');
+
+  var busy = false;
+  async function send(){
+    var text = input.value.trim();
+    if(!text || busy) return;
+    input.value='';
+    bubble(text, 'me'); history.push({ role:'user', content:text });
+    busy = true;
+    var t = bubble('typing…', 'bot typing');
+    try{
+      var res = await fetch('/api/support', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages: history }) });
+      var data = await res.json().catch(function(){ return {}; });
+      t.remove();
+      var reply = (res.ok && data.reply) ? data.reply : "Got it, I've noted that. Tap “Send this request to my builder” below when you're ready and a real person will take it from here.";
+      bubble(reply, 'bot'); history.push({ role:'assistant', content:reply });
+    }catch(e){
+      t.remove();
+      bubble("Noted. Tap “Send this request to my builder” below and a real person will handle it.", 'bot');
+    }
+    busy = false;
+  }
+  sendBtn.addEventListener('click', send);
+  input.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); send(); } });
+
+  deliver.addEventListener('click', async function(){
+    var reqs = history.filter(function(m){ return m.role==='user'; }).map(function(m){ return m.content; });
+    if(!reqs.length){ dnote.style.color='var(--red)'; dnote.textContent='Type your change above first.'; return; }
+    dnote.style.color=''; dnote.textContent='Sending to your builder…'; deliver.disabled=true;
+    try{
+      var body = {
+        access_key: WEB3FORMS_KEY,
+        subject: 'KILLSWITCH · site change request',
+        from_name: 'Customer panel',
+        site: document.getElementById('siteName').textContent,
+        message: 'Change request(s) from the customer panel:\n\n- ' + reqs.join('\n- ')
+      };
+      var r = await fetch('https://api.web3forms.com/submit', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      if(r.ok){ dnote.style.color='var(--ok)'; dnote.textContent='Sent. Your builder will make the change and email you when it’s live.'; }
+      else throw new Error();
+    }catch(e){ dnote.style.color='var(--red)'; dnote.textContent='Could not send. Email us and we’ll take care of it.'; deliver.disabled=false; }
+  });
+})();
+</script>
+</body>
+</html>

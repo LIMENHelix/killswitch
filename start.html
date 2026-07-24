@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Start your free site — KILLSWITCH</title>
+<meta name="description" content="Tell us about your business and we will build your free website. A few quick questions and you are on your way." />
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230a0b0e'/%3E%3Cg fill='none' stroke='%23FF3826' stroke-width='9' stroke-linecap='round'%3E%3Cpath d='M62.5 30.4 A25 25 0 1 1 37.5 30.4'/%3E%3Cpath d='M50 22 V52'/%3E%3C/g%3E%3C/svg%3E" />
+<link rel="stylesheet" href="/ks.css" />
+</head>
+<body>
+<div id="pglow" aria-hidden="true"></div>
+<div class="hazard" aria-hidden="true"></div>
+
+<header class="nav" id="top">
+  <div class="wrap nav-in">
+    <a href="/" class="brand"><svg class="brand-ic" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>KILLSWITCH</a>
+    <nav class="nav-links" id="navLinks">
+      <a href="/services">Services</a>
+      <a href="/work">Work</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/switch">Ask the AI</a>
+      <a href="/start" class="nav-cta">Get my free site</a>
+    </nav>
+  </div>
+</header>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section__head">
+      <div class="eyebrow">Get started</div>
+      <h1 class="section__title">Let's build your free site.</h1>
+      <p class="section__sub">A few quick questions. Your website is free and yours to keep, and nothing is charged unless you turn on a paid module.</p>
+    </div>
+
+    <form class="intake" id="startForm" novalidate>
+      <div class="fld">
+        <label class="lab" for="f-business">Business name</label>
+        <input type="text" id="f-business" name="business" placeholder="e.g. Rivertown Plumbing" required />
+      </div>
+      <div class="row">
+        <div class="fld">
+          <label class="lab" for="f-trade">What you do</label>
+          <input type="text" id="f-trade" name="trade" placeholder="Plumber, salon, clinic..." />
+        </div>
+        <div class="fld">
+          <label class="lab" for="f-area">Town / area you serve</label>
+          <input type="text" id="f-area" name="area" placeholder="City or region" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="fld">
+          <label class="lab" for="f-name">Your name</label>
+          <input type="text" id="f-name" name="name" placeholder="First and last" required />
+        </div>
+        <div class="fld">
+          <label class="lab" for="f-phone">Phone</label>
+          <input type="tel" id="f-phone" name="phone" placeholder="(555) 555-5555" />
+        </div>
+      </div>
+      <div class="fld">
+        <label class="lab" for="f-email">Best email</label>
+        <input type="email" id="f-email" name="email" placeholder="you@business.com" required />
+      </div>
+
+      <div class="fld">
+        <label class="lab">Do you already own a website domain?</label>
+        <div class="opts">
+          <label class="opt"><input type="radio" name="domain" id="domYes" value="yes"> Yes, I have one</label>
+          <label class="opt"><input type="radio" name="domain" id="domNo" value="no" checked> No, I need one (we'll set it up for you)</label>
+        </div>
+        <div class="dom-detail" id="domWhichWrap" style="display:none">
+          <input type="text" id="domWhich" name="domainName" placeholder="What's the web address? e.g. rivertownplumbing.com" />
+        </div>
+      </div>
+
+      <div class="fld">
+        <label class="lab">Starting with (all optional, add anytime)</label>
+        <div class="opts">
+          <label class="opt"><input type="checkbox" name="module" value="Get Found on Google"> Get Found on Google</label>
+          <label class="opt"><input type="checkbox" name="module" value="Online Booking"> Online Booking</label>
+          <label class="opt"><input type="checkbox" name="module" value="Payments"> Payments</label>
+          <label class="opt"><input type="checkbox" name="module" value="24/7 AI Assistant"> 24/7 AI Assistant</label>
+        </div>
+      </div>
+
+      <div class="fld">
+        <label class="lab" for="f-notes">Anything else we should know?</label>
+        <textarea id="f-notes" name="notes" placeholder="Photos, hours, colors, a site you like, anything at all."></textarea>
+      </div>
+
+      <label class="agree">
+        <input type="checkbox" id="agree" />
+        <span>I agree to the <a href="/terms" target="_blank" rel="noopener">Terms of Service</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>. My free website is mine to keep, and nothing is charged unless I turn on a paid module.</span>
+      </label>
+
+      <button class="btn btn--lg btn--block" type="submit">Build my free site →</button>
+      <p class="note2" id="startNote"></p>
+    </form>
+
+    <div class="start-done" id="startDone" style="display:none">
+      <h3>You're in. 🔧</h3>
+      <p>We've got everything we need to get started. We'll build your free site and email you the link, usually within minutes. Want it found on Google or taking bookings from day one? Those are on the <a href="/pricing" style="color:var(--amber)">growth path</a>, add them whenever you're ready.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div>
+      <div class="foot-brand"><svg class="brand-ic" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>KILLSWITCH</div>
+      <div class="foot-tag">Custom software, disguised as a website. Built for businesses nationwide.
+        <a class="lh" href="https://www.limenhelix.com" target="_blank" rel="noopener">A LIMEN Helix company</a></div>
+    </div>
+    <div class="foot-links">
+      <a href="/services">Services</a>
+      <a href="/work">Work</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/switch">Ask the AI</a>
+      <a href="/start">Get my free site</a>
+    </div>
+  </div>
+  <div class="wrap copy">© 2026 KILLSWITCH &middot; Serving all 50 states &middot; <a href="/terms">Terms</a> &middot; <a href="/privacy">Privacy</a></div>
+</footer>
+
+<script>
+(function () {
+  var KEY = 'fd068540-d6c4-44e3-9f5b-3d46da7c44ed';
+  var form = document.getElementById('startForm'),
+      note = document.getElementById('startNote'),
+      whichWrap = document.getElementById('domWhichWrap');
+
+  function toggleWhich() {
+    whichWrap.style.display = document.getElementById('domYes').checked ? 'block' : 'none';
+  }
+  form.querySelectorAll('input[name=domain]').forEach(function (r) { r.addEventListener('change', toggleWhich); });
+
+  function setNote(t, err) { note.textContent = t; note.style.color = err ? 'var(--red)' : 'var(--mute-2)'; }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var g = function (n) { var el = form.querySelector('[name=' + n + ']'); return el ? el.value.trim() : ''; };
+    var business = g('business'), name = g('name'), email = g('email');
+    if (!business || !name || !email) { setNote('Please add your business name, your name, and an email.', true); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setNote("That email doesn't look right, mind checking it?", true); return; }
+    if (!document.getElementById('agree').checked) { setNote('Please agree to the Terms and Privacy Policy to continue.', true); return; }
+
+    var modules = [];
+    form.querySelectorAll('input[name=module]:checked').forEach(function (m) { modules.push(m.value); });
+    var domain = document.getElementById('domYes').checked
+      ? ('Yes: ' + (g('domainName') || '(not given)'))
+      : 'No, needs one';
+
+    var message = 'NEW SIGNUP (KILLSWITCH /start)\n'
+      + 'Business: ' + business + '\n'
+      + 'Trade: ' + (g('trade') || '-') + '\n'
+      + 'Service area: ' + (g('area') || '-') + '\n'
+      + 'Name: ' + name + '\n'
+      + 'Phone: ' + (g('phone') || '-') + '\n'
+      + 'Email: ' + email + '\n'
+      + 'Domain: ' + domain + '\n'
+      + 'Starting with: Free website' + (modules.length ? (' + ' + modules.join(', ')) : '') + '\n'
+      + 'Notes: ' + (g('notes') || '-') + '\n'
+      + 'Agreed to Terms + Privacy: yes';
+
+    var btn = form.querySelector('button[type=submit]');
+    btn.disabled = true; setNote('Sending...', false);
+
+    fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        access_key: KEY,
+        subject: '🔔 NEW KILLSWITCH SIGNUP — ' + business,
+        from_name: 'KILLSWITCH Signup',
+        name: name, contact: email, business: business,
+        source: 'signup — /start', message: message
+      })
+    })
+    .then(function (r) { return r.json().catch(function () { return {}; }); })
+    .then(function (d) {
+      if (d && d.success) {
+        form.style.display = 'none'; setNote('', false);
+        document.getElementById('startDone').style.display = 'block';
+        document.getElementById('startDone').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        setNote('Could not send (' + ((d && d.message) || 'please try again') + ').', true);
+        btn.disabled = false;
+      }
+    })
+    .catch(function () { setNote('Network error, please try again.', true); btn.disabled = false; });
+  });
+})();
+</script>
+<script src="/ks-fx.js"></script>
+</body>
+</html>

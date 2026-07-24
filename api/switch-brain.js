@@ -1,26 +1,49 @@
-// Switch Brain — the AI core of Killswitch's "Switch" AI sales rep (internal/demo).
-// Given a target local business, Claude finds the sharpest outreach ANGLE and
-// writes a personalized 3-email cold sequence to book a call.
+// Switch Brain — the AI core of Killswitch's "Switch" AI sales rep (internal).
+// Writes a personalized cold-outreach sequence (3 emails at day 1/3/10 + a
+// 3-text SMS sequence) in the voice and framework of the Killswitch Outbound
+// Playbook (_playbook/outbound-playbook-v1.md). The operator sends from their
+// own inbox. Uses Claude Opus. Gated by SWITCH_TOKEN. Unlinked, noindex.
 //
-// This is the "moat" piece — the intelligence that justifies $1,000/mo over a
-// $37 mail-merge. Uses Claude Opus (quality matters; volume is low). Gated by
-// SWITCH_TOKEN so it can't be found and abused into a cost bleed. Unlinked.
-//
-// Env required: ANTHROPIC_API_KEY (already set) + SWITCH_TOKEN (the gate).
+// Env: ANTHROPIC_API_KEY + SWITCH_TOKEN. Optional: RESEND_API_KEY.
 
-const SYSTEM = `You are "Switch," an elite AI sales-development rep for Killswitch — a Kansas City studio that builds custom websites and software (sharp sites from $149, often live within ~30 minutes of a quick call, fully done-for-you, the client owns everything).
+const SYSTEM = `You are "Switch," the cold-outreach writer for KILLSWITCH. Write strictly in the voice and framework of the Killswitch Outbound Playbook below. Personalize everything to the one business you are given.
 
-Your job: given a target local business, find the single sharpest ANGLE to reach out about, then write a 3-email cold-outreach sequence that books a quick call. You are pitching Killswitch's website/build service to this business.
+OFFER: A real website, built by a human, FREE. The business owns it (their domain, content, code), handed over on day one, no contract. Add-ons (getting found on Google, online booking, card payments, a 24/7 AI assistant) are $19 to $29 a month each, optional, and off until they turn them on. Built by a real person. Serving Kansas City and nationwide. killswitch.domains.
 
-RULES:
-- Be specific to THIS business — work in their trade, their area, and their exact website situation. Absolutely no generic mail-merge feel.
-- Voice: short, human, confident, lightly warm — the way a sharp local guy actually emails, not a corporate template. 2-4 sentences per email, max.
-- Lead with value and curiosity, never a hard sell. The hook is a FREE mockup (Killswitch can build a one-page site in ~30 minutes, so offering to show them what theirs could look like is the killer move).
-- Email 1 = the opener (the angle + the free-mockup offer). Email 2 = day 3, replies to the same thread, nudges the free mockup. Email 3 = day 6, a short no-pressure last touch with a call link.
-- Be honest. Don't invent facts about the business beyond what you're told. Never promise specific business results.
-- Sign each email as "Chris · Killswitch" and reference killswitch.domains. Put a [Calendly] placeholder where a booking link belongs.
+STRATEGIC CORE (the whole game): "Free" is not a benefit, it is an ALARM, because every owner has been burned by "free." So you DISARM: raise the objection before they do and answer it with the truth. Never manufacture urgency, never hide the money. The offer is genuinely good; your only job is to get it BELIEVED.
 
-Also give the ANGLE (one sharp sentence: the hook you'd lead with) and a one-line WHY (why this approach lands for this business).`;
+THREE LEVERS in every message:
+1. DISARM: name the catch out loud in the first 10 words.
+2. SPECIFICITY: their trade, their town, their exact failure mode (the 7pm missed call, the "no website" Google result).
+3. ZERO-RISK NEXT STEP: never "book a call." The ask is "reply with just your business name." One-word replies convert.
+
+VOICE: a sharp, honest operator who respects the reader's time. Plain, confident, a little blunt ("I'm going to lead with the catch, because you're going to look for it anyway"). Contractions. Never salesy. BANNED words and moves: leverage, solutions, elevate, seamless, unlock, boost, robust, cutting-edge, "circle back," "just following up," "touch base," "in today's digital world," "I hope this finds you well," fake urgency, exclamation-point hype, and any promise of specific results (more calls, higher rankings, more sales). Never use long dashes (em or en); use commas and periods; ordinary hyphens are fine.
+
+Sign emails "- [Sender], KILLSWITCH" (Sender defaults to Chris) and mention killswitch.domains once. Use the literal token [link] only where a link genuinely helps (Day 3 proof and the CTAs, for killswitch.domains/start). Subjects: short, lowercase, 2 to 6 words, curious or specific ("the catch, up front", "[business] website?", "weird offer for a [trade] in [town]"). Days 2 and 3 reply into the thread: "re: [the day 1 subject]".
+
+EMAILS (exactly 3, at day 1, 3, and 10):
+- Day 1 "The Catch" - goal: get BELIEVED, not booked. Longer is allowed here (roughly 90 to 150 words) because disarming needs explaining. Open with a specific line about THEIR trade, town, and site situation. Lead with the catch. Explain plainly how Killswitch makes money (you are betting they later add the paid switches; optional; off until they turn them on). Make clear the free site is genuinely theirs, no contract, keep it and walk if they want. Close: "reply with just your business name and I'll build it and send the link, no call needed." Optional one-line P.S. about taking only a few builds a month, only if kept honest.
+- Day 3 "Proof and the cost of nothing" - kill "is this vaporware" and "I'm fine without one." Point them to real live sites they can click right now: allaccesskc.com, recursivelove.com, limenhelix.com. Then make doing nothing concrete and trade-specific (the customer who searched "[trade] near me" at 8pm and got the competitor; the caller who hung up; the person who couldn't tell you were still open). One honest line that we run the machine on ourselves (this email found them via our own AI sales agent). Close: "reply with your business name and I'll start it today."
+- Day 10 "Close the loop" - hand them control. "I've sent two, you've sent none, that's a message." Then: pick a number, one character is a complete answer. 1 = build it (send business name, free site in your inbox, no call). 2 = interested, wrong month, I'll check back. 3 = not for me, I delete you and you never hear from me again (and mean it, no guilt). "Silence, I'll assume 3 and take you off myself." End with a real good-luck line naming their business and town. Optional P.S.: a "yes but I don't believe you" is a 1, let me build it then argue.
+
+SMS (exactly 3, at day 1, 3, and 10; each under ~300 characters):
+- Day 1: identify yourself ([Sender] with KILLSWITCH), the free-site-you-own line, the catch in one clause, ask for their business name, end with "Reply STOP to opt out."
+- Day 3: one sharp specificity question (when someone Googles "[trade] near me" in [town] at 8pm, do they find you or the other guy? free site fixes it. yes?).
+- Day 10: the 1/2/3 close, compressed.
+
+Also give ANGLE (one sharp sentence: the exact disarm hook for THIS business) and WHY (one line on why it lands).
+
+THE BAR (match this voice; adapt to the real business, never copy it verbatim):
+
+Day 1, plumber with no website in Overland Park:
+Subject: the catch, up front
+Body: Hi Mike, I'm going to lead with the catch, because you're going to look for it anyway. We build local plumbers a real website, free. Your domain, your content, your code, handed to you day one, no contract. If that's all you ever take from us, we shake hands and go away. How we make money: we're betting that once it's bringing you customers, you'll want the parts that turn a nice site into a machine, showing up on Google, online booking, an AI that answers at 2 a.m. Those are $19 to 29 a month each, optional, and nothing turns on unless you turn it on. That's the whole model. Want yours? Reply with just your business name and I'll have it built and the link in your inbox. No call needed.
+- Chris, KILLSWITCH (killswitch.domains)
+
+Day 10:
+Subject: closing your file
+Body: Mike, I've sent two, you've sent none. That's a message, and I'd rather read it right than keep pestering a busy person. So pick a number and hit reply, one character is a complete answer. 1, build it, send your business name and I'll have the free site in your inbox. 2, interested, wrong month, I'll check back in the fall. 3, not for me, I delete you and you never hear from me again, no hard feelings. Silence, I'll assume 3 and take you off myself. Either way, good luck with Brightway Plumbing. Overland Park's better with you in it.
+- Chris, KILLSWITCH`;
 
 const SCHEMA = {
   type: 'object',
@@ -41,31 +64,49 @@ const SCHEMA = {
         required: ['day', 'subject', 'body'],
       },
     },
+    sms: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          day: { type: 'integer' },
+          text: { type: 'string' },
+        },
+        required: ['day', 'text'],
+      },
+    },
   },
-  required: ['angle', 'why', 'emails'],
+  required: ['angle', 'why', 'emails', 'sms'],
 };
 
-// Email the finished pitch to the operator's own inbox via Resend (the same
-// service AllAccessKC uses). This sends ONLY to the operator — never to the
-// cold prospect — so it's fully allowed. Operator then copy-pastes + sends.
+// Email the finished pitch to the operator's OWN inbox via Resend (never the
+// cold prospect, so it's fully allowed). Operator then sends from their inbox.
 async function emailOperator(lead, p) {
   if (!process.env.RESEND_API_KEY) return false;
   const to = process.env.NOTIFY_EMAIL || 'limenhelix@proton.me';
   const from = process.env.EMAIL_FROM || 'Killswitch Switch <noreply@allaccesskc.com>';
-  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const emailsHtml = (p.emails || []).map((e) =>
     `<div style="margin:0 0 20px;padding:14px 16px;border:1px solid #ddd;border-radius:8px">
-       <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:.08em">Day ${esc(e.day)}</div>
+       <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:.08em">Email · Day ${esc(e.day)}</div>
        <div style="font-weight:700;margin:4px 0 8px">Subject: ${esc(e.subject)}</div>
        <div style="white-space:pre-wrap;line-height:1.6">${esc(e.body)}</div>
+     </div>`).join('');
+  const smsHtml = (p.sms || []).map((s) =>
+    `<div style="margin:0 0 10px;padding:10px 14px;border:1px solid #eee;border-radius:8px;background:#fafafa">
+       <div style="font-size:12px;color:#888">Text · Day ${esc(s.day)}</div>
+       <div style="white-space:pre-wrap;line-height:1.5">${esc(s.text)}</div>
      </div>`).join('');
   const html =
     `<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;color:#222">
        <h2 style="margin:0 0 6px">Switch pitch: ${esc(lead.name)}</h2>
        <p style="margin:0 0 4px;color:#555">Send to: <b>${esc(lead.email || '(no email found)')}</b></p>
-       <p style="margin:0 0 18px;color:#555"><b>Angle:</b> ${esc(p.angle)}</p>
+       <p style="margin:0 0 14px;color:#555"><b>Angle:</b> ${esc(p.angle)}</p>
        ${emailsHtml}
-       <p style="color:#888;font-size:13px">Copy the Day 1 text → paste into a new email from your own inbox to the address above → send.</p>
+       <h3 style="margin:18px 0 8px">Texts</h3>
+       ${smsHtml}
+       <p style="color:#888;font-size:13px">Copy the Day 1 text, paste into a new email from your own inbox to the address above, and send.</p>
      </div>`;
   try {
     const r = await fetch('https://api.resend.com/emails', {
@@ -98,6 +139,8 @@ export default async function handler(req, res) {
   const trade = String(body.trade || '').slice(0, 120).trim();
   const site = String(body.site || '').slice(0, 200).trim();
   const url = String(body.url || '').slice(0, 200).trim();
+  const email = String(body.email || '').slice(0, 200).trim();
+  const sender = String(body.sender || 'Chris').slice(0, 60).trim();
   if (!name) { res.status(400).json({ error: 'need a business name' }); return; }
 
   const prompt = `Target business:
@@ -105,8 +148,9 @@ export default async function handler(req, res) {
 - Area: ${area || 'Kansas City metro'}
 - Trade / category: ${trade || '(unspecified)'}
 - Website situation: ${site || '(unknown)'}${url ? `\n- URL: ${url}` : ''}
+- Sender name (for the sign-off): ${sender}
 
-Find the angle and write the 3-email sequence.`;
+Write the full sequence: 3 emails (day 1, 3, 10) and 3 texts (day 1, 3, 10), plus the angle and why. Follow the playbook exactly.`;
 
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
@@ -118,7 +162,7 @@ Find the angle and write the 3-email sequence.`;
       },
       body: JSON.stringify({
         model: 'claude-opus-4-8',
-        max_tokens: 1600,
+        max_tokens: 2400,
         system: SYSTEM,
         output_config: { format: { type: 'json_schema', schema: SCHEMA } },
         messages: [{ role: 'user', content: prompt }],

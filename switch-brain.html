@@ -4,126 +4,188 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex, nofollow" />
-<title>Switch Brain — internal</title>
+<title>Switch Desk — internal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230a0b0e'/%3E%3Cg fill='none' stroke='%23cf1322' stroke-width='9' stroke-linecap='round'%3E%3Cpath d='M62.5 30.4 A25 25 0 1 1 37.5 30.4'/%3E%3Cpath d='M50 22 V52'/%3E%3C/g%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230a0b0e'/%3E%3Cg fill='none' stroke='%23FF3826' stroke-width='9' stroke-linecap='round'%3E%3Cpath d='M62.5 30.4 A25 25 0 1 1 37.5 30.4'/%3E%3Cpath d='M50 22 V52'/%3E%3C/g%3E%3C/svg%3E" />
+<link rel="stylesheet" href="/ks.css" />
 <style>
-  .sb-wrap { max-width: 760px; margin: 0 auto; padding: 56px 22px 90px; }
-  .sb-wrap h1 { font-size: clamp(28px, 4vw, 40px); }
-  .sb-wrap .eyebrow { color: var(--accent); }
-  .sb-sub { color: var(--muted); margin: 10px 0 32px; font-size: 15.5px; }
-  .sb-form { display: grid; gap: 14px; background: var(--bg-alt); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
-  .sb-form label { font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-family: 'Space Grotesk', sans-serif; font-weight: 700; margin-bottom: -6px; }
-  .sb-form input, .sb-form select { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); font: inherit; padding: 12px 14px; }
-  .sb-form input:focus, .sb-form select:focus { outline: none; border-color: var(--accent); }
-  .sb-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .sb-note { color: var(--muted); font-size: 13px; min-height: 18px; margin-top: 4px; }
-  .sb-out { margin-top: 34px; display: none; }
-  .sb-angle { background: color-mix(in srgb, var(--accent) 10%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 22px; }
-  .sb-angle .lab { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
-  .sb-angle .ang { font-size: 18px; color: var(--ink); font-weight: 600; margin: 8px 0 10px; line-height: 1.4; }
-  .sb-angle .why { color: var(--body); font-size: 14.5px; }
-  .sb-email { background: var(--bg-alt); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 16px; }
-  .sb-email .day { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
-  .sb-email .subj { font-weight: 700; color: var(--ink); margin: 6px 0 12px; font-size: 16px; }
-  .sb-email .bd { color: var(--body); font-size: 14.5px; line-height: 1.6; white-space: pre-wrap; }
-  .sb-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
-  @media (max-width: 560px) { .sb-row { grid-template-columns: 1fr; } }
+  .sb-wrap{max-width:760px;margin:0 auto;padding:48px 22px 90px}
+  .sb-head .eyebrow{display:block;margin-bottom:10px}
+  .sb-head h1{font-size:clamp(1.8rem,4vw,2.6rem)}
+  .sb-sub{color:var(--mute-2);margin:12px 0 30px;font-size:1rem;line-height:1.5}
+  .sb-out{margin-top:34px;display:none}
+  .sb-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:16px}
+  .sb-card .lab{font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);font-weight:600}
+  .sb-angle{background:linear-gradient(180deg,rgba(255,196,46,.08),var(--panel));border-color:color-mix(in srgb,var(--amber) 34%,var(--line))}
+  .sb-angle .ang{font-family:"Archivo",sans-serif;font-size:1.14rem;color:var(--ink);font-weight:700;margin:8px 0 10px;line-height:1.4}
+  .sb-angle .why{color:var(--mute);font-size:.94rem}
+  .sb-card .subj{font-family:"Archivo",sans-serif;font-weight:700;color:var(--ink);margin:6px 0 12px;font-size:1.02rem}
+  .sb-card .bd{color:var(--mute);font-size:.95rem;line-height:1.65;white-space:pre-wrap}
+  .sb-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+  .sb-note{color:var(--mute-2);font-size:.9rem;min-height:20px;margin-top:6px}
 </style>
 </head>
 <body>
-<div class="sb-wrap">
-  <div class="eyebrow">Killswitch · internal</div>
-  <h1>Switch Brain 🧠</h1>
-  <p class="sb-sub">Drop in a target business. Switch finds the angle and writes a personalized cold-outreach sequence — the AI core of the $1,000/mo sales rep.</p>
+<div id="pglow" aria-hidden="true"></div>
+<div class="hazard" aria-hidden="true"></div>
 
-  <form class="sb-form" id="sbForm">
-    <label for="name">Business name</label>
-    <input id="name" required placeholder="e.g. Brightway Plumbing" />
-    <div class="sb-row">
-      <div style="display:grid;gap:6px"><label for="area">Area</label><input id="area" placeholder="e.g. Olathe, KS" /></div>
-      <div style="display:grid;gap:6px"><label for="trade">Trade / category</label><input id="trade" placeholder="e.g. plumber" /></div>
+<div class="sb-wrap">
+  <div class="sb-head">
+    <span class="eyebrow">Killswitch · internal</span>
+    <h1>Switch Desk 🧠</h1>
+    <p class="sb-sub">Drop in a target business. Switch finds the angle and writes a personalized cold sequence (3 emails plus a text/DM), built around the free-site-in-minutes hook. Send it from your own inbox.</p>
+  </div>
+
+  <form class="intake" id="sbForm" novalidate>
+    <div class="fld"><label class="lab" for="name">Business name</label><input type="text" id="name" placeholder="e.g. Brightway Plumbing" /></div>
+    <div class="row">
+      <div class="fld"><label class="lab" for="area">Area</label><input type="text" id="area" placeholder="e.g. Olathe, KS" /></div>
+      <div class="fld"><label class="lab" for="trade">Trade / category</label><input type="text" id="trade" placeholder="e.g. plumber" /></div>
     </div>
-    <label for="site">Website situation</label>
-    <select id="site">
-      <option value="No website at all — just a Google listing">No website at all</option>
-      <option value="On a free Wix/Squarespace subdomain — looks unfinished">Free Wix / Squarespace site</option>
-      <option value="Has an old, ugly, not-mobile-friendly site">Old / ugly / not mobile-friendly</option>
-      <option value="Has a decent site but it's outdated">Decent but outdated</option>
-    </select>
-    <label for="url">Their URL (optional)</label>
-    <input id="url" placeholder="e.g. brightwayplumbing.wixsite.com" />
-    <label for="email">Their email (optional — pre-fills the "To")</label>
-    <input id="email" placeholder="e.g. joe@joesdrainkc.com" />
-    <label for="token">Access token</label>
-    <input id="token" type="password" placeholder="Switch token" />
-    <button type="submit" class="btn btn--block" id="sbGo">Generate the pitch →</button>
-    <div class="sb-note" id="sbNote"></div>
+    <div class="fld"><label class="lab" for="site">Website situation</label>
+      <select id="site">
+        <option value="No website at all, just a Google listing">No website at all</option>
+        <option value="On a free Wix or Squarespace subdomain, looks unfinished">Free Wix / Squarespace site</option>
+        <option value="Has an old, ugly, not-mobile-friendly site">Old / ugly / not mobile-friendly</option>
+        <option value="Has a decent site but it is outdated">Decent but outdated</option>
+      </select>
+    </div>
+    <div class="row">
+      <div class="fld"><label class="lab" for="url">Their URL (optional)</label><input type="text" id="url" placeholder="brightwayplumbing.wixsite.com" /></div>
+      <div class="fld"><label class="lab" for="email">Their email (optional)</label><input type="text" id="email" placeholder="joe@business.com" /></div>
+    </div>
+    <div class="fld"><label class="lab" for="link">Link to insert (replaces [link])</label><input type="text" id="link" value="https://killswitch.domains/start" /></div>
+    <div class="fld"><label class="lab" for="token">Access token</label><input type="password" id="token" placeholder="Switch token" /></div>
+    <button type="submit" class="btn btn--lg btn--block" id="sbGo">Generate the pitch →</button>
+    <p class="sb-note" id="sbNote"></p>
   </form>
 
   <div class="sb-out" id="sbOut"></div>
+
+  <details style="margin-top:36px">
+    <summary style="cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber)">Reply handlers &amp; phone opener (playbook)</summary>
+    <div class="sb-card" style="margin-top:14px">
+      <div class="lab">Cold-call opener</div>
+      <div class="bd">"[Name]? Hi, my name's Chris, I'm with a company called KILLSWITCH. I'm going to be straight with you: this is a sales call. You can hang up and I won't take it personally. Can I have thirty seconds to tell you what it is, and then you decide?"
+
+[pause] "Thank you. We build local [trade]s a website. Free. Not a trial, not a lease, you own it, your domain, no contract. The reason we can do that is we make our money later, if you want online booking, showing up on Google, or an AI that answers at 2 a.m. Those run $19 to 29 a month, off unless you turn them on."
+
+[pause] "So my question isn't 'will you buy something.' It's: do you currently have a website you're proud of?"</div>
+    </div>
+    <div class="sb-card">
+      <div class="lab">Reply handlers</div>
+      <div class="bd"><strong>"What's the catch?"</strong>  No catch on the site, it's yours, no contract. We make money only if you later add Google/booking/payments ($19 to 29/mo, optional). That's the whole model.
+
+<strong>"How much?"</strong>  Site: $0. Add-ons only if you want them. Most popular combo is $38/mo (Google + booking). You can also take just the free site and never spend a dime.
+
+<strong>"I already have a website."</strong>  Good. Then the free build is a free second opinion, if ours isn't better keep yours and we walk. Costs you nothing to look.
+
+<strong>"I'm too busy."</strong>  That's the point. No call, no meeting. Send your business name and I'll do the rest.
+
+<strong>"Nothing's free."</strong>  Right, and I won't insult you. The site's free, the hope isn't. We hope you buy add-ons later. Say no and keep the site.
+
+<strong>"Send me some information."</strong>  I'll do better, I'll send you a site. Same effort for me. What's the business name?</div>
+    </div>
+  </details>
 </div>
 
 <script>
-const f = document.getElementById('sbForm');
-const note = document.getElementById('sbNote');
-const out = document.getElementById('sbOut');
-const go = document.getElementById('sbGo');
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-
-f.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  note.style.color = ''; note.textContent = 'Switch is thinking…'; go.disabled = true; out.style.display = 'none';
-  try {
-    const r = await fetch('/api/switch-brain', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: name.value, area: area.value, trade: trade.value,
-        site: site.value, url: url.value, token: token.value,
-      }),
-    });
-    const d = await r.json();
-    if (!r.ok || d.error) {
-      note.style.color = '#ef4444';
-      note.textContent = r.status === 401 ? 'Wrong access token.' :
-        r.status === 503 ? 'Not configured yet (token/key missing).' :
-        'Error: ' + (d.error || r.status);
-      go.disabled = false; return;
-    }
-    let html = '<div class="sb-angle"><div class="lab">The angle</div><div class="ang">' + esc(d.angle) +
-      '</div><div class="why"><strong>Why it lands:</strong> ' + esc(d.why) + '</div></div>';
-    const leadEmail = document.getElementById('email').value.trim();
-    (d.emails || []).forEach((em, i) => {
-      const mailto = 'mailto:' + leadEmail
-        + '?subject=' + encodeURIComponent(em.subject)
-        + '&body=' + encodeURIComponent(em.body);
-      html += '<div class="sb-email"><div class="day">Day ' + esc(em.day) + '</div><div class="subj">' +
-        esc(em.subject) + '</div><div class="bd">' + esc(em.body) + '</div>' +
-        '<div class="sb-actions">' +
-        '<a class="btn btn--sm" href="' + mailto + '">📨 Compose email</a>' +
-        '<button type="button" class="btn btn--sm btn--ghost" data-copy="' + i + '">Copy</button>' +
-        '</div></div>';
-    });
-    out.innerHTML = html; out.style.display = 'block';
-    out.querySelectorAll('[data-copy]').forEach(b => {
-      b.addEventListener('click', () => {
-        const em = d.emails[+b.getAttribute('data-copy')];
-        navigator.clipboard.writeText(em.subject + '\n\n' + em.body).then(() => {
-          const orig = b.textContent; b.textContent = 'Copied ✓';
-          setTimeout(() => { b.textContent = orig; }, 1400);
-        });
+(function () {
+  var f = document.getElementById('sbForm');
+  var note = document.getElementById('sbNote');
+  var out = document.getElementById('sbOut');
+  var go = document.getElementById('sbGo');
+  var $ = function (id) { return document.getElementById(id); };
+  // Remember the access token on this device so it's entered only once.
+  try { var savedTok = localStorage.getItem('ks-switch-token'); if (savedTok) $('token').value = savedTok; } catch (e) {}
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function fill(s) { var link = $('link').value.trim() || 'https://killswitch.domains/start'; return String(s || '').replace(/\[link\]/gi, link).replace(/\[calendly\]/gi, link); }
+  function gmail(to, subject, bodyText) {
+    return 'https://mail.google.com/mail/?view=cm&fs=1&tf=1' + (to ? '&to=' + encodeURIComponent(to) : '') +
+      '&su=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(bodyText);
+  }
+  function copyBtn(text, label) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn btn--sm btn--ghost'; b.textContent = label || 'Copy';
+    b.addEventListener('click', function () {
+      navigator.clipboard.writeText(text).then(function () {
+        var o = b.textContent; b.textContent = 'Copied ✓'; setTimeout(function () { b.textContent = o; }, 1400);
       });
     });
-    note.textContent = ''; go.disabled = false;
-    out.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  } catch (err) {
-    note.style.color = '#ef4444'; note.textContent = 'Network error — try again.'; go.disabled = false;
+    return b;
   }
-});
+
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    try { localStorage.setItem('ks-switch-token', $('token').value.trim()); } catch (er) {}
+    note.style.color = ''; note.textContent = 'Switch is thinking…'; go.disabled = true; out.style.display = 'none';
+    fetch('/api/switch-brain', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: $('name').value, area: $('area').value, trade: $('trade').value,
+        site: $('site').value, url: $('url').value, email: $('email').value, token: $('token').value,
+      }),
+    })
+    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, status: r.status, d: d }; }); })
+    .then(function (res) {
+      var d = res.d;
+      if (!res.ok || d.error) {
+        note.style.color = 'var(--red)';
+        note.textContent = res.status === 401 ? 'Wrong access token.' :
+          res.status === 503 ? 'Not configured yet (token or API key missing).' :
+          d.error === 'refused' ? 'Model declined this one.' : 'Error: ' + (d.error || res.status);
+        go.disabled = false; return;
+      }
+      out.innerHTML = '';
+      var to = $('email').value.trim();
+
+      var angle = document.createElement('div');
+      angle.className = 'sb-card sb-angle';
+      angle.innerHTML = '<div class="lab">The angle</div><div class="ang">' + esc(d.angle) +
+        '</div><div class="why"><strong>Why it lands:</strong> ' + esc(d.why) + '</div>';
+      out.appendChild(angle);
+
+      (d.emails || []).forEach(function (em) {
+        var body = fill(em.body);
+        var card = document.createElement('div');
+        card.className = 'sb-card';
+        card.innerHTML = '<div class="lab">Email · Day ' + esc(em.day) + '</div>' +
+          '<div class="subj">' + esc(em.subject) + '</div><div class="bd">' + esc(body) + '</div>';
+        var acts = document.createElement('div'); acts.className = 'sb-actions';
+        var g = document.createElement('a');
+        g.className = 'btn btn--sm'; g.textContent = '📨 Open in Gmail';
+        g.href = gmail(to, em.subject, body); g.target = '_blank'; g.rel = 'noopener';
+        acts.appendChild(g);
+        acts.appendChild(copyBtn(em.subject + '\n\n' + body, 'Copy'));
+        card.appendChild(acts); out.appendChild(card);
+      });
+
+      if ((d.sms || []).length) {
+        var sh = document.createElement('div');
+        sh.style.cssText = 'margin:22px 0 8px';
+        sh.innerHTML = '<div class="lab" style="color:var(--mute-2)">Text / DM sequence</div>';
+        out.appendChild(sh);
+      }
+      (d.sms || []).forEach(function (s) {
+        var txt = fill(s.text);
+        var card = document.createElement('div');
+        card.className = 'sb-card';
+        card.innerHTML = '<div class="lab">Text · Day ' + esc(s.day) + '</div><div class="bd">' + esc(txt) + '</div>';
+        var a1 = document.createElement('div'); a1.className = 'sb-actions';
+        a1.appendChild(copyBtn(txt, 'Copy text'));
+        card.appendChild(a1); out.appendChild(card);
+      });
+
+      out.style.display = 'block';
+      note.textContent = res.d.emailed ? 'Also emailed to your inbox.' : '';
+      go.disabled = false;
+      out.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    })
+    .catch(function () { note.style.color = 'var(--red)'; note.textContent = 'Network error, try again.'; go.disabled = false; });
+  });
+})();
 </script>
 </body>
 </html>

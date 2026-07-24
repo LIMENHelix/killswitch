@@ -3,27 +3,39 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Web Design &amp; Custom Software — KILLSWITCH, Nationwide</title>
-<meta name="description" content="Custom websites, dashboards, CRMs, AI assistants, online booking, payments, client portals and automations — built for businesses nationwide by KILLSWITCH." />
+<title>Custom Websites and Business Software, Nationwide | KILLSWITCH</title>
+<meta name="description" content="Custom websites, dashboards, CRMs, AI assistants, online booking, payments and automations, built for businesses nationwide by KILLSWITCH." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230a0b0e'/%3E%3Cg fill='none' stroke='%23cf1322' stroke-width='9' stroke-linecap='round'%3E%3Cpath d='M62.5 30.4 A25 25 0 1 1 37.5 30.4'/%3E%3Cpath d='M50 22 V52'/%3E%3C/g%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230a0b0e'/%3E%3Cg fill='none' stroke='%23FF3826' stroke-width='9' stroke-linecap='round'%3E%3Cpath d='M62.5 30.4 A25 25 0 1 1 37.5 30.4'/%3E%3Cpath d='M50 22 V52'/%3E%3C/g%3E%3C/svg%3E" />
+<link rel="stylesheet" href="/ks.css" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="KILLSWITCH" />
+<meta property="og:title" content="Custom Websites and Business Software, Nationwide | KILLSWITCH" />
+<meta property="og:description" content="Custom websites, dashboards, CRMs, AI assistants, online booking, payments and automations, built for businesses nationwide by KILLSWITCH." />
+<meta property="og:url" content="https://killswitch.domains/services" />
+<meta property="og:image" content="https://killswitch.domains/og-image.svg" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Custom Websites and Business Software, Nationwide | KILLSWITCH" />
+<meta name="twitter:description" content="Custom websites, dashboards, CRMs, AI assistants, online booking, payments and automations, built for businesses nationwide by KILLSWITCH." />
+<meta name="twitter:image" content="https://killswitch.domains/og-image.svg" />
+<link rel="canonical" href="https://killswitch.domains/services" />
 </head>
 <body>
+<div id="pglow" aria-hidden="true"></div>
+<div class="hazard" aria-hidden="true"></div>
 
 <header class="nav" id="top">
-  <div class="container nav__inner">
+  <div class="wrap nav-in">
     <a href="/" class="brand"><svg class="brand-ic" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>KILLSWITCH</a>
-    <nav class="nav__links" id="navLinks">
+    <nav class="nav-links" id="navLinks">
       <a href="/services">Services</a>
       <a href="/work">Work</a>
       <a href="/pricing">Pricing</a>
-      <a href="/switch">AI Sales Rep</a>
-      <a href="/contact" class="btn btn--sm nav__cta">Start a plan</a>
+      <a href="/switch">Ask the AI</a>
+      <a href="/start" class="nav-cta">Get my free site</a>
     </nav>
-    <button class="nav__toggle" id="navToggle" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="23" height="23"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></button>
   </div>
 </header>
 
@@ -66,21 +78,98 @@
 <section class="section">
   <div class="container">
     <h2 class="section__title">Live systems, not static pages</h2>
-    <p class="section__sub">Your site can pull real data, run logic, and update itself — like a product, not a
-      pamphlet. Below is a live dashboard pulling <em>real Kansas City weather right now</em>, next to the kind of
-      metrics we wire into client back-offices.</p>
+    <p class="section__sub">Every number on this dashboard is a real API call, made the moment your browser loaded
+      this page. Not a screenshot, not a mockup. Reload it and watch it move. This is the same live data we wire
+      into client sites.</p>
     <div class="dash">
-      <div class="dash__bar"><i></i><i></i><i></i><span>● LIVE · your-business.com/dashboard</span></div>
+      <div class="dash__bar"><i></i><i></i><i></i><span id="lvClock">● LIVE · pulled just now</span></div>
       <div class="dash__grid">
-        <div class="metric metric--wx"><span class="metric__label">Right now in KC</span><strong id="wxTemp">—°</strong><em id="wxDesc">fetching live data…</em></div>
-        <div class="metric"><span class="metric__label">New leads</span><strong data-count="37">0</strong><em class="up">▲ 12% this week</em></div>
-        <div class="metric"><span class="metric__label">Revenue (MTD)</span><strong>$<span data-count="42">0</span>k</strong><em class="up">▲ on pace</em></div>
-        <div class="metric metric--chart"><span class="metric__label">Bookings · last 7 days</span><div class="bars" id="bars"></div></div>
+        <div class="metric metric--wx"><span class="metric__label">Weather right now · Kansas City</span><strong id="lvTemp">—°</strong><em id="lvTempD">fetching live…</em></div>
+        <div class="metric"><span class="metric__label">Air quality · KC (US AQI)</span><strong id="lvAqi">—</strong><em id="lvAqiD">fetching live…</em></div>
+        <div class="metric metric--news"><span class="metric__label">Headlines · Kansas City</span><a id="lvNews" class="metric__news" href="#" target="_blank" rel="noopener">loading live headlines…</a><em id="lvNewsD">fetching live…</em></div>
+        <div class="metric metric--chart"><span class="metric__label">KC highs · next 7 days (°F)</span><div class="bars" id="lvBars"></div></div>
       </div>
     </div>
-    <p class="caps__foot">That temperature is a live API call. Swap it for your prices, inventory, schedule, or KPIs — same plumbing.</p>
+    <p class="caps__foot">Weather, air quality, a live market price, and a 7-day forecast, all pulled the instant
+      you arrived. Swap them for your prices, inventory, schedule, or bookings. Same plumbing.</p>
   </div>
 </section>
+
+<script>
+/* Live data wall: every tile is a real, live feed (Open-Meteo weather + air quality,
+   plus Kansas City headlines via /api/kcnews), with graceful fallbacks. */
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var KC = 'latitude=39.10&longitude=-94.58';
+
+  // 1) Current weather
+  (function () {
+    var t = $('lvTemp'), d = $('lvTempD'); if (!t) return;
+    var codes = { 0:'Clear sky',1:'Mostly clear',2:'Partly cloudy',3:'Overcast',45:'Foggy',48:'Foggy',51:'Light drizzle',53:'Drizzle',55:'Drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',80:'Rain showers',81:'Showers',82:'Heavy showers',95:'Thunderstorm',96:'Thunderstorm' };
+    fetch('https://api.open-meteo.com/v1/forecast?' + KC + '&current=temperature_2m,weather_code&temperature_unit=fahrenheit')
+      .then(function (r) { return r.json(); })
+      .then(function (j) { t.textContent = Math.round(j.current.temperature_2m) + '°'; d.textContent = (codes[j.current.weather_code] || 'Live') + ' · updated just now'; })
+      .catch(function () { d.textContent = 'live feed'; });
+  })();
+
+  // 2) Air quality (US AQI)
+  (function () {
+    var v = $('lvAqi'), d = $('lvAqiD'); if (!v) return;
+    fetch('https://air-quality-api.open-meteo.com/v1/air-quality?' + KC + '&current=us_aqi')
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        var a = Math.round(j.current.us_aqi); v.textContent = a;
+        var lab = a <= 50 ? 'Good' : a <= 100 ? 'Moderate' : a <= 150 ? 'Unhealthy for sensitive' : a <= 200 ? 'Unhealthy' : 'Very unhealthy';
+        d.textContent = lab + ' · live'; if (a <= 50) d.className = 'up';
+      })
+      .catch(function () { d.textContent = 'live feed'; });
+  })();
+
+  // 3) Live Kansas City headlines (server-side /api/kcnews, cached, no CORS)
+  (function () {
+    var a = $('lvNews'), d = $('lvNewsD'); if (!a) return;
+    fetch('/api/kcnews')
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        var items = (j && j.items) ? j.items.slice(0, 6) : [];
+        if (!items.length) throw 0;
+        function render(it) {
+          var parts = it.title.split(' - ');
+          var src = parts.length > 1 ? parts.pop() : 'Kansas City';
+          a.textContent = parts.join(' - ') || it.title;
+          a.href = it.link || '#';
+          d.textContent = src + ' · live'; d.className = '';
+        }
+        render(items[0]); a.style.opacity = 1;
+        var i = 1;
+        setInterval(function () {
+          a.style.opacity = 0;
+          setTimeout(function () { render(items[i % items.length]); a.style.opacity = 1; i++; }, 350);
+        }, 4500);
+      })
+      .catch(function () { a.textContent = 'Kansas City headlines'; d.textContent = 'live feed'; });
+  })();
+
+  // 4) Real 7-day KC high-temp chart
+  (function () {
+    var box = $('lvBars'); if (!box) return;
+    fetch('https://api.open-meteo.com/v1/forecast?' + KC + '&daily=temperature_2m_max&temperature_unit=fahrenheit&forecast_days=7')
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        var arr = (j.daily && j.daily.temperature_2m_max) || []; if (!arr.length) return;
+        var mn = Math.min.apply(null, arr), mx = Math.max.apply(null, arr), rng = (mx - mn) || 1;
+        box.innerHTML = '';
+        arr.forEach(function (val) {
+          var b = document.createElement('i');
+          b.style.setProperty('--h', Math.round(30 + ((val - mn) / rng) * 70) + '%');
+          b.title = Math.round(val) + '°';
+          box.appendChild(b);
+        });
+      })
+      .catch(function () {});
+  })();
+})();
+</script>
 
 <!-- CONTACT -->
 <section class="section section--cta" id="contact">
@@ -97,24 +186,22 @@
   </div>
 </section>
 
-<footer class="footer">
-  <div class="container footer__grid">
-    <div class="footer__brand">
-      <span class="brand"><svg class="brand-ic" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>KILLSWITCH</span>
-      <p>Custom software, disguised as a website. Built for businesses nationwide.</p>
+<footer>
+  <div class="wrap foot-in">
+    <div>
+      <div class="foot-brand"><svg class="brand-ic" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>KILLSWITCH</div>
+      <div class="foot-tag">Custom software, disguised as a website. Built for businesses nationwide.
+        <a class="lh" href="https://www.limenhelix.com" target="_blank" rel="noopener">A LIMEN Helix company</a></div>
     </div>
-    <nav class="footer__links">
+    <div class="foot-links">
       <a href="/services">Services</a>
       <a href="/work">Work</a>
       <a href="/pricing">Pricing</a>
-      <a href="/switch">AI Sales Rep</a>
-      <a href="/contact">Start a project</a>
-    </nav>
+      <a href="/switch">Ask the AI</a>
+      <a href="/start">Get my free site</a>
+    </div>
   </div>
-  <div class="container footer__bar">
-    <span>© 2026 KILLSWITCH</span>
-    <a href="#top">Back to top ↑</a>
-  </div>
+  <div class="wrap copy">© 2026 KILLSWITCH · Serving all 50 states &middot; <a href="/terms">Terms</a> &middot; <a href="/privacy">Privacy</a></div>
 </footer>
 
 <button class="chat__launch" id="chatLaunch" aria-label="Open chat">
@@ -134,5 +221,6 @@
 </div>
 
 <script src="script.js"></script>
+<script src="/ks-fx.js"></script>
 </body>
 </html>

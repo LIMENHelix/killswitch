@@ -1,3 +1,9 @@
 .vercel/
 node_modules/
 *.log
+.env
+.env.*
+_outreach/CREDENTIALS.txt
+_outreach/leads.csv
+_outreach/call-sheet.csv
+_outreach/dashboard.html

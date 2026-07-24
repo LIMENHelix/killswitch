@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>KILLSWITCH · Free Websites, Built Nationwide</title>
-<meta name="description" content="KILLSWITCH builds local service businesses a real website, free. You own it. Add booking, payments, and a 24/7 AI assistant when you're ready. Serving businesses in all 50 states." />
+<title>Free Website for Your Business, Built for You | KILLSWITCH</title>
+<meta name="description" content="KILLSWITCH builds local service businesses a real website, free, and you own it. Add getting found on Google, booking, payments, and a 24/7 AI assistant when you are ready. Serving all 50 states." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230a0b0e'/%3E%3Cg fill='none' stroke='%23FF3826' stroke-width='9' stroke-linecap='round'%3E%3Cpath d='M62.5 30.4 A25 25 0 1 1 37.5 30.4'/%3E%3Cpath d='M50 22 V52'/%3E%3C/g%3E%3C/svg%3E" />
 <meta name="google-site-verification" content="y-rQyRpN8xyv4gVq61auWfMm8tfURu-bQkqDbiYz3Pg" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -99,6 +99,8 @@
 
   .hero-fine{margin-top:18px;font-size:.85rem;color:var(--mute-2);display:flex;align-items:center;gap:8px}
   .hero-fine .pip{width:6px;height:6px;border-radius:50%;background:var(--ok)}
+  .hero-own{margin-top:16px;font-family:"Archivo",sans-serif;font-weight:700;font-size:1.12rem;letter-spacing:-.01em;color:var(--ink)}
+  .hero-own .amp{color:var(--amber)}
 
   /* ---- THE SWITCH PANEL ---- */
   .panel-unit{
@@ -108,8 +110,8 @@
   }
   .panel-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line-soft)}
   .panel-head .lbl{font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.18em;color:var(--mute);text-transform:uppercase}
-  .status{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;display:flex;align-items:center;gap:8px;color:var(--amber);transition:color .3s}
-  .status .sdot{width:9px;height:9px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);transition:.3s}
+  .status{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;display:flex;align-items:center;gap:8px;color:var(--red);transition:color .3s}
+  .status .sdot{width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red);transition:.3s}
   .status.live{color:var(--go)}
   .status.live .sdot{background:var(--go);box-shadow:0 0 12px var(--go);animation:pulse 1.4s infinite}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
@@ -138,8 +140,38 @@
   .switch.on::after{color:#fff;text-shadow:0 0 12px rgba(255,255,255,.95), 0 0 26px rgba(37,199,102,.9)}
 
   .switch-caption{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.14em;font-size:.74rem;color:var(--mute);text-align:center}
-  .switch-caption b{color:var(--amber);font-weight:600}
+  .switch-caption b{color:var(--red);font-weight:600}
   .switch.on ~ .switch-caption b{color:var(--go)}
+
+  /* ---- big up/down KILL-SWITCH lever (hero master) ---- */
+  .klsw{background:linear-gradient(180deg,#2a2a31,#141418);border:1px solid #3a3a42;border-radius:14px;width:66px;height:134px;position:relative;cursor:pointer;padding:0;box-shadow:inset 0 2px 9px rgba(0,0,0,.8),0 0 20px -6px rgba(255,85,70,.5);transition:box-shadow .3s,border-color .3s}
+  .klsw .slot{position:absolute;left:50%;top:12px;bottom:12px;width:20px;transform:translateX(-50%);background:#0b0b0e;border-radius:10px;box-shadow:inset 0 2px 6px rgba(0,0,0,.95)}
+  .klsw .lever{position:absolute;left:50%;transform:translateX(-50%);width:16px;height:62px;border-radius:8px;top:36px;background:linear-gradient(180deg,#9a9ea8,#5e626c);border:1px solid #4a4e58;box-shadow:0 3px 7px rgba(0,0,0,.6);transition:background .25s,box-shadow .25s;z-index:2}
+  .klsw .lever::before{content:"";position:absolute;top:-13px;left:50%;transform:translateX(-50%);width:46px;height:20px;border-radius:9px;background:linear-gradient(180deg,#d2d6df,#868a94);border:1px solid #5a5e68;box-shadow:0 3px 7px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.4);transition:top .32s cubic-bezier(.2,1.7,.42,1),background .25s,box-shadow .25s}
+  .klsw .led{position:absolute;left:50%;top:-5px;transform:translateX(-50%);width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 8px rgba(255,85,70,.6);transition:.25s;z-index:4}
+  .klsw:hover{border-color:#565a64}
+  .klsw:focus-visible{outline:2px solid var(--go);outline-offset:5px}
+  .klsw.on{border-color:var(--go);box-shadow:inset 0 2px 9px rgba(0,0,0,.5),0 0 34px -2px rgba(27,164,90,.82)}
+  .klsw.on .lever{background:linear-gradient(180deg,#38c877,#158f4e);border-color:#0f7a40;box-shadow:0 0 16px rgba(27,164,90,.8)}
+  .klsw.on .lever::before{top:55px;background:linear-gradient(180deg,#8effb9,#1BA45A);border-color:#0f7a40;box-shadow:0 0 22px rgba(27,164,90,.95),inset 0 1px 0 rgba(255,255,255,.4)}
+  .klsw.on .led{background:var(--go);box-shadow:0 0 12px var(--go),0 0 24px var(--go)}
+  .klsw.flash::before{content:"";position:absolute;inset:-10px;border-radius:20px;pointer-events:none;box-shadow:0 0 44px 11px rgba(140,255,190,.95);animation:sparkflash .5s ease-out forwards}
+  @keyframes sparkflash{0%{opacity:1}100%{opacity:0}}
+
+  /* cumulative power glow + zap flick */
+  #pglow{position:fixed;inset:0;z-index:-1;pointer-events:none;transition:background .55s ease;
+    background:
+      radial-gradient(145% 110% at 50% 0%, rgba(40,220,135,calc(var(--power,0)*.12)), transparent 62%),
+      radial-gradient(115% 90% at 50% 100%, rgba(27,164,90,calc(var(--power,0)*.08)), transparent 70%)}
+  body.zap{animation:zapflick .18s}
+  @keyframes zapflick{0%,100%{filter:none}45%{filter:brightness(1.16)}}
+
+  /* growth-path power gate */
+  .growth-hidden{display:none}
+  .gate{margin-top:34px;border:1px dashed var(--line);border-radius:16px;padding:44px 26px;text-align:center;background:var(--panel)}
+  .gate .zi{font-size:2rem;filter:grayscale(.2)}
+  .gate h3{font-family:"Archivo",sans-serif;font-weight:900;font-size:1.35rem;margin-top:8px;letter-spacing:-.01em}
+  .gate p{color:var(--mute);margin:8px auto 0;max-width:30em}
 
   /* ---- SECTION SCAFFOLD ---- */
   section.s{padding:88px 0;border-top:1px solid var(--line-soft)}
@@ -199,6 +231,8 @@
   .rung .v{color:var(--mute);font-size:.93rem}
   .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
   .chips span{font-size:.72rem;color:var(--mute);background:var(--metal);border:1px solid var(--line-soft);border-radius:6px;padding:3px 9px;line-height:1.4}
+  .mtrade{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:.82rem;letter-spacing:.02em;color:var(--mute);background:var(--metal);border:1px solid var(--line);border-radius:8px;padding:9px 15px;transition:.2s}
+  .mtrade:hover{border-color:var(--amber);color:var(--ink);background:var(--panel);transform:translateY(-1px)}
   .rung .amt{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:.96rem;color:var(--amber);text-align:right;white-space:nowrap}
   .rung .amt small{display:block;color:var(--mute-2);font-size:.66rem;font-weight:400;margin-top:2px;letter-spacing:.03em}
   .rung.free{background:linear-gradient(180deg,rgba(255,196,46,.06),transparent)}
@@ -210,16 +244,42 @@
   .rung .buy-alt{display:block;margin-top:7px;font-size:.68rem;color:var(--mute-2);text-decoration:underline;text-underline-offset:2px}
   .rung .buy-alt:hover{color:var(--amber)}
   .rung.flag .buy{background:var(--go);color:var(--go-ink);border-color:var(--go)}
-  .rung{grid-template-columns:30px 1fr auto}
+  .rung{grid-template-columns:54px 1fr auto}
   .pick{display:flex;align-items:center;justify-content:center}
-  .pick input{width:19px;height:19px;accent-color:var(--go);cursor:pointer}
+  /* pricing picks = mini kill-switch handle levers (housing + slot + handle) */
+  .pick input{appearance:none;-webkit-appearance:none;width:38px;height:56px;border-radius:9px;background:linear-gradient(180deg,#2a2a31,#141418);border:1px solid #3a3a42;position:relative;cursor:pointer;margin:0;flex:0 0 auto;box-shadow:inset 0 2px 6px rgba(0,0,0,.75),0 0 14px -5px rgba(255,85,70,.42);transition:box-shadow .25s,border-color .25s}
+  .pick input::after{content:"";position:absolute;left:50%;top:5px;transform:translateX(-50%);width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 6px rgba(255,85,70,.75);transition:background .25s,box-shadow .25s}
+  .pick input::before{content:"";position:absolute;left:50%;transform:translateX(-50%);width:26px;height:15px;border-radius:6px;top:17px;background:linear-gradient(180deg,#d2d6df,#868a94);border:1px solid #5a5e68;box-shadow:0 2px 5px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.4);transition:top .22s cubic-bezier(.18,2.4,.42,1),background .25s,box-shadow .25s,border-color .25s;z-index:2}
+  .pick input:checked{border-color:var(--go);box-shadow:inset 0 2px 6px rgba(0,0,0,.5),0 0 18px -3px rgba(27,164,90,.72)}
+  .pick input:checked::before{top:34px;background:linear-gradient(180deg,#8effb9,#1BA45A);border-color:#0f7a40;box-shadow:0 0 14px rgba(27,164,90,.9),inset 0 1px 0 rgba(255,255,255,.4)}
+  .pick input:checked::after{background:var(--go);box-shadow:0 0 8px var(--go),0 0 14px var(--go)}
+  .pick input:focus-visible{outline:2px solid var(--go);outline-offset:3px}
   .rung.sel{background:rgba(255,196,46,.08)}
   .pcart{max-width:560px;margin:26px auto 0;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px}
   .pcart-row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;margin-bottom:14px;font-size:.9rem;color:var(--mute)}
   .pcart-row strong{font-family:"IBM Plex Mono",monospace;color:var(--amber);font-size:1.3rem;white-space:nowrap}
   .pcart .btn{width:100%;justify-content:center}
   .pcart-note{margin-top:10px;font-size:.8rem;min-height:16px;color:var(--mute-2)}
-  @media(max-width:880px){.rung{grid-template-columns:24px 1fr;gap:12px;padding:17px 15px}.rung .amt{grid-column:2 / -1;text-align:left;margin-top:8px}}
+  @media(max-width:880px){.rung{grid-template-columns:52px 1fr;gap:12px;padding:17px 15px}.rung .amt{grid-column:2 / -1;text-align:left;margin-top:8px}}
+
+  /* essentials ⇄ everything reveal switch */
+  .mtoggle{display:flex;align-items:center;justify-content:center;gap:16px;margin:40px auto 6px;padding:14px 22px;max-width:max-content;border:1px solid var(--line);border-radius:999px;background:var(--panel);box-shadow:0 0 0 4px rgba(255,196,46,.05);font-family:"IBM Plex Mono",monospace;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase}
+  .mtoggle .off-lbl{color:var(--amber);transition:color .25s;font-weight:600}
+  .mtoggle .on-lbl{color:var(--mute-2);transition:color .25s;font-weight:600}
+  .mtoggle-hint{text-align:center;font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mute-2);margin-top:10px}
+  .rung-p{font-family:"IBM Plex Mono",monospace;font-size:.72rem;color:var(--amber);letter-spacing:.06em;font-weight:600;margin-right:6px}
+  .rung.flag .rung-p{color:var(--go)}
+  .mtoggle.allon .off-lbl{color:var(--mute-2)}
+  .mtoggle.allon .on-lbl{color:var(--go)}
+  .mswitch{background:none;border:none;padding:5px;cursor:pointer;line-height:0}
+  .mswitch .track{display:block;width:58px;height:30px;border-radius:999px;background:var(--metal);border:1px solid var(--line);position:relative;transition:.25s}
+  .mswitch .thumb{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);transition:.25s}
+  .mswitch:focus-visible{outline:2px solid var(--go);outline-offset:3px;border-radius:999px}
+  .mswitch[aria-checked="true"] .track{background:color-mix(in srgb,var(--go) 24%,var(--metal));border-color:var(--go)}
+  .mswitch[aria-checked="true"] .thumb{left:33px;background:var(--go);box-shadow:0 0 10px var(--go)}
+  .rung.more{display:none}
+  .ladder.showall .rung.more{display:grid}
+  @media(max-width:880px){.ladder.showall .rung.more{display:grid}}
 
   /* proof */
   .proof-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:42px}
@@ -275,19 +335,81 @@
     background-size:46px 46px;
     -webkit-mask-image:radial-gradient(120% 78% at 50% 0%,#000 42%,transparent 82%);
     mask-image:radial-gradient(120% 78% at 50% 0%,#000 42%,transparent 82%)}
+
+  /* ---- SELF-SERVE CHAT (start your free site online, no call) ---- */
+  .ksbot-launch{position:fixed;right:20px;bottom:20px;z-index:80;display:inline-flex;align-items:center;gap:10px;
+    font-family:"Archivo",sans-serif;font-weight:700;font-size:.95rem;color:var(--go-ink);background:var(--go);
+    border:1px solid var(--go);border-radius:999px;padding:13px 20px 13px 16px;cursor:pointer;
+    box-shadow:0 14px 32px -12px rgba(27,164,90,.7);transition:transform .15s,filter .2s}
+  .ksbot-launch:hover{transform:translateY(-2px);filter:brightness(1.08)}
+  .ksbot-launch svg{width:20px;height:20px;flex:0 0 auto}
+  .ksbot-launch .pulse{width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 8px #fff;animation:pulse 1.4s infinite}
+  @media(max-width:520px){.ksbot-launch .lbl{display:none}.ksbot-launch{padding:15px;border-radius:50%}.ksbot-launch .pulse{display:none}}
+
+  .ksbot{position:fixed;right:20px;bottom:20px;z-index:81;width:min(384px,calc(100vw - 32px));
+    height:min(608px,calc(100vh - 40px));display:none;flex-direction:column;
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;
+    box-shadow:0 44px 90px -34px rgba(0,0,0,.88)}
+  .ksbot.open{display:flex}
+  .ksbot-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 16px;
+    border-bottom:1px solid var(--line-soft);background:linear-gradient(180deg,var(--metal-hi),var(--metal))}
+  .ksbot-head .t{font-family:"Archivo",sans-serif;font-weight:700;font-size:.98rem;display:flex;align-items:center;gap:9px}
+  .ksbot-head .t svg{width:18px;height:18px;color:var(--go);flex:0 0 auto}
+  .ksbot-head .r{display:flex;align-items:center;gap:12px}
+  .ksbot-head .sub{font-family:"IBM Plex Mono",monospace;font-size:.56rem;letter-spacing:.13em;text-transform:uppercase;color:var(--go);display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .ksbot-head .sub .d{width:7px;height:7px;border-radius:50%;background:var(--go);box-shadow:0 0 8px var(--go);animation:pulse 1.4s infinite}
+  .ksbot-x{background:none;border:none;color:var(--mute);font-size:1.5rem;line-height:1;cursor:pointer;padding:0 4px}
+  .ksbot-x:hover{color:var(--ink)}
+  .ksbot-progress{height:3px;background:var(--line-soft)}
+  .ksbot-progress i{display:block;height:100%;width:0;background:var(--go);transition:width .35s ease}
+  .ksbot-log{flex:1;overflow-y:auto;padding:18px 16px;display:flex;flex-direction:column;gap:11px}
+  .ksmsg{max-width:84%;padding:11px 14px;border-radius:14px;font-size:.92rem;line-height:1.5;word-wrap:break-word}
+  .ksmsg.bot{align-self:flex-start;background:var(--metal);border:1px solid var(--line-soft);border-bottom-left-radius:5px;color:var(--ink)}
+  .ksmsg.me{align-self:flex-end;background:var(--go);color:var(--go-ink);border-bottom-right-radius:5px}
+  .ksmsg.typing{color:var(--mute-2);font-style:italic}
+  .ksmsg a{color:var(--amber);text-decoration:underline}
+  .ksmsg.me a{color:#eafff2}
+  .kschips{display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 6px}
+  .kschip{font-family:"Inter",sans-serif;font-size:.85rem;color:var(--go);background:transparent;border:1px solid var(--go);
+    border-radius:999px;padding:8px 14px;cursor:pointer;transition:.15s;line-height:1.2}
+  .kschip:hover{background:var(--go);color:var(--go-ink)}
+  .ksbot-foot{border-top:1px solid var(--line-soft);padding:12px 14px;display:flex;gap:9px;align-items:center}
+  .ksbot-foot input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--ink);
+    font-family:inherit;font-size:.92rem;padding:11px 13px;outline:none}
+  .ksbot-foot input:focus{border-color:var(--go)}
+  .ksbot-foot button{background:var(--go);color:var(--go-ink);border:none;border-radius:10px;width:42px;height:42px;
+    font-size:1.15rem;cursor:pointer;flex:0 0 auto;display:flex;align-items:center;justify-content:center;transition:filter .2s}
+  .ksbot-foot button:hover{filter:brightness(1.09)}
+  @media(prefers-reduced-motion:reduce){.ksbot-launch .pulse,.ksbot-head .sub .d{animation:none}}
 </style>
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="KILLSWITCH" />
+<meta property="og:title" content="Free Website for Your Business, Built for You | KILLSWITCH" />
+<meta property="og:description" content="KILLSWITCH builds local service businesses a real website, free, and you own it. Add getting found on Google, booking, payments, and a 24/7 AI assistant when you are ready. Serving all 50 states." />
+<meta property="og:url" content="https://killswitch.domains/" />
+<meta property="og:image" content="https://killswitch.domains/og-image.svg" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Free Website for Your Business, Built for You | KILLSWITCH" />
+<meta name="twitter:description" content="KILLSWITCH builds local service businesses a real website, free, and you own it. Add getting found on Google, booking, payments, and a 24/7 AI assistant when you are ready. Serving all 50 states." />
+<meta name="twitter:image" content="https://killswitch.domains/og-image.svg" />
+<link rel="canonical" href="https://killswitch.domains/" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"ProfessionalService","name":"KILLSWITCH","description":"KILLSWITCH builds local service businesses a real website, free, and you own it. Add booking, payments, and a 24/7 AI assistant when you are ready.","url":"https://killswitch.domains/","areaServed":"US","priceRange":"Free to low monthly","parentOrganization":{"@type":"Organization","name":"LIMEN Helix LLC","url":"https://www.limenhelix.com"},"makesOffer":{"@type":"Offer","price":"0","priceCurrency":"USD","itemOffered":{"@type":"Service","name":"Free business website","description":"A free, custom, mobile-ready website on your own domain that you own outright."}},"sameAs":["https://www.limenhelix.com"]}
+</script>
 </head>
 <body>
+<div id="pglow" aria-hidden="true"></div>
 <div class="hazard" aria-hidden="true"></div>
 
 <header class="nav">
   <div class="wrap nav-in">
     <a href="https://killswitch.domains/" class="brand"><svg class="brand-ic" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>KILLSWITCH</a>
     <nav class="nav-links">
-      <a href="https://killswitch.domains/work">Work</a>
-      <a href="#modules">Pricing</a>
-      <a href="https://killswitch.domains/switch">Ask the AI</a>
-      <a href="https://calendly.com/chrishubbel72/30min" class="nav-cta">Get my free site</a>
+      <a href="/services">Services</a>
+      <a href="/work">Work</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/switch" id="navAskAi">Ask the AI</a>
+      <a href="/start" id="navGetSite" class="nav-cta">Get my free site</a>
     </nav>
   </div>
 </header>
@@ -298,14 +420,15 @@
     <div>
       <div class="eyebrow"><span class="mono">For local service businesses · trades, salons, clinics, shops · Nationwide</span></div>
       <h1 class="display hero-h">We'll build your<br>website. <span class="free">Free.</span></h1>
-      <p class="hero-sub">A real, modern site on <strong>your</strong> domain, built by a real, live human, live in minutes by end of call. You own every bit of it. No contract, no catch. <strong>Flip the switch and we'll get started.</strong></p>
+      <p class="hero-own">You own it. No contract. <span class="amp">Turn on only what you need.</span></p>
+      <p class="hero-sub">A real, modern site on <strong>your</strong> domain, built by a real, live human. We hand you the keys on day one, no contract, no catch. <strong>Flip the switch and your free site goes live in minutes, no call needed.</strong></p>
       <div class="hero-actions">
         <a href="https://calendly.com/chrishubbel72/30min" id="primaryCta" class="btn btn-primary standby">
           <span class="label">Flip the switch to start</span><span class="arrow">→</span>
         </a>
-        <a href="https://killswitch.domains/switch" class="btn btn-ghost">Ask the AI first</a>
+        <a href="https://killswitch.domains/switch" id="askAiHero" class="btn btn-ghost">Ask the AI first</a>
       </div>
-      <div class="hero-fine"><span class="pip"></span> Now booking new builds · usually replies same day</div>
+      <div class="hero-fine"><span class="pip"></span> Free site in minutes · no call required · you own it</div>
     </div>
 
     <div>
@@ -316,8 +439,8 @@
         </div>
         <div class="panel-body">
           <span class="top-haz" aria-hidden="true"></span>
-          <button class="switch" id="killSwitch" role="switch" aria-checked="false" aria-label="Power on your free website"></button>
-          <p class="switch-caption">Status: <b id="capState">Standby</b><br><span style="color:var(--mute-2);font-size:.68rem">tap to power on</span></p>
+          <button class="klsw" id="killSwitch" role="switch" aria-checked="false" aria-label="Power on your free website"><span class="led"></span><span class="slot"></span><span class="lever"></span></button>
+          <p class="switch-caption">Status: <b id="capState">Standby</b><br><span style="color:var(--mute-2);font-size:.68rem">throw the switch to power on</span></p>
           <span class="bot-haz" aria-hidden="true"></span>
         </div>
       </div>
@@ -330,7 +453,8 @@
   <div class="wrap">
     <div class="s-head reveal">
       <span class="mono">The catch</span>
-      <h2>There isn't one.<br>Here's how we actually make money.</h2>
+      <h2>There isn't one.<br>We give first. We earn the rest.</h2>
+      <p class="lead"><strong>You get a real website, free and yours, no contract, before you pay a cent.</strong> Then we do our best to earn your paid business by being good enough that you choose the add-ons. That order never changes: we give first, always.</p>
     </div>
     <div class="catch-card reveal">
       <p>The website is <strong>genuinely free and yours</strong>: your domain, your content, your code. We hand you the keys and walk away if that's all you want.</p>
@@ -346,9 +470,10 @@
     <div class="s-head reveal">
       <span class="mono">The growth path</span>
       <h2>Start free. Add power as you grow.</h2>
-      <p class="lead">Every business grows the same way. Each add-on does one job, switch it on when you need it. Own it outright or run it monthly.</p>
+      <p class="lead">The website is free and yours. Everything else is a switch: each module does one job, turn on only what you need. Most run for a low monthly, and several you can own outright for a one-time price. Nothing turns on unless you flip it.</p>
     </div>
 
+    <div id="growth">
     <div class="starter reveal">
       <span class="badge">Most popular</span>
       <div class="starter-main">
@@ -362,7 +487,7 @@
       </div>
     </div>
 
-    <div class="ladder reveal">
+    <div class="ladder showall reveal">
       <div class="rung free">
         <div class="pick"></div>
         <div>
@@ -378,15 +503,14 @@
         <label class="pick"><input type="checkbox" class="mcb" data-phase="P1" data-name="Get Found on Google" data-monthly="19" data-once="149" aria-label="Add Get Found on Google"></label>
         <div>
           <h3>Get Found on Google</h3>
-          <span class="k">What it does</span><div class="v">Show up on Google when nearby customers search for what you sell.</div>
+          <span class="k">What it does</span><div class="v">Show up on Google when nearby customers search for what you sell. This is your SEO and local listings, handled for you.</div>
           <span class="k">Sold under it</span><div class="chips"><span>Your Google business listing</span><span>Higher in search results</span><span>On the local map</span><span>Found for the right searches</span><span>Every page findable</span></div>
         </div>
         <div class="amt">$19<small>/mo</small>
-          <a class="buy" href="https://buy.stripe.com/4gM8wR7M4gBr4XJcIR1ck05" target="_blank" rel="noopener">Start</a>
-          <a class="buy-alt" href="https://buy.stripe.com/bJe5kF8Q81Gx3TF8sB1ck0e" target="_blank" rel="noopener">or $149 once</a></div>
+          <a class="buy" href="https://buy.stripe.com/4gM8wR7M4gBr4XJcIR1ck05" target="_blank" rel="noopener">Start</a></div>
       </div>
 
-      <div class="rung">
+      <div class="rung more">
         <label class="pick"><input type="checkbox" class="mcb" data-phase="P2" data-name="Content & Email Marketing" data-monthly="29" data-once="149" aria-label="Add P2 Content and Email Marketing"></label>
         <div>
           <h3>Content &amp; Email Marketing</h3>
@@ -394,8 +518,7 @@
           <span class="k">Sold under it</span><div class="chips"><span>A news / updates page</span><span>Posts written for you</span><span>Email newsletter</span><span>Social posts scheduled</span><span>A simple plan of what goes out</span></div>
         </div>
         <div class="amt">$29<small>/mo</small>
-          <a class="buy" href="https://buy.stripe.com/7sY3cxc2k0CtfCn24d1ck06" target="_blank" rel="noopener">Start</a>
-          <a class="buy-alt" href="https://buy.stripe.com/cNi28t1nG1Gx4XJfV31ck0f" target="_blank" rel="noopener">or $149 once</a></div>
+          <a class="buy" href="https://buy.stripe.com/7sY3cxc2k0CtfCn24d1ck06" target="_blank" rel="noopener">Start</a></div>
       </div>
 
       <div class="rung">
@@ -410,7 +533,7 @@
           <a class="buy-alt" href="https://buy.stripe.com/9B68wRc2k4SJ89V8sB1ck0g" target="_blank" rel="noopener">or $149 once</a></div>
       </div>
 
-      <div class="rung">
+      <div class="rung more">
         <label class="pick"><input type="checkbox" class="mcb" data-phase="P4" data-name="Hosting & Maintenance" data-monthly="29" aria-label="Add P4 Hosting and Maintenance"></label>
         <div>
           <h3>Hosting &amp; Maintenance</h3>
@@ -421,7 +544,7 @@
           <a class="buy" href="https://buy.stripe.com/7sY00l8Q870Rduf8sB1ck08" target="_blank" rel="noopener">Start</a></div>
       </div>
 
-      <div class="rung">
+      <div class="rung more">
         <label class="pick"><input type="checkbox" class="mcb" data-phase="P5" data-name="CRM & Customer Database" data-monthly="29" data-once="499" aria-label="Add P5 CRM and Customer Database"></label>
         <div>
           <h3>CRM &amp; Customer Database</h3>
@@ -433,7 +556,7 @@
           <a class="buy-alt" href="https://buy.stripe.com/14A9AVeas1Gxeyj8sB1ck0h" target="_blank" rel="noopener">or $499 once</a></div>
       </div>
 
-      <div class="rung">
+      <div class="rung more">
         <label class="pick"><input type="checkbox" class="mcb" data-phase="P6" data-name="Marketing Automation" data-monthly="29" data-once="199" aria-label="Add P6 Marketing Automation"></label>
         <div>
           <h3>Marketing Automation</h3>
@@ -441,11 +564,10 @@
           <span class="k">Sold under it</span><div class="chips"><span>Automatic follow-ups</span><span>Sends leads to the right person</span><span>Asks happy customers for reviews</span><span>Connects your other apps</span><span>Alerts you and your team</span></div>
         </div>
         <div class="amt">$29<small>/mo</small>
-          <a class="buy" href="https://buy.stripe.com/cNi7sN7M4fxn4XJ6kt1ck0a" target="_blank" rel="noopener">Start</a>
-          <a class="buy-alt" href="https://buy.stripe.com/aFaaEZ5DW5WNbm75gp1ck0i" target="_blank" rel="noopener">or $199 once</a></div>
+          <a class="buy" href="https://buy.stripe.com/cNi7sN7M4fxn4XJ6kt1ck0a" target="_blank" rel="noopener">Start</a></div>
       </div>
 
-      <div class="rung">
+      <div class="rung more">
         <label class="pick"><input type="checkbox" class="mcb" data-phase="P7" data-name="Payments & Checkout" data-monthly="19" data-once="149" aria-label="Add P7 Payments and Checkout"></label>
         <div>
           <h3>Payments &amp; Checkout</h3>
@@ -457,7 +579,7 @@
           <a class="buy-alt" href="https://buy.stripe.com/5kQbJ37M41Gx75R6kt1ck0j" target="_blank" rel="noopener">or $149 once</a></div>
       </div>
 
-      <div class="rung">
+      <div class="rung more">
         <label class="pick"><input type="checkbox" class="mcb" data-phase="P8" data-name="Analytics & Reporting" data-monthly="19" aria-label="Add P8 Analytics and Reporting"></label>
         <div>
           <h3>Analytics &amp; Reporting</h3>
@@ -476,11 +598,10 @@
           <span class="k">Sold under it</span><div class="chips"><span>Answers 24/7</span><span>Answers & screens questions</span><span>Books appointments</span><span>Knows your business</span><span>Passes leads to you</span></div>
         </div>
         <div class="amt">$29<small>/mo</small>
-          <a class="buy" href="https://buy.stripe.com/8x29AVeas3OF9dZ6kt1ck0d" target="_blank" rel="noopener">Start</a>
-          <a class="buy-alt" href="https://buy.stripe.com/5kQaEZ8Q8fxneyj38h1ck0k" target="_blank" rel="noopener">or $99 once</a></div>
+          <a class="buy" href="https://buy.stripe.com/8x29AVeas3OF9dZ6kt1ck0d" target="_blank" rel="noopener">Start</a></div>
       </div>
 
-      <div class="rung flag">
+      <div class="rung flag more">
         <label class="pick"><input type="checkbox" class="mcb" data-phase="P10" data-name="AI Sales Agent & Custom Software" data-custom="1" aria-label="Add P10 AI Sales Agent"></label>
         <div>
           <h3>AI Sales Agent &amp; Custom Software <span class="tag" style="background:var(--go);color:var(--go-ink)">The Switch</span></h3>
@@ -500,6 +621,7 @@
     <div class="hero-actions reveal" style="margin-top:30px">
       <a href="https://calendly.com/chrishubbel72/30min" class="btn btn-primary armed">Book a call to map your path <span class="arrow">→</span></a>
     </div>
+    </div><!-- /#growth -->
   </div>
 </section>
 
@@ -524,11 +646,11 @@
         <p>A resource hub for families, guides, a forum, and a 24/7 AI helper, the kind of site that keeps people coming back.</p>
         <span class="go">Visit the site <span class="arrow">→</span></span>
       </a>
-      <a class="pcard reveal" href="https://killswitch.domains/work">
-        <span class="tag">Our own build</span>
+      <a class="pcard reveal" href="https://www.limenhelix.com" target="_blank" rel="noopener">
+        <span class="tag">Our flagship · live</span>
         <h3>LIMEN Helix</h3>
-        <p>The bigger custom software we build in-house. Proof we can go well past a website when a business needs it.</p>
-        <span class="go">See the case <span class="arrow">→</span></span>
+        <p>Our own intelligence platform. It reads the economic health of 20 industries through one brain-inspired pattern and surfaces distress the moment it appears. Proof we build far past a website.</p>
+        <span class="go">Visit limenhelix.com <span class="arrow">→</span></span>
       </a>
     </div>
 
@@ -540,15 +662,58 @@
   </div>
 </section>
 
+<!-- WE GREW KILLSWITCH USING KILLSWITCH -->
+<section class="s catch" id="dogfood">
+  <div class="wrap">
+    <div class="s-head reveal">
+      <span class="mono">We eat our own cooking</span>
+      <h2>We grew Killswitch<br>using Killswitch.</h2>
+      <p class="lead">The machine we want to hand you is the same one we used to reach you. If it could not grow our own business, we would not put our name on it.</p>
+    </div>
+    <div class="mods">
+      <div class="mod"><div class="ix">Get found on Google</div><h3>This page found you.</h3><p>The site you landed on is running our own "get found on Google" module, pointed at ourselves. It is the exact same local SEO we build for you.</p></div>
+      <div class="mod"><div class="ix">24/7 AI assistant</div><h3>That chat is the product.</h3><p>The assistant in the corner is the same 24/7 AI we put on client sites. It answers questions, qualifies, and books, day or night.</p></div>
+      <div class="mod"><div class="ix">AI sales agent</div><h3>Switch reaches out first.</h3><p>Switch, our AI sales agent, finds businesses and starts the conversation for us. That is the top-tier module, working on our own behalf right now.</p></div>
+    </div>
+    <p class="mods-note reveal">// Free site, found on Google, answered by AI, booked automatically. We run the whole machine on ourselves before we ever sell it to you.</p>
+  </div>
+</section>
+
+<!-- BUILT FOR YOUR TRADE -->
+<section class="s" id="trades">
+  <div class="wrap">
+    <div class="s-head reveal">
+      <span class="mono">Built for your trade</span>
+      <h2>Your business is not generic. Neither is your site.</h2>
+      <p class="lead">Every trade loses work online in its own way. We build a free site tuned to yours, with the add-ons that actually win jobs for your kind of business.</p>
+    </div>
+    <div class="chips" style="margin-top:26px;gap:10px">
+      <a class="mtrade" href="/free-website-for-plumbers">Plumbers</a>
+      <a class="mtrade" href="/free-website-for-electricians">Electricians</a>
+      <a class="mtrade" href="/free-website-for-hvac">HVAC</a>
+      <a class="mtrade" href="/free-website-for-roofers">Roofers</a>
+      <a class="mtrade" href="/free-website-for-landscapers">Landscapers</a>
+      <a class="mtrade" href="/free-website-for-painters">Painters</a>
+      <a class="mtrade" href="/free-website-for-hair-salons">Hair salons</a>
+      <a class="mtrade" href="/free-website-for-barbershops">Barbershops</a>
+      <a class="mtrade" href="/free-website-for-cleaning-services">Cleaning services</a>
+      <a class="mtrade" href="/free-website-for-auto-repair">Auto repair</a>
+    </div>
+    <div class="hero-actions reveal" style="margin-top:26px">
+      <a href="/trades" class="btn btn-primary armed">See all trades <span class="arrow">→</span></a>
+    </div>
+  </div>
+</section>
+
 <!-- FINAL CTA -->
 <section class="final" id="start">
   <div class="hazard" aria-hidden="true" style="opacity:.5;margin-bottom:60px"></div>
   <div class="wrap">
     <h2 class="reveal">Your free site is one<br>switch away.</h2>
-    <p class="reveal">Hop on a 30-minute call with a real, live human. We'll figure out what you need, what's free, and what's worth adding, no script, no pressure.</p>
+    <p class="reveal">Answer a few quick questions and we build your free site in minutes, then email you the link, no call required. Prefer a real, live human? A quick call works too.</p>
     <div class="hero-actions reveal">
-      <a href="https://calendly.com/chrishubbel72/30min" class="btn btn-primary armed">Book my free build <span class="arrow">→</span></a>
-      <a href="https://killswitch.domains/switch" class="btn btn-ghost">Or ask the AI anything</a>
+      <a href="https://calendly.com/chrishubbel72/30min" id="finalStart" class="btn btn-primary armed">Start my free site online <span class="arrow">→</span></a>
+      <a href="https://calendly.com/chrishubbel72/30min" class="btn btn-ghost">Prefer to talk? Book a call</a>
     </div>
   </div>
 </section>
@@ -558,19 +723,99 @@
     <div>
       <div class="foot-brand"><svg class="brand-ic" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>KILLSWITCH</div>
       <div class="foot-tag">Custom software, disguised as a website. Built for businesses nationwide.
-        <span class="lh">A Limen Helix company</span></div>
+        <a class="lh" href="https://www.limenhelix.com" target="_blank" rel="noopener">A LIMEN Helix company</a></div>
     </div>
     <div class="foot-links">
-      <a href="https://killswitch.domains/work">Work</a>
-      <a href="#modules">Pricing</a>
-      <a href="https://killswitch.domains/switch">Ask the AI</a>
-      <a href="https://calendly.com/chrishubbel72/30min">Book a call</a>
+      <a href="/services">Services</a>
+      <a href="/work">Work</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/switch">Ask the AI</a>
+      <a href="/start">Get my free site</a>
     </div>
   </div>
-  <div class="wrap copy">© 2026 KILLSWITCH · Serving all 50 states</div>
+  <div class="wrap copy">© 2026 KILLSWITCH · Serving all 50 states &middot; <a href="/terms">Terms</a> &middot; <a href="/privacy">Privacy</a></div>
 </footer>
 
+<!-- SELF-SERVE CHAT: start your free site online, no call required -->
+<button class="ksbot-launch" id="ksbotLaunch" type="button" aria-label="Start your free site online">
+  <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>
+  <span class="lbl">Start online</span><span class="pulse" aria-hidden="true"></span>
+</button>
+<section class="ksbot" id="ksbot" aria-label="Start your free site" role="dialog">
+  <div class="ksbot-head">
+    <div class="t"><svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>Start your free site</div>
+    <div class="r"><span class="sub"><span class="d"></span>No call needed</span><button class="ksbot-x" id="ksbotClose" type="button" aria-label="Close">×</button></div>
+  </div>
+  <div class="ksbot-progress"><i id="ksbotBar"></i></div>
+  <div class="ksbot-log" id="ksbotLog" aria-live="polite"></div>
+  <div class="kschips" id="ksbotChips"></div>
+  <form class="ksbot-foot" id="ksbotForm">
+    <input id="ksbotInput" autocomplete="off" placeholder="Type here…" aria-label="Your message" />
+    <button type="submit" aria-label="Send">→</button>
+  </form>
+</section>
+
 <script>
+  /* ---- shared electric FX: buzz (Web Audio, no files) + cumulative glow ---- */
+  var __muted=false; try{__muted=localStorage.getItem('ks-muted')==='1';}catch(e){}
+  var __ac;
+  function __ctx(){ if(!__ac){ try{__ac=new (window.AudioContext||window.webkitAudioContext)();}catch(e){__ac=null;} } if(__ac&&__ac.state==='suspended'){try{__ac.resume();}catch(e){}} return __ac; }
+  function ksLevel(){ var m=document.getElementById('killSwitch'); var n=(m&&m.classList.contains('on'))?1:0; document.querySelectorAll('.mcb:checked').forEach(function(){ n++; }); return n; }
+  function ksGlow(){ document.body.style.setProperty('--power', ksLevel()); }
+  function ksFlick(){ document.body.classList.add('zap'); setTimeout(function(){ document.body.classList.remove('zap'); }, 180); }
+  function ksFlash(el){ if(!el) return; el.classList.add('flash'); setTimeout(function(){ el.classList.remove('flash'); }, 480); }
+  function ksZap(){
+    var c=__ctx(); if(!c||__muted) return;
+    var t=c.currentTime, lvl=ksLevel();
+    // SNAP — short mechanical throw click
+    var sn=c.createOscillator(); sn.type='square'; sn.frequency.setValueAtTime(340,t); sn.frequency.exponentialRampToValueAtTime(80,t+0.03);
+    var sg=c.createGain(); sg.gain.setValueAtTime(0.30,t); sg.gain.exponentialRampToValueAtTime(0.0001,t+0.05);
+    sn.connect(sg).connect(c.destination); sn.start(t); sn.stop(t+0.06);
+    // BUZZ — longer sustained electric hum after the snap
+    var bt=t+0.04, dur=1.25+lvl*0.06;
+    var o=c.createOscillator(); o.type='sawtooth'; var base=84+lvl*7;
+    o.frequency.setValueAtTime(base*1.3,bt); o.frequency.linearRampToValueAtTime(base,bt+dur);
+    var lfo=c.createOscillator(); lfo.type='square'; lfo.frequency.value=26+lvl*4;
+    var lfg=c.createGain(); lfg.gain.value=20; lfo.connect(lfg).connect(o.frequency);
+    var g=c.createGain(); g.gain.setValueAtTime(0.0001,bt); g.gain.exponentialRampToValueAtTime(0.2,bt+0.02); g.gain.setValueAtTime(0.2,bt+dur-0.14); g.gain.exponentialRampToValueAtTime(0.0001,bt+dur);
+    o.connect(g).connect(c.destination);
+    var len=Math.floor(c.sampleRate*dur), buf=c.createBuffer(1,len,c.sampleRate), d=buf.getChannelData(0);
+    for(var i=0;i<len;i++){ d[i]=(Math.random()*2-1)*(0.45+0.55*Math.pow(1-i/len,1.3))*0.6; }
+    var ns=c.createBufferSource(); ns.buffer=buf;
+    var bp=c.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1500+lvl*120; bp.Q.value=0.7;
+    var ng=c.createGain(); ng.gain.value=0.22; ns.connect(bp).connect(ng).connect(c.destination);
+    o.start(bt); lfo.start(bt); o.stop(bt+dur); lfo.stop(bt+dur); ns.start(bt); ns.stop(bt+dur);
+  }
+  function ksThunk(){
+    var c=__ctx(); if(!c||__muted) return; var t=c.currentTime;
+    var o=c.createOscillator(); o.type='square'; o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(58,t+0.09);
+    var g=c.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.13,t+0.006); g.gain.exponentialRampToValueAtTime(0.0001,t+0.14);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t+0.15);
+  }
+  /* white lightning burst — a "short circuit" thrown off the switch on ON */
+  function ksSparks(el){
+    if(!el || !el.getBoundingClientRect) return;
+    var r=el.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2, S=160, c=S/2;
+    var ns='http://www.w3.org/2000/svg';
+    var svg=document.createElementNS(ns,'svg');
+    svg.setAttribute('width',S); svg.setAttribute('height',S); svg.setAttribute('viewBox','0 0 '+S+' '+S);
+    svg.style.cssText='position:fixed;left:'+(cx-c)+'px;top:'+(cy-c)+'px;z-index:95;pointer-events:none;overflow:visible';
+    var N=8;
+    for(var i=0;i<N;i++){
+      var ang=(360/N)*i+(Math.random()*38-19), seg=32+Math.random()*40, n=4, pts=[c+','+c], x=c, y=c;
+      for(var j=1;j<=n;j++){ y=c-(seg/n)*j; x=c+(Math.random()*12-6); pts.push(x.toFixed(1)+','+y.toFixed(1)); }
+      var pl=document.createElementNS(ns,'polyline');
+      pl.setAttribute('points',pts.join(' ')); pl.setAttribute('fill','none'); pl.setAttribute('stroke','#fff');
+      pl.setAttribute('stroke-width',(1.4+Math.random()*1.4).toFixed(1)); pl.setAttribute('stroke-linecap','round'); pl.setAttribute('stroke-linejoin','round');
+      pl.setAttribute('transform','rotate('+ang.toFixed(0)+' '+c+' '+c+')');
+      pl.style.filter='drop-shadow(0 0 3px #fff) drop-shadow(0 0 8px #8effb9)';
+      svg.appendChild(pl);
+    }
+    document.body.appendChild(svg);
+    try{ svg.animate([{opacity:1,transform:'scale(.45)'},{opacity:1,transform:'scale(1)'},{opacity:0,transform:'scale(1.4)'}],{duration:300,easing:'ease-out'}); }catch(e){}
+    setTimeout(function(){ svg.remove(); }, 320);
+  }
+
   (function(){
     var sw = document.getElementById('killSwitch');
     var status = document.getElementById('status');
@@ -596,15 +841,25 @@
         cta.classList.remove('armed');
         ctaLabel.textContent = 'Flip the switch to start';
       }
+      ksFlash(sw);
+      if(on) ksFlick();
+      ksGlow();
     }
 
     sw.addEventListener('click', flip);
     sw.addEventListener('keydown', function(e){
       if(e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); flip(); }
     });
-    // clicking the CTA while in standby flips it on first, then proceeds
+    // clicking the CTA flips the switch on (if needed), then opens the
+    // self-serve chat so they can start online — no call required.
     cta.addEventListener('click', function(e){
-      if(!on){ e.preventDefault(); flip(); setTimeout(function(){ window.location.href = cta.getAttribute('href'); }, 350); }
+      e.preventDefault();
+      var wasOff = !on;
+      if(wasOff) flip();
+      setTimeout(function(){
+        if(window.ksbotOpen) window.ksbotOpen('intake');
+        else window.location.href = cta.getAttribute('href');
+      }, wasOff ? 350 : 0);
     });
 
     // scroll reveal
@@ -612,6 +867,20 @@
       entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target);} });
     }, {threshold:.12});
     document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  })();
+
+  /* Essentials ⇄ Everything — reveal the rest of the growth path on a switch */
+  (function(){
+    var sw = document.getElementById('showAll'),
+        lad = document.querySelector('.ladder'),
+        wrap = document.getElementById('mtoggle');
+    if(!sw || !lad) return;
+    sw.addEventListener('click', function(){
+      var on = sw.getAttribute('aria-checked') === 'true';
+      sw.setAttribute('aria-checked', on ? 'false' : 'true');
+      lad.classList.toggle('showall', !on);
+      if(wrap) wrap.classList.toggle('allon', !on);
+    });
   })();
 
   /* Growth-path checkout — tick phases, buy the set in one Stripe checkout, right here */
@@ -635,7 +904,7 @@
       totEl.textContent = money(mo) + '/mo';
       return { mo: mo, items: items, hasCustom: hasCustom };
     }
-    cbs.forEach(function(cb){ cb.addEventListener('change', tally); });
+    cbs.forEach(function(cb){ cb.addEventListener('change', function(){ tally(); if(cb.checked) ksFlick(); ksGlow(); }); });
     tally();
 
     // "Add the Starter set" — pre-tick Get Found on Google (P1) + Online Booking (P3)
@@ -646,7 +915,7 @@
           var p = cb.getAttribute('data-phase');
           if(p === 'P1' || p === 'P3') cb.checked = true;
         });
-        tally();
+        tally(); ksFlick(); ksGlow();
         var cart = document.getElementById('mcart');
         if(cart) cart.scrollIntoView({ behavior:'smooth', block:'center' });
       });
@@ -673,6 +942,226 @@
           note.textContent = 'Network error. You can still use Buy now on each rung.';
           btn.disabled = false;
         });
+    });
+  })();
+
+  /* ============================================================
+     SELF-SERVE CHAT — start a free site online, no phone call.
+     Guided intake (deterministic capture → Web3Forms lead), with a
+     free-question mode that routes to /api/chat (Claude). Zero deps.
+     ============================================================ */
+  (function(){
+    function byId(id){ return document.getElementById(id); }
+    var launch = byId('ksbotLaunch'), panel = byId('ksbot'), closeBtn = byId('ksbotClose'),
+        log = byId('ksbotLog'), chipsBox = byId('ksbotChips'), form = byId('ksbotForm'),
+        input = byId('ksbotInput'), bar = byId('ksbotBar');
+    if(!launch || !panel) return;
+
+    var WEB3FORMS_KEY = 'fd068540-d6c4-44e3-9f5b-3d46da7c44ed';
+    var CALENDLY = 'https://calendly.com/chrishubbel72/30min';
+
+    var emailOk = function(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || "That doesn't look like an email — mind trying again?"; };
+    var STEPS = [
+      { key:'business', q:"Great choice, let's build it. First up: what's your business called?", ph:'Your business name', v:function(x){ return x.length >= 2 || "Just pop in your business name."; } },
+      { key:'trade',    q:"Nice. What do you do? (plumber, salon, dentist, landscaper, that kind of thing)", ph:'What you do' },
+      { key:'city',     q:"Which town or area do you serve?", ph:'City / area' },
+      { key:'current',  q:"Got a website right now? Paste the link, or just say “no.”", ph:'Current site, or “no”' },
+      { key:'name',     q:"Almost there. What's your name?", ph:'Your name', v:function(x){ return x.length >= 2 || "Your first name is fine."; } },
+      { key:'email',    q:"Best email to send your finished site to?", ph:'you@business.com', v:emailOk },
+      { key:'extra',    q:"Last one: anything you'd like on the site, or a phone number for a quick heads-up? (optional — type “skip” if not)", ph:'Optional — or “skip”', optional:true }
+    ];
+
+    var mode = 'menu', step = 0, data = {}, started = false, askHist = [];
+
+    function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function md(text){
+      var s = esc(text);
+      s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+|\/[^\s)]*)\)/g, function(m, label, url){
+        var ext = /^https?:/i.test(url);
+        return '<a href="'+url+'"'+(ext?' target="_blank" rel="noopener"':'')+'>'+label+'</a>';
+      });
+      s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      return s.replace(/\n/g, '<br>');
+    }
+    function bubble(text, who, isHTML){
+      var d = document.createElement('div');
+      d.className = 'ksmsg ' + (who || 'bot');
+      if(isHTML) d.innerHTML = md(text); else d.textContent = text;
+      log.appendChild(d); log.scrollTop = log.scrollHeight;
+      return d;
+    }
+    function botSay(text, cb, isHTML){
+      var t = bubble('typing…', 'bot typing');
+      setTimeout(function(){
+        t.remove();
+        bubble(text, 'bot', isHTML);
+        if(cb) cb();
+      }, 480);
+    }
+    function setChips(items){
+      chipsBox.innerHTML = '';
+      (items || []).forEach(function(it){
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'kschip'; b.textContent = it.label;
+        b.addEventListener('click', it.fn);
+        chipsBox.appendChild(b);
+      });
+    }
+    function clearChips(){ chipsBox.innerHTML = ''; }
+    function setBar(f){ bar.style.width = Math.round(Math.max(0, Math.min(1, f)) * 100) + '%'; }
+    function firstName(n){ return (n || '').trim().split(/\s+/)[0] || 'there'; }
+
+    function greet(){
+      botSay("Hey! 👋 I can get your free website started right here — no phone call. Want to jump in, or ask a question first?", function(){
+        setChips([
+          { label:'Start my free site →', fn:beginIntake },
+          { label:'Ask a question first', fn:beginAsk }
+        ]);
+      });
+    }
+    function beginIntake(){
+      clearChips(); mode = 'intake'; step = 0; data = {};
+      askStep();
+    }
+    function askStep(){
+      if(step >= STEPS.length){ return finish(); }
+      setBar(step / STEPS.length);
+      var s = STEPS[step];
+      input.placeholder = s.ph || 'Type your answer…';
+      botSay(s.q);
+    }
+    function handleIntake(v){
+      var s = STEPS[step];
+      if(s.optional && /^(skip|no|none|n\/?a|nope)$/i.test(v)) v = '';
+      if(s.v && v){ var res = s.v(v); if(res !== true){ botSay(res); return; } }
+      if(s.v && !v && !s.optional){ botSay(s.v(v)); return; }
+      data[s.key] = v; step++; setBar(step / STEPS.length); askStep();
+    }
+    function finish(){
+      setBar(1); mode = 'done'; input.placeholder = 'Type here…';
+      botSay("Perfect — that's everything I need. Locking it in… 🔧", submitLead);
+    }
+    function submitLead(){
+      var payload = {
+        access_key: WEB3FORMS_KEY,
+        subject: '🔔 FREE SITE request (self-serve chat) — KILLSWITCH',
+        from_name: 'KILLSWITCH Website',
+        name: data.name || '',
+        contact: data.email || '',
+        business: data.business || '',
+        source: 'free site — self-serve chat',
+        message: 'FREE SITE REQUEST (self-serve chat, no call)\n' +
+          'Business: ' + (data.business || '') + '\n' +
+          'Trade: ' + (data.trade || '') + '\n' +
+          'Area: ' + (data.city || '') + '\n' +
+          'Current site: ' + (data.current || '—') + '\n' +
+          'Name: ' + (data.name || '') + '\n' +
+          'Email: ' + (data.email || '') + '\n' +
+          'Notes / phone: ' + (data.extra || '—')
+      };
+      fetch('https://api.web3forms.com/submit', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'Accept':'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(function(r){ return r.json().catch(function(){ return {}; }); })
+      .then(function(d){
+        if(d && d.success){
+          botSay("🎉 You're in, " + firstName(data.name) + "! No call needed. We'll build your free site and email the link to **" + esc(data.email) + "**, usually within minutes.\n\nWant it found on Google or taking bookings from day one? Those are on the growth path just above — add them whenever you're ready.", function(){
+            setChips([{ label:'Prefer to talk? Book a quick call', fn:function(){ window.open(CALENDLY, '_blank', 'noopener'); } }]);
+          }, true);
+        } else { sendFailed(); }
+      })
+      .catch(sendFailed);
+    }
+    function sendFailed(){
+      botSay("Hmm — I couldn't send that through just now. Nothing lost. You can [book a quick 30-min call](" + CALENDLY + ") and we'll start it together, or tap retry.", function(){
+        setChips([
+          { label:'Retry sending', fn:submitLead },
+          { label:'Book a call instead', fn:function(){ window.open(CALENDLY, '_blank', 'noopener'); } }
+        ]);
+      }, true);
+    }
+
+    function beginAsk(){
+      clearChips(); mode = 'ask'; setBar(0); input.placeholder = 'Ask anything…';
+      botSay("Sure — ask me anything about pricing, timelines, or what we can build. When you're ready, hit “Start my free site.”", pinStart);
+    }
+    function pinStart(){ setChips([{ label:'Start my free site →', fn:beginIntake }]); }
+    function handleAsk(v){
+      askHist.push({ role:'user', content:v });
+      var t = bubble('typing…', 'bot typing');
+      fetch('/api/chat', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ messages: askHist.slice(-8) })
+      })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){
+        t.remove();
+        var reply = (d && d.reply) ? d.reply : "A real person can nail that one down. Want to start your free site, or book a quick call?";
+        bubble(reply, 'bot', true);
+        askHist.push({ role:'assistant', content:reply });
+        pinStart();
+      })
+      .catch(function(){
+        t.remove();
+        bubble("I couldn't reach the assistant just now. You can start your free site above, or [book a quick call](" + CALENDLY + ").", 'bot', true);
+        pinStart();
+      });
+    }
+
+    function openPanel(startMode){
+      panel.classList.add('open');
+      launch.style.display = 'none';
+      if(!started){
+        started = true;
+        if(startMode === 'intake') beginIntake();
+        else if(startMode === 'ask') beginAsk();
+        else greet();
+      } else if(startMode === 'intake' && mode !== 'intake'){ beginIntake(); }
+        else if(startMode === 'ask' && mode !== 'ask'){ beginAsk(); }
+      setTimeout(function(){ input.focus(); }, 120);
+    }
+    function closePanel(){ panel.classList.remove('open'); launch.style.display = ''; }
+
+    launch.addEventListener('click', function(){ openPanel(); });
+    closeBtn.addEventListener('click', closePanel);
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      var v = input.value.trim(); if(!v) return;
+      bubble(v, 'me'); input.value = '';
+      if(mode === 'intake') return handleIntake(v);
+      if(mode === 'ask') return handleAsk(v);
+      // menu/done → treat free text as a question
+      if(mode !== 'ask'){ mode = 'ask'; }
+      handleAsk(v);
+    });
+
+    // Repoint the other CTAs to the self-serve chat (call becomes optional).
+    function wire(id, m){
+      var el = byId(id);
+      if(el) el.addEventListener('click', function(e){ e.preventDefault(); openPanel(m); });
+    }
+    
+    wire('finalStart', 'intake');
+    wire('askAiHero', 'ask');
+    wire('navAskAi', 'ask');
+
+    // Let the hero primary CTA (in the other IIFE) open this too.
+    window.ksbotOpen = openPanel;
+  })();
+
+  /* Label each growth-path rung with its phase code (P0–P10) so the phases
+     read on the front, essentials or expanded. */
+  (function(){
+    document.querySelectorAll('#modules .rung').forEach(function(rung){
+      var h = rung.querySelector('h3'); if(!h || h.querySelector('.rung-p')) return;
+      var inp = rung.querySelector('input[data-phase]');
+      var code = inp ? inp.getAttribute('data-phase') : (rung.classList.contains('free') ? 'P0' : '');
+      if(!code) return;
+      var s = document.createElement('span'); s.className = 'rung-p'; s.textContent = code;
+      h.insertBefore(s, h.firstChild);
     });
   })();
 </script>
