@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>KILLSWITCH · Master Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230a0b0e'/%3E%3Cg fill='none' stroke='%23FF3826' stroke-width='9' stroke-linecap='round'%3E%3Cpath d='M62.5 30.4 A25 25 0 1 1 37.5 30.4'/%3E%3Cpath d='M50 22 V52'/%3E%3C/g%3E%3C/svg%3E" />
+<style>
+  :root{--bg:#121214;--panel:#1a1a1e;--metal:#232328;--line:#34343c;--ink:#fff;--mute:#b6bac2;--mute2:#888c96;--amber:#FFC42E;--red:#FF5546;--go:#1BA45A;--blue:#9db0ff;--gold:#ffd85c}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:"Inter",system-ui,sans-serif;line-height:1.5}
+  .wrap{max-width:1160px;margin:0 auto;padding:22px}
+  h1{font-family:"Archivo",sans-serif;font-weight:900;font-size:1.4rem}
+  .sub{color:var(--mute2);font-size:.82rem;margin-top:3px}
+  .mono{font-family:"IBM Plex Mono",monospace}
+  #login{max-width:360px;margin:14vh auto;text-align:center}
+  #login h1{margin-bottom:8px}
+  #login input{width:100%;margin:16px 0 10px;background:var(--metal);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:13px 15px;font:inherit}
+  .btn{font-family:"Archivo",sans-serif;font-weight:700;background:var(--go);color:#fff;border:1px solid var(--go);border-radius:10px;padding:12px 20px;cursor:pointer;font-size:.95rem}
+  .btn:hover{filter:brightness(1.09)} .btn[disabled]{opacity:.5;cursor:default}
+  .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)} .btn.sm{padding:8px 13px;font-size:.83rem}
+  .err{color:var(--red);font-size:.85rem;min-height:18px;margin-top:6px}
+  #app{display:none}
+  .top{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+  .top .links{display:flex;gap:10px}
+  a{color:var(--amber)}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+  .tile{background:linear-gradient(180deg,#17171b,#141416);border:1px solid var(--line);border-radius:14px;padding:15px 17px}
+  .tile .k{font-family:"Archivo",sans-serif;font-weight:900;font-size:2rem;font-variant-numeric:tabular-nums;line-height:1.05}
+  .tile .l{font-size:.66rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mute2);margin-top:4px}
+  .tile.go .k{color:var(--go)} .tile.gold .k{color:var(--gold)} .tile.blue .k{color:var(--blue)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:18px}
+  .card h2{font-family:"Archivo",sans-serif;font-weight:700;font-size:1.02rem;margin-bottom:4px}
+  .card .h-sub{color:var(--mute2);font-size:.82rem;margin-bottom:13px}
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+  .f{display:flex;flex-direction:column;gap:5px;font-size:.66rem;letter-spacing:.05em;text-transform:uppercase;color:var(--mute2)}
+  .f input{background:var(--metal);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:inherit;font-size:.9rem;min-width:190px}
+  .f input:focus{outline:none;border-color:var(--go)}
+  .onres{font-size:.85rem;margin-top:11px;min-height:18px;word-break:break-all}
+  .onres a{font-weight:600}
+  .wrapt{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+  table{width:100%;border-collapse:collapse;font-size:.86rem}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:top}
+  th{color:var(--mute2);font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;background:#0e0e10;position:sticky;top:0}
+  tr:hover td{background:var(--panel)}
+  td.email{font-weight:600}
+  .chips{display:flex;flex-wrap:wrap;gap:4px;white-space:normal;max-width:280px}
+  .chip{font-size:.62rem;font-weight:600;padding:2px 7px;border-radius:999px;background:rgba(27,164,90,.14);color:var(--go);white-space:nowrap}
+  .chip.free{background:rgba(150,150,160,.15);color:var(--mute2)}
+  .mrr{font-family:"IBM Plex Mono",monospace;font-weight:600}
+  .mrr.zero{color:var(--mute2)}
+  .msg{font-size:.85rem;color:var(--mute);min-height:18px;margin:8px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="login">
+    <h1>KILLSWITCH Master</h1>
+    <div class="sub">Enter your admin key.</div>
+    <input id="key" type="password" placeholder="Admin key" autocomplete="current-password" />
+    <button class="btn" id="loginBtn" style="width:100%">Sign in</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+
+  <div id="app">
+    <div class="top">
+      <div><h1>Master Panel</h1><div class="sub">Every customer, their plan and switches, and revenue. Onboard a new one below.</div></div>
+      <div class="links">
+        <a class="btn ghost sm" href="/admin">Outreach admin →</a>
+        <button class="btn ghost sm" id="signout">Sign out</button>
+      </div>
+    </div>
+
+    <div class="tiles" id="tiles"></div>
+
+    <div class="card">
+      <h2>Onboard a customer</h2>
+      <div class="h-sub">Creates their free account and emails a $0 receipt with their portal link. No card, no Stripe.</div>
+      <div class="row">
+        <label class="f">Email<input id="oEmail" type="email" placeholder="owner@shop.com" /></label>
+        <label class="f">Site<input id="oSite" type="text" placeholder="theirshop.com" /></label>
+        <label class="f">Name<input id="oName" type="text" placeholder="First name" /></label>
+        <button class="btn sm" id="oBtn">Create &amp; send receipt</button>
+      </div>
+      <div class="onres" id="oRes"></div>
+    </div>
+
+    <div class="msg" id="msg"></div>
+    <div class="wrapt"><table><thead><tr>
+      <th>Customer</th><th>Site</th><th>Switches on</th><th>MRR</th><th>Joined</th><th>Portal</th>
+    </tr></thead><tbody id="tb"></tbody></table></div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let KEY=localStorage.getItem('ks-admin-key')||'';
+
+async function api(action,extra){
+  const r=await fetch('/api/master',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action,token:KEY,...(extra||{})})});
+  const d=await r.json().catch(()=>({}));
+  return {status:r.status,ok:r.ok&&d.ok,d};
+}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function money(n){return '$'+(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}
+function showLogin(m){ $('app').style.display='none'; $('login').style.display='block'; $('loginErr').textContent=m||''; }
+
+async function boot(){
+  if(!KEY){ showLogin(); return; }
+  const res=await api('list');
+  if(res.status===401){ showLogin('Wrong admin key.'); return; }
+  if(!res.ok){ showLogin('Error: '+(res.d.error||res.status)); return; }
+  $('login').style.display='none'; $('app').style.display='block';
+  paint(res.d);
+}
+
+function paint(d){
+  const t=d.totals||{customers:0,paying:0,mrr:0};
+  $('tiles').innerHTML=[
+    ['go',t.customers,'Customers'],
+    ['gold',t.paying,'Paying'],
+    ['go',money(t.mrr)+'/mo','Recurring revenue'],
+    ['blue',(t.customers-t.paying),'On free']
+  ].map(([c,k,l])=>`<div class="tile ${c}"><div class="k">${typeof k==='number'?k.toLocaleString():esc(k)}</div><div class="l">${l}</div></div>`).join('');
+
+  const rows=(d.accounts||[]);
+  $('tb').innerHTML = rows.length ? rows.map(a=>{
+    const chips = (a.switches&&a.switches.length)
+      ? a.switches.map(s=>`<span class="chip">${esc(s)}</span>`).join('')
+      : '<span class="chip free">Free site only</span>';
+    const joined = a.createdAt ? new Date(a.createdAt).toLocaleDateString() : '';
+    return `<tr>
+      <td class="email">${esc(a.email)}${a.name?'<div class="sub">'+esc(a.name)+'</div>':''}</td>
+      <td>${a.site?esc(a.site):'<span class="mrr zero">—</span>'}</td>
+      <td><div class="chips">${chips}</div></td>
+      <td class="mrr ${a.mrr>0?'':'zero'}">${a.mrr>0?money(a.mrr)+'/mo':'$0'}</td>
+      <td class="mono" style="color:var(--mute2)">${esc(joined)}</td>
+      <td><a href="${esc(a.portalUrl)}" target="_blank" rel="noopener">Open →</a></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="6" style="color:var(--mute2);text-align:center;padding:26px">No customers yet. Onboard your first above.</td></tr>';
+}
+
+$('oBtn').onclick=async()=>{
+  const email=$('oEmail').value.trim(); if(!email){ $('oRes').style.color='var(--red)'; $('oRes').textContent='Enter an email.'; return; }
+  $('oBtn').disabled=true; $('oRes').style.color='var(--mute)'; $('oRes').textContent='Creating...';
+  const r=await api('onboard',{email,site:$('oSite').value.trim(),name:$('oName').value.trim()});
+  $('oBtn').disabled=false;
+  if(r.ok){
+    $('oRes').style.color='var(--go)';
+    $('oRes').innerHTML='Done. '+(r.d.emailed?'Receipt emailed. ':'(Email did not send, send this link) ')
+      +'Portal: <a href="'+esc(r.d.portalUrl)+'" target="_blank" rel="noopener">'+esc(r.d.portalUrl)+'</a>';
+    $('oEmail').value=$('oSite').value=$('oName').value='';
+    boot();
+  } else { $('oRes').style.color='var(--red)'; $('oRes').textContent='Error: '+(r.d.error||r.status); }
+};
+
+$('loginBtn').onclick=()=>{ KEY=$('key').value.trim(); localStorage.setItem('ks-admin-key',KEY); boot(); };
+$('key').onkeydown=e=>{ if(e.key==='Enter') $('loginBtn').click(); };
+$('signout').onclick=()=>{ localStorage.removeItem('ks-admin-key'); KEY=''; showLogin(); };
+boot();
+</script>
+</body>
+</html>
