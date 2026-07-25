@@ -7,7 +7,7 @@
 // Nothing mails unless you POST action:mail with explicit ids. Human-in-the-loop.
 
 import { configured, getLeads, saveLeads, getConfig, saveConfig } from '../lib/store.js';
-import { lobSend, runAutopilot } from '../lib/mailer.js';
+import { lobSend, runAutopilot, spentToDate, COST } from '../lib/mailer.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).json({ error: 'method' }); return; }
@@ -27,7 +27,8 @@ export default async function handler(req, res) {
       res.status(200).json({ ok: true, leads: await getLeads() }); return;
     }
     if (action === 'config') {
-      res.status(200).json({ ok: true, config: await getConfig() }); return;
+      const spent = spentToDate(await getLeads());
+      res.status(200).json({ ok: true, config: await getConfig(), spent }); return;
     }
     if (action === 'setconfig') {
       const cur = await getConfig();
@@ -35,8 +36,23 @@ export default async function handler(req, res) {
       if (body.enabled !== undefined) next.enabled = !!body.enabled;
       if (body.dailyCap !== undefined) next.dailyCap = Math.max(0, Math.floor(Number(body.dailyCap) || 0));
       if (body.budgetCeiling !== undefined) next.budgetCeiling = Math.max(0, Number(body.budgetCeiling) || 0);
+
+      // The ceiling counts postage already spent. Arming with a ceiling at or
+      // below that would switch autopilot on and then trip it dead on the first
+      // run, hours later, looking like a silent failure. Refuse it now instead.
+      const spent = spentToDate(await getLeads());
+      const minCeiling = +(spent + COST).toFixed(2); // room for at least one postcard
+      if (next.enabled && next.budgetCeiling < minCeiling) {
+        res.status(400).json({
+          error: 'budget_below_spend',
+          spent, minCeiling,
+          message: `You have already spent $${spent.toFixed(2)} on postage. The ceiling is TOTAL spend, not new spend, so a $${next.budgetCeiling.toFixed(2)} ceiling leaves nothing to mail with. Set it to at least $${minCeiling.toFixed(2)} before switching autopilot on.`,
+        });
+        return;
+      }
+
       await saveConfig(next);
-      res.status(200).json({ ok: true, config: next }); return;
+      res.status(200).json({ ok: true, config: next, spent }); return;
     }
     if (action === 'run-autopilot') {
       res.status(200).json({ ok: true, result: await runAutopilot('manual') }); return;

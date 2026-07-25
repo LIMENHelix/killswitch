@@ -6,10 +6,14 @@ import { runAutopilot } from '../lib/mailer.js';
 export const config = { maxDuration: 300 };
 
 export default async function handler(req, res) {
+  // Fails CLOSED. Vercel sends `Authorization: Bearer <CRON_SECRET>` on cron
+  // invocations once CRON_SECRET is set on the project. With no secret set this
+  // endpoint spends real money (Lob postage) for anyone who finds the URL, so a
+  // missing secret means nobody gets in except an admin token.
   const secret = process.env.CRON_SECRET;
   const auth = req.headers.authorization || '';
   const token = (req.query && req.query.token) || '';
-  const okCron = secret ? auth === `Bearer ${secret}` : true; // Vercel adds this header when CRON_SECRET is set
+  const okCron = !!secret && auth === `Bearer ${secret}`;
   const okAdmin = [process.env.ADMIN_KEY, process.env.SWITCH_TOKEN].filter(Boolean).includes(token);
   if (!okCron && !okAdmin) { res.status(401).json({ error: 'unauthorized' }); return; }
 

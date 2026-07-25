@@ -58,6 +58,8 @@
   .ap-f{display:flex;flex-direction:column;gap:5px;font-size:.66rem;letter-spacing:.05em;text-transform:uppercase;color:var(--mute2)}
   .ap-f input{width:150px}
   .ap-last{color:var(--mute2);font-size:.78rem;font-family:"IBM Plex Mono",monospace;margin-top:11px;min-height:16px}
+  .ap-budget{font-size:.78rem;font-family:"IBM Plex Mono",monospace;margin-top:10px;min-height:16px;color:var(--mute2)}
+  .ap-budget.warn{color:var(--amber)}
   .switch{position:relative;display:inline-block;width:52px;height:28px;flex:none}
   .switch input{opacity:0;width:0;height:0}
   .slider{position:absolute;inset:0;background:var(--metal);border:1px solid var(--line);border-radius:999px;cursor:pointer;transition:.2s}
@@ -136,6 +138,7 @@
         <button class="btn sm" id="apSave">Save settings</button>
         <button class="btn ghost sm" id="apRun">Run a batch now</button>
       </div>
+      <div class="ap-budget" id="apBudgetNote"></div>
       <div class="ap-last" id="apLast"></div>
     </section>
 
@@ -199,7 +202,8 @@ async function boot(){
 
 // ---- autopilot config ----
 let CFG={enabled:false,dailyCap:0,budgetCeiling:0};
-async function loadCfg(){ const r=await api('config'); if(r.ok){ CFG=r.d.config||CFG; paintCfg(); } }
+let SPENT=0; // postage already spent, server-computed; the ceiling is measured against it
+async function loadCfg(){ const r=await api('config'); if(r.ok){ CFG=r.d.config||CFG; if(typeof r.d.spent==='number') SPENT=r.d.spent; paintCfg(); } }
 function paintCfg(){
   $('apEnabled').checked=!!CFG.enabled;
   if(document.activeElement!==$('apCap')) $('apCap').value=CFG.dailyCap||'';
@@ -209,10 +213,28 @@ function paintCfg(){
   $('apSub').textContent=CFG.enabled
     ? `On. Mailing up to ${CFG.dailyCap}/day, halting at $${(CFG.budgetCeiling||0).toLocaleString()} total. ${CFG.mailedToday||0} sent today.`
     : 'Off. Set a daily cap and a budget ceiling, then flip the switch. It mails on its own, every day, and stops itself the instant it hits the ceiling.';
+  paintBudget();
   const L=CFG.lastRun;
-  $('apLast').textContent=L?`Last run: ${L.mailed||0} mailed`+(L.bad?`, ${L.bad} bad-addr`:'')+(L.note?` — ${L.note}`:'')+(L.when?`  ·  ${new Date(L.when).toLocaleString()}`:''):'';
+  $('apLast').textContent=L?`Last run: ${L.mailed||0} mailed`+(L.bad?`, ${L.bad} bad-addr`:'')+(L.note?`. ${L.note}`:'')+(L.when?`  ·  ${new Date(L.when).toLocaleString()}`:''):'';
 }
-async function saveCfg(extra){ const r=await api('setconfig',{dailyCap:+$('apCap').value||0,budgetCeiling:+$('apBudget').value||0,...(extra||{})}); if(r.ok){CFG=r.d.config;paintCfg();} return r; }
+// The ceiling is TOTAL postage, so anything already mailed counts against it.
+// Show that plainly, because a ceiling under spend-to-date can never run.
+function paintBudget(){
+  const el=$('apBudgetNote'); if(!el) return;
+  const bud=+$('apBudget').value||CFG.budgetCeiling||0;
+  const left=+(bud-SPENT).toFixed(2);
+  el.textContent=`Postage spent to date: $${SPENT.toFixed(2)}.`+(bud>0
+    ? (left>=COST ? ` A $${bud.toLocaleString()} ceiling leaves $${left.toFixed(2)} (about ${Math.floor(left/COST)} more postcards).`
+                  : ` A $${bud.toLocaleString()} ceiling is already used up, so autopilot cannot mail. Set it to at least $${(SPENT+COST).toFixed(2)}.`)
+    : ` Set a ceiling above that (at least $${(SPENT+COST).toFixed(2)}) to arm autopilot.`);
+  el.className='ap-budget'+((bud>0&&left<COST)?' warn':'');
+}
+async function saveCfg(extra){
+  const r=await api('setconfig',{dailyCap:+$('apCap').value||0,budgetCeiling:+$('apBudget').value||0,...(extra||{})});
+  if(r.ok){ CFG=r.d.config; if(typeof r.d.spent==='number') SPENT=r.d.spent; paintCfg(); }
+  else { if(typeof r.d.spent==='number'){ SPENT=r.d.spent; paintBudget(); } $('msg').textContent=r.d.message||('Error: '+(r.d.error||r.status)); $('apEnabled').checked=!!CFG.enabled; }
+  return r;
+}
 function uniq(k){return [...new Set(LEADS.map(r=>r[k]).filter(Boolean))].sort()}
 function fillFilters(){
   uniq('trade').forEach(t=>$('fTrade').insertAdjacentHTML('beforeend',`<option>${esc(t)}</option>`));
@@ -308,16 +330,19 @@ $('mailBtn').onclick=async()=>{
 };
 
 // autopilot controls
-$('apSave').onclick=async()=>{ await saveCfg(); $('msg').textContent='Autopilot settings saved.'; };
+$('apBudget').oninput=paintBudget;
+$('apSave').onclick=async()=>{ const r=await saveCfg(); if(r.ok) $('msg').textContent='Autopilot settings saved.'; };
 $('apEnabled').onchange=async()=>{
   const on=$('apEnabled').checked;
   if(on){
     const cap=+$('apCap').value, bud=+$('apBudget').value;
     if(!(cap>0)||!(bud>0)){ $('msg').textContent='Set a daily cap and a budget ceiling before switching on.'; $('apEnabled').checked=false; return; }
-    if(!confirm(`Turn autopilot ON?\n\nIt will mail up to ${cap} postcards/day automatically and switch itself OFF at $${bud.toLocaleString()} total spend.`)){ $('apEnabled').checked=false; return; }
+    if(bud<SPENT+COST){ $('msg').textContent=`That ceiling is already used up. You have spent $${SPENT.toFixed(2)} on postage and the ceiling is total spend, so set it to at least $${(SPENT+COST).toFixed(2)}.`; $('apEnabled').checked=false; paintBudget(); return; }
+    const room=Math.floor((bud-SPENT)/COST);
+    if(!confirm(`Turn autopilot ON?\n\nIt will mail up to ${cap} postcards/day automatically.\n\nSpent so far: $${SPENT.toFixed(2)}. Ceiling: $${bud.toLocaleString()} total. That leaves room for about ${room} more postcards before it switches itself OFF.`)){ $('apEnabled').checked=false; return; }
   }
-  await saveCfg({enabled:on});
-  $('msg').textContent=on?'Autopilot ON.':'Autopilot OFF.';
+  const r=await saveCfg({enabled:on});
+  if(r.ok) $('msg').textContent=on?'Autopilot ON.':'Autopilot OFF.';
 };
 $('apRun').onclick=async()=>{
   $('msg').textContent='Running a batch now...';
