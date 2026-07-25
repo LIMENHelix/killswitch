@@ -202,8 +202,11 @@ async function boot(){
 
 // ---- autopilot config ----
 let CFG={enabled:false,dailyCap:0,budgetCeiling:0};
-let SPENT=0; // postage already spent, server-computed; the ceiling is measured against it
-async function loadCfg(){ const r=await api('config'); if(r.ok){ CFG=r.d.config||CFG; if(typeof r.d.spent==='number') SPENT=r.d.spent; paintCfg(); } }
+let SPENT=0; // postage already spent; the ceiling is measured against it
+// Derived from the leads already in the browser, so the once-a-minute poll costs
+// no extra Upstash read. The server recomputes it authoritatively on setconfig.
+function recomputeSpent(){ SPENT=+((LEADS.filter(isMailed).length)*COST).toFixed(2); }
+async function loadCfg(){ recomputeSpent(); const r=await api('config'); if(r.ok){ CFG=r.d.config||CFG; paintCfg(); } }
 function paintCfg(){
   $('apEnabled').checked=!!CFG.enabled;
   if(document.activeElement!==$('apCap')) $('apCap').value=CFG.dailyCap||'';

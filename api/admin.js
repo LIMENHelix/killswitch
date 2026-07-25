@@ -26,9 +26,12 @@ export default async function handler(req, res) {
     if (action === 'list') {
       res.status(200).json({ ok: true, leads: await getLeads() }); return;
     }
+    // Deliberately does NOT read the lead list. /admin polls this every minute and
+    // the leads blob is ~600 KB, so reading it here would double Upstash egress for
+    // a number the page can already derive from the leads it just fetched. The
+    // authoritative spend check lives in setconfig, which runs only on a click.
     if (action === 'config') {
-      const spent = spentToDate(await getLeads());
-      res.status(200).json({ ok: true, config: await getConfig(), spent }); return;
+      res.status(200).json({ ok: true, config: await getConfig() }); return;
     }
     if (action === 'setconfig') {
       const cur = await getConfig();
