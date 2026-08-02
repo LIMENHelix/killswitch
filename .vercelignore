@@ -3,9 +3,8 @@ _playbook
 _outreach
 # Operator automation control surface - internal Claude Code config, never deployed.
 .claude/
-demos/auto-tech-shawnee.html
-demos/autobots-overland-park.html
-demos/daves-trusted-auto-grandview.html
-demos/charlies-brake-muffler-lenexa.html
-demos/lee-auto-repair-kansas-city.html
-demos/amilcars-auto-repair-independence.html
+# The six speculative auto-shop demos below are now DEPLOYED on purpose:
+# delivery-call-scripts.md hands out their URLs on live calls, and they 404'd.
+# They carry <meta name="robots" content="noindex, nofollow"> because they are
+# built for businesses that have not agreed to anything yet, so Google must not
+# index a site branded with a real business's name, address and phone.
