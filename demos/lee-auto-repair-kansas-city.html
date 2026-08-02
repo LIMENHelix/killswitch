@@ -110,7 +110,7 @@
 </head>
 <body>
 
-<div class="demo-bar">DEMO built by <b>KILLSWITCH</b> for Lee Auto Repair &middot; not live yet &middot; yours, free, if you want it</div>
+<div class="demo-bar">DEMO built by <b>Killswitch Websites</b> for Lee Auto Repair &middot; not live yet &middot; yours, free, if you want it</div>
 
 <nav class="nav">
   <div class="wrap">
@@ -218,7 +218,7 @@
   </div>
 </footer>
 
-<div class="fine">Free demo by KILLSWITCH (killswitchwebsites.com). Not affiliated with the shop yet. Hours, review quotes, and photos are placeholders for the owner to confirm. If Lee Auto Repair wants it, the site, domain, and code are theirs to keep.</div>
+<div class="fine">Free demo by Killswitch Websites (killswitchwebsites.com). Not affiliated with the shop yet. Hours, review quotes, and photos are placeholders for the owner to confirm. If Lee Auto Repair wants it, the site, domain, and code are theirs to keep.</div>
 
 <script>
   (function(){
@@ -227,7 +227,7 @@
     f.addEventListener('submit',function(e){
       e.preventDefault();
       fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
-        body:JSON.stringify({access_key:'fd068540-d6c4-44e3-9f5b-3d46da7c44ed',subject:'Quote request — Lee Auto Repair (Killswitch demo)',from_name:'Lee Auto Repair demo site',name:f.name.value,contact:f.contact.value,vehicle:f.vehicle.value,message:f.message.value})})
+        body:JSON.stringify({access_key:'fd068540-d6c4-44e3-9f5b-3d46da7c44ed',subject:'Quote request — Lee Auto Repair (Killswitch Websites demo)',from_name:'Lee Auto Repair demo site',name:f.name.value,contact:f.contact.value,vehicle:f.vehicle.value,message:f.message.value})})
         .then(function(r){return r.json();}).then(function(){ok.hidden=false;f.reset();})
         .catch(function(){ok.hidden=false;ok.textContent='Please call the shop at (816) 861-7227.';f.reset();});
     });

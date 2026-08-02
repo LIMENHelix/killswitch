@@ -1,4 +1,4 @@
-# KILLSWITCH — Outbound Playbook v1
+# Killswitch Websites — Outbound Playbook v1
 
 Source of truth for Switch (the AI sales rep) and all human outreach. The email +
 SMS sequences here are encoded into the Switch brain (api/switch-brain.js). The
@@ -28,7 +28,7 @@ Subjects (test): `the catch, up front` / `free website. here's how we actually m
 > **How we make money:** we're betting that once the site is bringing you customers, you'll *want* the parts that turn a nice site into a machine — showing up on Google, online booking, card payments, an AI that answers the phone at 2 a.m. Those are $19–29/mo each, all optional, and nothing turns on unless you turn it on.
 > That's it. That's the whole model. We earn the free site back by being good enough that you choose to buy more.
 > Want yours? Reply with just your business name and I'll have the site built and the link in your inbox. No call needed.
-> — {{SenderName}}, KILLSWITCH · killswitchwebsites.com
+> — {{SenderName}}, Killswitch Websites · killswitchwebsites.com
 > *P.S. We only take a handful of free builds at a time so each one gets done right.*
 
 Trade swaps (replace paragraph 2):
@@ -59,7 +59,7 @@ Subjects: `closing your file` / `should I stop?` / `last one from me, {{FirstNam
 > **3** — Not for me. I delete you from the list and you never hear from me again. No hard feelings, and I mean that.
 > If it's silence, I'll assume 3 and take you off myself.
 > Either way — genuinely, good luck with {{BusinessName}}. {{City}} is better with you in it.
-> — {{SenderName}}, KILLSWITCH
+> — {{SenderName}}, Killswitch Websites
 > *P.S. If it's a "yes, but I don't believe you," that's a 1 too. Let me build it, then argue with me.*
 
 ---
@@ -68,7 +68,7 @@ Subjects: `closing your file` / `should I stop?` / `last one from me, {{FirstNam
 
 > **Compliance, not optional:** text only businesses you have a lawful basis to contact, honor STOP instantly, identify yourself in message one, keep to business hours in their time zone. Have counsel bless the list before this ships.
 
-- **Text 1 (Day 1):** {{FirstName}} — {{SenderName}} w/ KILLSWITCH. We build local businesses a real website, free, and you own it. Catch is we hope you'll later pay for booking/Google/etc. Optional, always. Want yours? Just send your business name. Reply STOP to opt out.
+- **Text 1 (Day 1):** {{FirstName}} — {{SenderName}} w/ Killswitch Websites. We build local businesses a real website, free, and you own it. Catch is we hope you'll later pay for booking/Google/etc. Optional, always. Want yours? Just send your business name. Reply STOP to opt out.
 - **Text 2 (Day 3):** {{FirstName}} — no pressure, one question: when someone Googles "{{trade}} near me" in {{City}} at 8pm, do they find you or the other guy? Free site fixes that. Takes minutes. Yes?
 - **Text 3 (Day 10):** {{FirstName}} — closing your file. Reply 1 = build my free site. 2 = later. 3 = never. Silence = 3 and I'll take you off myself. Either way, good luck out there.
 
@@ -82,7 +82,7 @@ Subjects: `closing your file` / `should I stop?` / `last one from me, {{FirstNam
 
 ## PART 3 — DIRECT MAIL
 
-**Postcard (6×9 oversized). FRONT:** "We'll build your website. Free." / "And no, we're not going to hold it hostage." / KILLSWITCH · killswitchwebsites.com
+**Postcard (6×9 oversized). FRONT:** "We'll build your website. Free." / "And no, we're not going to hold it hostage." / Killswitch Websites · killswitchwebsites.com
 **BACK:** The catch, since you're looking for it: the website is free and genuinely yours (domain, content, code, no contract). We bet you'll later want the machine around it (Google, 24/7 booking, payments, a 2 a.m. AI), $19–29/mo, nothing on unless you turn it on. That's how a free website pays for itself. Built for {{trade}}s. → killswitchwebsites.com/start (live in minutes, no call) or call/text {{Phone}} and say "free site."
 
 **The Letter (1 page, #10 window envelope, real stamp, blue-ink signature — beats the postcard 3:1 on trades):** opens "This is a sales letter. You knew that by the second line." States the free real site you own, no contract, keep it and walk if you want. Explains the model (add-ons $19–29/mo, optional, off). "We give away the thing you'd normally pay two thousand dollars for, and bet on being good enough that you choose to pay later." Proof (allaccesskc.com, recursivelove.com). "We take a handful of builds at a time." CTA: killswitchwebsites.com/start or call and say "free site." P.S. the paper letter proves we'll do the unscalable thing.
@@ -92,7 +92,7 @@ Subjects: `closing your file` / `should I stop?` / `last one from me, {{FirstNam
 ## PART 4 — PHONE SCRIPTS
 
 **Cold-call opener (the only 20 seconds that matter). Never open with "How are you today?"**
-> "{{FirstName}}? Hi, my name's {{SenderName}}, I'm with a company called KILLSWITCH. I'm going to be straight with you: this is a sales call. You can hang up and I won't take it personally. Can I have thirty seconds to tell you what it is, and then you decide?"
+> "{{FirstName}}? Hi, my name's {{SenderName}}, I'm with a company called Killswitch Websites. I'm going to be straight with you: this is a sales call. You can hang up and I won't take it personally. Can I have thirty seconds to tell you what it is, and then you decide?"
 > [pause, let them answer] "Thank you. We build local {{trade}}s a website. Free. Not a trial, not a lease, you own it, your domain, no contract. The reason we can do that is we make our money later, if you decide you want online booking, or showing up on Google, or an AI that answers the phone at 2 a.m. Those run $19–29/mo, off unless you turn them on."
 > [pause] "So my question isn't 'will you buy something.' It's: do you currently have a website you're proud of?"
 
@@ -110,8 +110,8 @@ Subjects: `closing your file` / `should I stop?` / `last one from me, {{FirstNam
 - "I need to think about it." → "Sure, what specifically, whether it's really free or whether it'll work? [listen] Here's a way with the risk removed: I build it, you look at the real thing instead of imagining it, then you think about it."
 
 **Voicemail (twice, 4 days apart, under 20 sec):**
-- VM1: "{{FirstName}}, {{SenderName}} with KILLSWITCH, we build {{trade}}s a website for free, you own it, no contract. There's a catch and I'll tell you what it is when you call back. {{Phone}}."
-- VM2: "{{FirstName}}, {{SenderName}}, KILLSWITCH, second and last call. The catch is we hope you'll buy add-ons later. That's it. Free site's yours either way. {{Phone}}."
+- VM1: "{{FirstName}}, {{SenderName}} with Killswitch Websites, we build {{trade}}s a website for free, you own it, no contract. There's a catch and I'll tell you what it is when you call back. {{Phone}}."
+- VM2: "{{FirstName}}, {{SenderName}}, Killswitch Websites, second and last call. The catch is we hope you'll buy add-ons later. That's it. Free site's yours either way. {{Phone}}."
 
 **Inbound / warm call (free site → Starter Machine $38/mo). Deliver first; the free build IS the pitch.**
 > "Your site's live and it's yours, that part's done. I don't need anything today. I do want to tell you the one thing that decides whether it makes you money or just sits there, then I'll shut up. A website nobody finds is a billboard in the desert. Two switches change that: getting found on Google, and online booking. $19 each, $38 together, month to month, cancel whenever. What's one {{job}} worth to you? [let them answer] So this pays for itself if it brings you one, and if it doesn't you turn it off and keep the site. I'll switch both on and you'll see it working by Friday, sound alright? [if hesitation] Take booking alone at $19, the one owners never regret. Google can wait."

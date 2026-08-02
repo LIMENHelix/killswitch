@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-KILLSWITCH mail runner — finder -> Lob postcard.
+Killswitch Websites mail runner — finder -> Lob postcard.
 
 Reads _outreach/leads.csv (from find.py), keeps the mailable ones (full US
 address), builds a 6x9 postcard from the Outbound Playbook personalized by trade,

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-KILLSWITCH lead finder — Google Places (New) edition.
+Killswitch Websites lead finder — Google Places (New) edition.
 
 Far better coverage and USPS-clean addresses than OSM, plus phone numbers.
 For each trade x city it runs a Places Text Search, keeps businesses with NO

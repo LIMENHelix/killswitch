@@ -1,4 +1,4 @@
-// Killswitch growth-path multi-select checkout.
+// Killswitch Websites growth-path multi-select checkout.
 // The client posts { phases: ["P1","P3", ...] }; the server maps each phase to
 // its MONTHLY subscription price and creates ONE Stripe Checkout Session so the
 // customer pays for the whole selection in a single subscription checkout.

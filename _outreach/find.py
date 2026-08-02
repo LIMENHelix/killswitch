@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-KILLSWITCH lead finder (DIY, free, no API key).
+Killswitch Websites lead finder (DIY, free, no API key).
 
 Pulls local businesses from OpenStreetMap (Overpass API) inside a bounding box,
 keeps only the ones with NO website, and writes a CSV grouped by trade. Those

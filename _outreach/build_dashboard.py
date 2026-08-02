@@ -18,7 +18,7 @@ data = json.dumps(rows)
 
 html = """<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>KILLSWITCH · Outreach Dashboard</title>
+<title>Killswitch Websites · Outreach Dashboard</title>
 <style>
   :root{--bg:#121214;--panel:#1a1a1e;--metal:#232328;--line:#34343c;--ink:#fff;--mute:#b6bac2;--mute2:#888c96;--amber:#FFC42E;--red:#FF5546;--go:#1BA45A}
   *{box-sizing:border-box;margin:0;padding:0}

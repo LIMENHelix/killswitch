@@ -1,4 +1,4 @@
-# KILLSWITCH — Delivery-Call Scripts (KC top 6)
+# Killswitch Websites — Delivery-Call Scripts (KC top 6)
 
 These are **delivery** calls, not cold pitches. The site already exists, so you are
 handing over something real, not asking permission to build. That flips the whole call:
@@ -28,7 +28,7 @@ Internal reference. Lives in `_outreach/` (firewalled from deploy). Voice matche
 **Hook:** Best reputation in Shawnee (4.7, 70+ reviews) but invisible on Google — only a generic NAPA page.
 **Live demo:** https://killswitchwebsites.com/demos/auto-tech-shawnee
 
-> "Hi, is this Kendall? My name's Chris, I run a small shop called Killswitch. I'll be
+> "Hi, is this Kendall? My name's Chris, I run a small shop called Killswitch Websites. I'll be
 > straight — this is a sales call, you can hang up and I won't take it personally. Thirty
 > seconds? … Here's why I called *you*: you've got the best reputation in Shawnee, 70-plus
 > reviews, and when somebody Googles 'auto repair Shawnee' they can't find you — just a
@@ -46,7 +46,7 @@ Internal reference. Lives in `_outreach/` (firewalled from deploy). Voice matche
 **Hook:** Near-perfect 4.9 stars, and a Facebook page is their entire web presence.
 **Live demo:** https://killswitchwebsites.com/demos/autobots-overland-park
 
-> "Hi — is this Steve? Chris here, with a shop called Killswitch. Straight up, this is a
+> "Hi — is this Steve? Chris here, with a shop called Killswitch Websites. Straight up, this is a
 > sales call, hang up any time. Thirty seconds? … Here's the thing: you've got a 4.9 — that's
 > near-perfect, almost nobody has that — and your whole website is a Facebook page. All that
 > reputation and nowhere to send it. So I already built you a real site. It's yours, free, you
@@ -62,7 +62,7 @@ Internal reference. Lives in `_outreach/` (firewalled from deploy). Voice matche
 **Hook:** 71 reviews at 4.6 in Grandview and nowhere online to send that credibility.
 **Live demo:** https://killswitchwebsites.com/demos/daves-trusted-auto-grandview
 
-> "Hi, is this Dave? Chris, with a shop called Killswitch. I'll be honest — sales call, you
+> "Hi, is this Dave? Chris, with a shop called Killswitch Websites. I'll be honest — sales call, you
 > can hang up, no hard feelings. Thirty seconds? … Reason I called: you've got seventy-plus
 > reviews at 4.6, that's a serious reputation, and there's no website to put it on — so when
 > somebody new Googles you, all that trust just isn't there to see. I already built you one.
@@ -78,7 +78,7 @@ Internal reference. Lives in `_outreach/` (firewalled from deploy). Voice matche
 **Hook:** Trusted 15+ year Lenexa brake/exhaust shop, strong reviews, no website at all.
 **Live demo:** https://killswitchwebsites.com/demos/charlies-brake-muffler-lenexa
 
-> "Hi, is this Charlie? Chris here, with a company called Killswitch. Straight with you —
+> "Hi, is this Charlie? Chris here, with a company called Killswitch Websites. Straight with you —
 > this is a sales call, hang up whenever. Thirty seconds? … Here's why I called: you've been
 > the brake-and-muffler shop in Lenexa for fifteen-plus years, great reviews, and there's no
 > website at all — so somebody searching 'brakes near me' in Lenexa never lands on you. I
@@ -95,7 +95,7 @@ Internal reference. Lives in `_outreach/` (firewalled from deploy). Voice matche
 **Hook:** Decades-long KC following, 60+ reviews, no site to capture it.
 **Live demo:** https://killswitchwebsites.com/demos/lee-auto-repair-kansas-city
 
-> "Hi, is this Lee? My name's Chris, I run a shop called Killswitch. Honest heads-up — this
+> "Hi, is this Lee? My name's Chris, I run a shop called Killswitch Websites. Honest heads-up — this
 > is a sales call, you can hang up, no hard feelings. Thirty seconds? … Here's the reason:
 > you've had a following on 31st Street for decades, sixty-plus reviews, and there's no
 > website — so the younger customers who only search online never even find you. I already
@@ -111,7 +111,7 @@ Internal reference. Lives in `_outreach/` (firewalled from deploy). Voice matche
 **Hook:** Long-running Independence independent, solid reviews, zero web presence.
 **Live demo:** https://killswitchwebsites.com/demos/amilcars-auto-repair-independence
 
-> "Hi, is this Amilcar? Chris here, with a shop called Killswitch. I'll be straight — this is
+> "Hi, is this Amilcar? Chris here, with a shop called Killswitch Websites. I'll be straight — this is
 > a sales call, hang up any time. Thirty seconds? … Here's why I called: you've been running
 > honest work on US-24 for a long time, good reviews, and there's no website — so anybody who
 > searches instead of asking a neighbor never finds you. I already built you one. Real site,
@@ -127,6 +127,6 @@ Internal reference. Lives in `_outreach/` (firewalled from deploy). Voice matche
 Send immediately, while you're still on the phone:
 > "{{Shop}} — here's the site I built you, yours free: {{link}}
 > Everything on it is editable and it's yours to keep. The only things that ever cost anything
-> are Google + online booking, $19/mo each, and they're off unless you say so. — Chris, Killswitch"
+> are Google + online booking, $19/mo each, and they're off unless you say so. — Chris, Killswitch Websites"
 
 Then in the admin dashboard: mark called, note the outcome, set a follow-up for 3 days if no reply.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-KILLSWITCH lead puller — calls the server-side Places finder (/api/find, where
+Killswitch Websites lead puller — calls the server-side Places finder (/api/find, where
 the Sensitive GOOGLE_PLACES_API_KEY lives) for each trade x city, keeps the
 no-website businesses it returns, and merges them into leads.csv, preserving any
 'mailed'/'bad_address' status. Same CSV format find.py/mail.py use.

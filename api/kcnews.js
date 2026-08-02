@@ -11,7 +11,7 @@ export default async function handler(req, res) {
       '&hl=en-US&gl=US&ceid=US:en';
 
     const r = await fetch(feed, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; KillswitchNews/1.0)' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Killswitch WebsitesNews/1.0)' },
     });
     const xml = await r.text();
 

@@ -1,4 +1,4 @@
-// KILLSWITCH lead finder — server-side Google Places (New) search.
+// Killswitch Websites lead finder — server-side Google Places (New) search.
 // GOOGLE_PLACES_API_KEY is a Sensitive Vercel var (can't be pulled locally), so
 // the search runs here where the key lives and returns no-website business leads
 // as JSON. Called by _outreach/pull.py. Gated by SWITCH_TOKEN. Unlinked.

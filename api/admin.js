@@ -1,4 +1,4 @@
-// KILLSWITCH admin API. Gated by ADMIN_KEY (falls back to SWITCH_TOKEN).
+// Killswitch Websites admin API. Gated by ADMIN_KEY (falls back to SWITCH_TOKEN).
 // Actions (POST {action, token, ...}):
 //   list   -> all leads
 //   seed   -> {leads:[...]} bulk load (one-time, from _outreach/seed_kv.py)

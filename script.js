@@ -1,5 +1,5 @@
 /* ============================================================
-   KILLSWITCH Web Studio — interactions
+   Killswitch Websites Web Studio — interactions
    Everything here is vanilla JS. No build step, no dependencies.
    Clone the folder, change text, push to Vercel — it's live.
    ============================================================ */
@@ -89,15 +89,15 @@ async function sendLead(payload, noteEl, formEl) {
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({
         access_key: WEB3FORMS_KEY,
-        subject: `🔔 New lead (${payload.source || 'website'}) — KILLSWITCH`,
-        from_name: 'KILLSWITCH Website',
+        subject: `🔔 New lead (${payload.source || 'website'}) — Killswitch Websites`,
+        from_name: 'Killswitch Websites Website',
         ...payload,
       }),
     });
     const data = await r.json().catch(() => ({}));
     ok = !!data.success;
     msg = data.message || ('HTTP ' + r.status);
-    console.log('[KILLSWITCH lead] status', r.status, data);
+    console.log('[Killswitch Websites lead] status', r.status, data);
   } catch (e) { msg = String(e); }
   if (noteEl) {
     noteEl.hidden = false;
@@ -178,7 +178,7 @@ function openChat() {
   chatLaunch.style.display = 'none';
   if (!greeted) {
     greeted = true;
-    setTimeout(() => addMsg("Hey! 👋 I'm the Killswitch assistant. Ask me about pricing, timelines, what we can build, or **Switch** (our AI sales rep).", 'bot'), 350);
+    setTimeout(() => addMsg("Hey! 👋 I'm the Killswitch Websites assistant. Ask me about pricing, timelines, what we can build, or **Switch** (our AI sales rep).", 'bot'), 350);
   }
   setTimeout(() => chatText.focus(), 100);
 }
