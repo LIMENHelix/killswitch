@@ -27,7 +27,7 @@ export default async function handler(req, res) {
   const account = await getAccount(email);
   if (!account) { res.status(404).json({ error: 'not_found' }); return; }
 
-  const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitch.domains';
+  const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitchwebsites.com';
   const action = body.action || 'state';
 
   try {

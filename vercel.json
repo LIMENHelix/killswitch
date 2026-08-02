@@ -6,6 +6,18 @@
     { "path": "/api/cron-mail", "schedule": "0 14,20 * * *" }
   ],
   "redirects": [
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "killswitch.domains" }],
+      "destination": "https://killswitchwebsites.com/",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "killswitch.domains" }],
+      "destination": "https://killswitchwebsites.com/:path*",
+      "permanent": true
+    },
     { "source": "/menu", "destination": "/pricing", "permanent": false },
     { "source": "/mckillswitches", "destination": "/pricing", "permanent": false },
     { "source": "/kitchen", "destination": "/pricing", "permanent": false },

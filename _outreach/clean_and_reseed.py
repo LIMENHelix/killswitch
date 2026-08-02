@@ -13,7 +13,7 @@ import os, csv, re, json, hashlib, urllib.request, urllib.error
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LEADS = os.path.join(HERE, "leads.csv")
-BASE = os.environ.get("KS_BASE", "https://killswitch.domains").rstrip("/")
+BASE = os.environ.get("KS_BASE", "https://killswitchwebsites.com").rstrip("/")
 TOKEN = os.environ.get("ADMIN_KEY") or os.environ.get("SWITCH_TOKEN", "sw_kcbrain_7Q2f9x")
 COLS = ["trade", "name", "phone", "street", "city", "state", "zip", "email", "status", "lob_id"]
 

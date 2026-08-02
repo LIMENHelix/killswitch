@@ -67,7 +67,7 @@ export default async function handler(req, res) {
 
   try {
     if (action === 'onboard') {
-      const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitch.domains';
+      const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitchwebsites.com';
       const out = await onboardCustomer({ email: body.email, site: body.site, name: body.name, host, source: 'master-onboard' });
       if (out.error) { res.status(400).json({ error: out.error }); return; }
       res.status(200).json({ ok: true, email: out.email, portalUrl: out.portalUrl, emailed: out.emailed, tokenReady: out.tokenReady });
@@ -75,7 +75,7 @@ export default async function handler(req, res) {
     }
 
     // action 'list'
-    const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitch.domains';
+    const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitchwebsites.com';
     const map = await getAccounts();
     const byCust = await stripeByCustomer();
     const accounts = Object.keys(map).map((k) => {

@@ -13,7 +13,7 @@ Internal reference. Lives in `_outreach/` (firewalled from deploy). Voice matche
       were added — deploy, then call. (As of this writing the demos are built but NOT yet live.)
 - [ ] You can send a text during/right after the call (the close is "can I text you the link").
 - [ ] Call during their business hours, on your lunch or after 5. One call per shop.
-- [ ] After each call, log it in the admin dashboard (killswitch.domains/admin).
+- [ ] After each call, log it in the admin dashboard (killswitchwebsites.com/admin).
 
 ## THE SHAPE (every call, 30 seconds)
 1. **Disarm:** "This is a sales call, you can hang up, no hard feelings. Thirty seconds?"
@@ -26,7 +26,7 @@ Internal reference. Lives in `_outreach/` (firewalled from deploy). Voice matche
 
 ## 1 — Auto Tech Services Center · Kendall · (913) 268-7887
 **Hook:** Best reputation in Shawnee (4.7, 70+ reviews) but invisible on Google — only a generic NAPA page.
-**Live demo:** https://killswitch.domains/demos/auto-tech-shawnee
+**Live demo:** https://killswitchwebsites.com/demos/auto-tech-shawnee
 
 > "Hi, is this Kendall? My name's Chris, I run a small shop called Killswitch. I'll be
 > straight — this is a sales call, you can hang up and I won't take it personally. Thirty
@@ -44,7 +44,7 @@ Internal reference. Lives in `_outreach/` (firewalled from deploy). Voice matche
 
 ## 2 — Autobots Garage · Steve / Frank · (913) 722-5151
 **Hook:** Near-perfect 4.9 stars, and a Facebook page is their entire web presence.
-**Live demo:** https://killswitch.domains/demos/autobots-overland-park
+**Live demo:** https://killswitchwebsites.com/demos/autobots-overland-park
 
 > "Hi — is this Steve? Chris here, with a shop called Killswitch. Straight up, this is a
 > sales call, hang up any time. Thirty seconds? … Here's the thing: you've got a 4.9 — that's
@@ -60,7 +60,7 @@ Internal reference. Lives in `_outreach/` (firewalled from deploy). Voice matche
 
 ## 3 — Dave's Trusted Auto · Dave · (816) 966-8600
 **Hook:** 71 reviews at 4.6 in Grandview and nowhere online to send that credibility.
-**Live demo:** https://killswitch.domains/demos/daves-trusted-auto-grandview
+**Live demo:** https://killswitchwebsites.com/demos/daves-trusted-auto-grandview
 
 > "Hi, is this Dave? Chris, with a shop called Killswitch. I'll be honest — sales call, you
 > can hang up, no hard feelings. Thirty seconds? … Reason I called: you've got seventy-plus
@@ -76,7 +76,7 @@ Internal reference. Lives in `_outreach/` (firewalled from deploy). Voice matche
 
 ## 4 — Charlie's Brake & Muffler · Charlie · (913) 859-9994
 **Hook:** Trusted 15+ year Lenexa brake/exhaust shop, strong reviews, no website at all.
-**Live demo:** https://killswitch.domains/demos/charlies-brake-muffler-lenexa
+**Live demo:** https://killswitchwebsites.com/demos/charlies-brake-muffler-lenexa
 
 > "Hi, is this Charlie? Chris here, with a company called Killswitch. Straight with you —
 > this is a sales call, hang up whenever. Thirty seconds? … Here's why I called: you've been
@@ -93,7 +93,7 @@ Internal reference. Lives in `_outreach/` (firewalled from deploy). Voice matche
 
 ## 5 — Lee Auto Repair · Lee · (816) 861-7227
 **Hook:** Decades-long KC following, 60+ reviews, no site to capture it.
-**Live demo:** https://killswitch.domains/demos/lee-auto-repair-kansas-city
+**Live demo:** https://killswitchwebsites.com/demos/lee-auto-repair-kansas-city
 
 > "Hi, is this Lee? My name's Chris, I run a shop called Killswitch. Honest heads-up — this
 > is a sales call, you can hang up, no hard feelings. Thirty seconds? … Here's the reason:
@@ -109,7 +109,7 @@ Internal reference. Lives in `_outreach/` (firewalled from deploy). Voice matche
 
 ## 6 — Amilcar's Auto Repair · Amilcar · (816) 382-1302
 **Hook:** Long-running Independence independent, solid reviews, zero web presence.
-**Live demo:** https://killswitch.domains/demos/amilcars-auto-repair-independence
+**Live demo:** https://killswitchwebsites.com/demos/amilcars-auto-repair-independence
 
 > "Hi, is this Amilcar? Chris here, with a shop called Killswitch. I'll be straight — this is
 > a sales call, hang up any time. Thirty seconds? … Here's why I called: you've been running

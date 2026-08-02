@@ -14,7 +14,7 @@ import os, csv, json, time, urllib.request, urllib.error
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LEADS = os.environ.get("KS_LEADS_OUT") or os.path.join(HERE, "leads.csv")
-BASE = os.environ.get("KS_BASE", "https://killswitch.domains").rstrip("/")
+BASE = os.environ.get("KS_BASE", "https://killswitchwebsites.com").rstrip("/")
 TOKEN = os.environ.get("SWITCH_TOKEN", "sw_kcbrain_7Q2f9x")
 
 TRADES = ["plumber", "electrician", "hvac", "roofer", "landscaper", "painter",

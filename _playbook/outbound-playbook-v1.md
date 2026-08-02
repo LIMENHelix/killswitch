@@ -28,7 +28,7 @@ Subjects (test): `the catch, up front` / `free website. here's how we actually m
 > **How we make money:** we're betting that once the site is bringing you customers, you'll *want* the parts that turn a nice site into a machine — showing up on Google, online booking, card payments, an AI that answers the phone at 2 a.m. Those are $19–29/mo each, all optional, and nothing turns on unless you turn it on.
 > That's it. That's the whole model. We earn the free site back by being good enough that you choose to buy more.
 > Want yours? Reply with just your business name and I'll have the site built and the link in your inbox. No call needed.
-> — {{SenderName}}, KILLSWITCH · killswitch.domains
+> — {{SenderName}}, KILLSWITCH · killswitchwebsites.com
 > *P.S. We only take a handful of free builds at a time so each one gets done right.*
 
 Trade swaps (replace paragraph 2):
@@ -82,10 +82,10 @@ Subjects: `closing your file` / `should I stop?` / `last one from me, {{FirstNam
 
 ## PART 3 — DIRECT MAIL
 
-**Postcard (6×9 oversized). FRONT:** "We'll build your website. Free." / "And no, we're not going to hold it hostage." / KILLSWITCH · killswitch.domains
-**BACK:** The catch, since you're looking for it: the website is free and genuinely yours (domain, content, code, no contract). We bet you'll later want the machine around it (Google, 24/7 booking, payments, a 2 a.m. AI), $19–29/mo, nothing on unless you turn it on. That's how a free website pays for itself. Built for {{trade}}s. → killswitch.domains/start (live in minutes, no call) or call/text {{Phone}} and say "free site."
+**Postcard (6×9 oversized). FRONT:** "We'll build your website. Free." / "And no, we're not going to hold it hostage." / KILLSWITCH · killswitchwebsites.com
+**BACK:** The catch, since you're looking for it: the website is free and genuinely yours (domain, content, code, no contract). We bet you'll later want the machine around it (Google, 24/7 booking, payments, a 2 a.m. AI), $19–29/mo, nothing on unless you turn it on. That's how a free website pays for itself. Built for {{trade}}s. → killswitchwebsites.com/start (live in minutes, no call) or call/text {{Phone}} and say "free site."
 
-**The Letter (1 page, #10 window envelope, real stamp, blue-ink signature — beats the postcard 3:1 on trades):** opens "This is a sales letter. You knew that by the second line." States the free real site you own, no contract, keep it and walk if you want. Explains the model (add-ons $19–29/mo, optional, off). "We give away the thing you'd normally pay two thousand dollars for, and bet on being good enough that you choose to pay later." Proof (allaccesskc.com, recursivelove.com). "We take a handful of builds at a time." CTA: killswitch.domains/start or call and say "free site." P.S. the paper letter proves we'll do the unscalable thing.
+**The Letter (1 page, #10 window envelope, real stamp, blue-ink signature — beats the postcard 3:1 on trades):** opens "This is a sales letter. You knew that by the second line." States the free real site you own, no contract, keep it and walk if you want. Explains the model (add-ons $19–29/mo, optional, off). "We give away the thing you'd normally pay two thousand dollars for, and bet on being good enough that you choose to pay later." Proof (allaccesskc.com, recursivelove.com). "We take a handful of builds at a time." CTA: killswitchwebsites.com/start or call and say "free site." P.S. the paper letter proves we'll do the unscalable thing.
 
 ---
 

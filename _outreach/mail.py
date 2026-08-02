@@ -85,7 +85,7 @@ def back_html(lead):
       <p>That's how a free website pays for itself. That's the whole business.</p>
       <p class="more">And whatever else you dream up, an online store, a booking system, even a 24/7 AI that answers your phone. If you can describe it, we build it.</p>
       <div class="built">Built for {trade}. We take a few builds a month.</div>
-      <div class="cta">&rarr; <span class="u">killswitch.domains/start</span>, live in minutes, no call needed</div>
+      <div class="cta">&rarr; <span class="u">killswitchwebsites.com/start</span>, live in minutes, no call needed</div>
       {phone_line}
     </div></div></body></html>"""
 

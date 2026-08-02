@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://killswitch.domains/sitemap.xml
+Sitemap: https://killswitchwebsites.com/sitemap.xml

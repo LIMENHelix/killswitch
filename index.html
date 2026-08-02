@@ -4,30 +4,41 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Free Website for Your Business, Built for You | KILLSWITCH</title>
-<meta name="description" content="KILLSWITCH builds local service businesses a real website, free, and you own it. Add getting found on Google, booking, payments, and a 24/7 AI assistant when you are ready. Serving all 50 states." />
+<meta name="description" content="KILLSWITCH builds local service businesses a real website, free, and yours to keep. Built by hand, usually the same day. Serving all 50 states." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230a0b0e'/%3E%3Cg fill='none' stroke='%23FF3826' stroke-width='9' stroke-linecap='round'%3E%3Cpath d='M62.5 30.4 A25 25 0 1 1 37.5 30.4'/%3E%3Cpath d='M50 22 V52'/%3E%3C/g%3E%3C/svg%3E" />
 <meta name="google-site-verification" content="y-rQyRpN8xyv4gVq61auWfMm8tfURu-bQkqDbiYz3Pg" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="KILLSWITCH" />
+<meta property="og:title" content="Free Website for Your Business, Built for You | KILLSWITCH" />
+<meta property="og:description" content="KILLSWITCH builds local service businesses a real website, free, and yours to keep. Built by hand, usually the same day. Serving all 50 states." />
+<meta property="og:url" content="https://killswitchwebsites.com/" />
+<meta property="og:image" content="https://killswitchwebsites.com/og-image.svg" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Free Website for Your Business, Built for You | KILLSWITCH" />
+<meta name="twitter:description" content="KILLSWITCH builds local service businesses a real website, free, and yours to keep. Built by hand, usually the same day. Serving all 50 states." />
+<meta name="twitter:image" content="https://killswitchwebsites.com/og-image.svg" />
+<link rel="canonical" href="https://killswitchwebsites.com/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"ProfessionalService","name":"KILLSWITCH","description":"KILLSWITCH builds local service businesses a real website, free, and yours to keep.","url":"https://killswitchwebsites.com/","areaServed":"US","priceRange":"Free to low monthly","parentOrganization":{"@type":"Organization","name":"LIMEN Helix LLC","url":"https://www.limenhelix.com"},"makesOffer":{"@type":"Offer","price":"0","priceCurrency":"USD","itemOffered":{"@type":"Service","name":"Free business website","description":"A free, custom, mobile-ready website for your business, yours to keep."}},"sameAs":["https://www.limenhelix.com"]}
+</script>
 <style>
   :root{
     --bg:#121214;
     --panel:#1a1a1e;
     --metal:#232328;
-    --metal-hi:#2c2c33;
     --line:#34343c;
     --line-soft:#26262c;
     --ink:#FFFFFF;
     --mute:#b6bac2;
     --mute-2:#888c96;
-    --amber:#FFC42E;     /* hazard / standby, brighter gold */
+    --amber:#FFC42E;
     --amber-dim:#c79a34;
-    --red:#FF5546;       /* live / emergency, brighter */
-    --red-deep:#d21f10;
-    --go:#1BA45A;        /* go / buy, green (solid, not too bright) */
+    --red:#FF5546;
+    --go:#1BA45A;
     --go-ink:#ffffff;
-    --ok:#3ad17a;
     --maxw:1140px;
     --r:14px;
   }
@@ -45,69 +56,77 @@
     line-height:1.55;
     -webkit-font-smoothing:antialiased;
     overflow-x:hidden;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
   }
   a{color:inherit;text-decoration:none}
 
   .mono{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.16em;font-size:.72rem;color:var(--mute)}
-  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px;width:100%}
   .display{font-family:"Archivo",sans-serif;font-weight:900;line-height:.96;letter-spacing:-.02em}
 
-  /* hazard stripe */
-  .hazard{
-    height:10px;
-    background:repeating-linear-gradient(-45deg,var(--amber) 0 16px,#161616 16px 32px);
-    opacity:.85;
-  }
+  #pglow{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0;transition:opacity .6s ease;
+    background:radial-gradient(760px 520px at 72% 34%, rgba(27,164,90,.20), transparent 68%)}
+  body.lit #pglow{opacity:1}
 
-  /* ---- NAV ---- */
-  header.nav{position:sticky;top:0;z-index:60;background:rgba(18,18,20,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--line-soft)}
-  .nav-in{display:flex;align-items:center;justify-content:space-between;height:64px}
-  .brand{font-family:"Archivo",sans-serif;font-weight:900;letter-spacing:.04em;font-size:1.15rem;display:flex;align-items:center;gap:9px}
-  .brand-ic{width:1.12em;height:1.12em;color:var(--red);flex:0 0 auto}
-  .nav-links{display:flex;gap:26px;align-items:center}
-  .nav-links a{font-size:.9rem;color:var(--mute);transition:color .2s}
+  .hazard{height:10px;background:repeating-linear-gradient(-45deg,var(--amber) 0 16px,#161616 16px 32px);opacity:.85;position:relative;z-index:2}
+
+  /* NAV */
+  .nav{position:relative;z-index:3;border-bottom:1px solid var(--line-soft);background:rgba(18,18,20,.72);backdrop-filter:blur(9px)}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;gap:20px}
+  .brand{display:inline-flex;align-items:center;gap:10px;font-family:"Archivo",sans-serif;font-weight:900;letter-spacing:.04em;color:var(--red);font-size:1.05rem}
+  .brand-ic{width:20px;height:20px;flex:none}
+  .nav-links{display:flex;align-items:center;gap:26px}
+  .nav-links a{font-size:.92rem;color:var(--mute);transition:color .2s}
   .nav-links a:hover{color:var(--ink)}
-  .nav-cta{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.1em;font-size:.74rem;padding:9px 16px;border:1px solid var(--amber);color:var(--amber);border-radius:8px;transition:.2s}
-  .nav-cta:hover{background:var(--amber);color:#111}
-  @media(max-width:760px){.nav-links a:not(.nav-cta){display:none}}
 
-  /* ---- HERO ---- */
-  .hero{position:relative;padding:74px 0 64px}
-  .hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:56px;align-items:center}
-  .eyebrow{display:inline-flex;align-items:center;gap:10px;margin-bottom:26px}
+  /* HERO */
+  main{position:relative;z-index:1;flex:1;display:flex;align-items:center;padding:clamp(40px,7vh,86px) 0}
+  .hero-grid{display:grid;grid-template-columns:1.35fr .65fr;gap:56px;align-items:center}
+  .eyebrow{display:inline-flex;align-items:center;gap:10px;margin-bottom:22px}
   .eyebrow::before{content:"";width:26px;height:1px;background:var(--amber)}
-  h1.hero-h{font-size:clamp(2rem,5vw,3.4rem)}
-  .hero-sub{margin-top:24px;font-size:1.12rem;color:var(--mute);max-width:30em}
-  .hero-sub strong{color:var(--ink);font-weight:700}
-  h1.hero-h .free{color:var(--amber);position:relative;text-shadow:0 0 22px rgba(255,196,46,.55)}
-  .hero-actions{margin-top:34px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  h1.hero-h{font-size:clamp(2.1rem,5.4vw,3.6rem)}
+  h1.hero-h .free{color:var(--amber);text-shadow:0 0 22px rgba(255,196,46,.55)}
+  .hero-sub{margin-top:20px;font-size:1.14rem;color:var(--mute);max-width:26em}
+  .hero-sub strong{color:var(--ink);font-weight:600}
 
-  .btn{
-    font-family:"Archivo",sans-serif;font-weight:700;letter-spacing:.01em;
-    font-size:1rem;padding:16px 26px;border-radius:11px;cursor:pointer;border:none;
-    display:inline-flex;align-items:center;gap:10px;transition:transform .15s ease, box-shadow .25s ease, background .25s, opacity .25s;
+  /* CAPTURE FORM */
+  .cap{margin-top:30px;max-width:430px}
+  .cap-row{margin-bottom:11px}
+  .cap label{display:block;font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--mute-2);margin-bottom:6px}
+  .cap input{
+    width:100%;padding:13px 15px;border-radius:11px;border:1px solid var(--line);
+    background:var(--metal);color:var(--ink);font-family:"Inter",system-ui,sans-serif;font-size:1rem;
+    transition:border-color .2s,box-shadow .2s;
   }
-  .btn-primary{background:var(--go);color:var(--go-ink);border:1px solid var(--go);box-shadow:0 6px 20px -10px rgba(0,0,0,.55)}
-  .btn-primary.armed{box-shadow:0 8px 26px -8px rgba(27,164,90,.55)}
+  .cap input::placeholder{color:#6d717b}
+  .cap input:focus{outline:none;border-color:var(--go);box-shadow:0 0 0 3px rgba(27,164,90,.18)}
+  .cap input:invalid:not(:placeholder-shown){border-color:var(--red)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:15px 26px;border-radius:12px;font-weight:600;font-size:1.02rem;cursor:pointer;border:1px solid transparent;transition:transform .18s,filter .18s,box-shadow .18s;font-family:"Inter",system-ui,sans-serif}
+  .btn-primary{width:100%;margin-top:7px;background:var(--go);color:var(--go-ink);border-color:var(--go);box-shadow:0 8px 26px -8px rgba(27,164,90,.55)}
   .btn-primary:hover{transform:translateY(-2px);filter:brightness(1.09)}
-  /* standby (default) = transparent outline like the ghost button; fills solid with black text on hover */
-  .btn-primary.standby{background:transparent;color:var(--go);border:1px solid var(--go);box-shadow:none}
-  .btn-primary.standby:hover{background:color-mix(in srgb, var(--go) 14%, transparent);color:var(--go);border-color:var(--go)}
-  .btn-primary.standby .arrow{opacity:.55}
-  .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:600;font-family:"Inter",sans-serif;font-size:.95rem;padding:15px 22px}
-  .btn-ghost:hover{background:var(--amber);border-color:var(--amber);color:#111}
+  .btn-primary[disabled]{opacity:.6;cursor:wait;transform:none}
+  .cap-fine{margin-top:12px;font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mute-2)}
+  .cap-note{margin-top:16px;font-size:.88rem;color:var(--mute-2);line-height:1.5;max-width:40em}
+  .cap-note b{color:var(--mute);font-weight:600}
+  .cap-err{margin-top:12px;font-size:.9rem;color:var(--red);display:none}
+  .cap-err.show{display:block}
 
-  .hero-fine{margin-top:18px;font-size:.85rem;color:var(--mute-2);display:flex;align-items:center;gap:8px}
-  .hero-fine .pip{width:6px;height:6px;border-radius:50%;background:var(--ok)}
-  .hero-own{margin-top:16px;font-family:"Archivo",sans-serif;font-weight:700;font-size:1.12rem;letter-spacing:-.01em;color:var(--ink)}
-  .hero-own .amp{color:var(--amber)}
+  .done{display:none;margin-top:30px;max-width:430px;padding:24px;border:1px solid var(--go);border-radius:var(--r);background:rgba(27,164,90,.09)}
+  .done.show{display:block}
+  .done h2{font-family:"Archivo",sans-serif;font-size:1.35rem;margin-bottom:10px}
+  .done p{color:var(--mute);font-size:.96rem}
 
-  /* ---- THE SWITCH PANEL ---- */
-  .panel-unit{
-    background:linear-gradient(180deg,var(--metal-hi),var(--metal));
-    border:1px solid var(--line);border-radius:18px;overflow:hidden;
-    box-shadow:0 30px 60px -30px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.04);
-  }
+  .proof{margin-top:26px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:.9rem;color:var(--mute-2)}
+  .proof a{color:var(--amber);border-bottom:1px solid rgba(255,196,46,.4);padding-bottom:1px}
+  .proof a:hover{color:var(--ink);border-color:var(--ink)}
+  .talk{margin-top:14px;font-size:.88rem;color:var(--mute-2)}
+  .talk a{color:var(--mute);border-bottom:1px solid var(--line)}
+  .talk a:hover{color:var(--ink)}
+
+  /* SWITCH PANEL */
+  .panel-unit{background:linear-gradient(180deg,var(--panel),#151519);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:0 20px 50px -28px rgba(0,0,0,.9)}
   .panel-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line-soft)}
   .panel-head .lbl{font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.18em;color:var(--mute);text-transform:uppercase}
   .status{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;display:flex;align-items:center;gap:8px;color:var(--red);transition:color .3s}
@@ -115,35 +134,13 @@
   .status.live{color:var(--go)}
   .status.live .sdot{background:var(--go);box-shadow:0 0 12px var(--go);animation:pulse 1.4s infinite}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
-
   .panel-body{padding:30px 18px 26px;display:flex;flex-direction:column;align-items:center;gap:18px;position:relative}
   .panel-body .top-haz,.panel-body .bot-haz{position:absolute;left:0;right:0;height:7px;background:repeating-linear-gradient(-45deg,var(--amber-dim) 0 12px,transparent 12px 24px);opacity:.5}
   .panel-body .top-haz{top:0}.panel-body .bot-haz{bottom:0}
-
-  /* the power button, round, click on/off */
-  .switch{
-    width:116px;height:116px;border-radius:50%;padding:0;
-    background:radial-gradient(circle at 50% 36%,#2a2a31,#0d0d11 72%);
-    border:1px solid #34343c;position:relative;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;color:var(--amber);
-    box-shadow:inset 0 3px 12px rgba(0,0,0,.8), inset 0 -4px 12px rgba(0,0,0,.5), 0 10px 26px -12px rgba(0,0,0,.85);
-    transition:box-shadow .3s, border-color .3s, color .3s, background .3s;
-  }
-  .switch::after{content:"\23FB";font-size:44px;line-height:1;text-shadow:0 0 10px rgba(255,196,46,.45);transition:color .3s, text-shadow .3s}
-  .switch:hover{border-color:var(--amber)}
-  .switch:focus-visible{outline:2px solid var(--amber);outline-offset:4px}
-  .switch.on{
-    color:#fff;border-color:rgba(37,199,102,.6);
-    background:radial-gradient(circle at 50% 40%,#123a20,#0a120c 74%);
-    box-shadow:inset 0 3px 12px rgba(0,0,0,.7), 0 0 42px -4px rgba(37,199,102,.7), 0 0 0 1px rgba(37,199,102,.4);
-  }
-  .switch.on::after{color:#fff;text-shadow:0 0 12px rgba(255,255,255,.95), 0 0 26px rgba(37,199,102,.9)}
-
   .switch-caption{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.14em;font-size:.74rem;color:var(--mute);text-align:center}
-  .switch-caption b{color:var(--red);font-weight:600}
-  .switch.on ~ .switch-caption b{color:var(--go)}
+  .switch-caption b{color:var(--red);font-weight:600;transition:color .3s}
+  .switch-caption.live b{color:var(--go)}
 
-  /* ---- big up/down KILL-SWITCH lever (hero master) ---- */
   .klsw{background:linear-gradient(180deg,#2a2a31,#141418);border:1px solid #3a3a42;border-radius:14px;width:66px;height:134px;position:relative;cursor:pointer;padding:0;box-shadow:inset 0 2px 9px rgba(0,0,0,.8),0 0 20px -6px rgba(255,85,70,.5);transition:box-shadow .3s,border-color .3s}
   .klsw .slot{position:absolute;left:50%;top:12px;bottom:12px;width:20px;transform:translateX(-50%);background:#0b0b0e;border-radius:10px;box-shadow:inset 0 2px 6px rgba(0,0,0,.95)}
   .klsw .lever{position:absolute;left:50%;transform:translateX(-50%);width:16px;height:62px;border-radius:8px;top:36px;background:linear-gradient(180deg,#9a9ea8,#5e626c);border:1px solid #4a4e58;box-shadow:0 3px 7px rgba(0,0,0,.6);transition:background .25s,box-shadow .25s;z-index:2}
@@ -155,247 +152,35 @@
   .klsw.on .lever{background:linear-gradient(180deg,#38c877,#158f4e);border-color:#0f7a40;box-shadow:0 0 16px rgba(27,164,90,.8)}
   .klsw.on .lever::before{top:55px;background:linear-gradient(180deg,#8effb9,#1BA45A);border-color:#0f7a40;box-shadow:0 0 22px rgba(27,164,90,.95),inset 0 1px 0 rgba(255,255,255,.4)}
   .klsw.on .led{background:var(--go);box-shadow:0 0 12px var(--go),0 0 24px var(--go)}
-  .klsw.flash::before{content:"";position:absolute;inset:-10px;border-radius:20px;pointer-events:none;box-shadow:0 0 44px 11px rgba(140,255,190,.95);animation:sparkflash .5s ease-out forwards}
-  @keyframes sparkflash{0%{opacity:1}100%{opacity:0}}
 
-  /* cumulative power glow + zap flick */
-  #pglow{position:fixed;inset:0;z-index:-1;pointer-events:none;transition:background .55s ease;
-    background:
-      radial-gradient(145% 110% at 50% 0%, rgba(40,220,135,calc(var(--power,0)*.12)), transparent 62%),
-      radial-gradient(115% 90% at 50% 100%, rgba(27,164,90,calc(var(--power,0)*.08)), transparent 70%)}
-  body.zap{animation:zapflick .18s}
-  @keyframes zapflick{0%,100%{filter:none}45%{filter:brightness(1.16)}}
+  /* FOOTER */
+  .foot{position:relative;z-index:2;border-top:1px solid var(--line-soft);padding:26px 0 20px;margin-top:auto}
+  .foot-in{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+  .foot-b{display:flex;flex-direction:column;gap:4px}
+  .lh{font-size:.84rem;color:var(--mute-2)}
+  .lh:hover{color:var(--amber)}
+  .foot-links{display:flex;gap:20px;flex-wrap:wrap}
+  .foot-links a{font-size:.88rem;color:var(--mute-2)}
+  .foot-links a:hover{color:var(--ink)}
+  .copy{margin-top:18px;font-size:.78rem;color:var(--mute-2)}
+  .copy a{border-bottom:1px solid var(--line-soft)}
+  .copy a:hover{color:var(--mute)}
 
-  /* growth-path power gate */
-  .growth-hidden{display:none}
-  .gate{margin-top:34px;border:1px dashed var(--line);border-radius:16px;padding:44px 26px;text-align:center;background:var(--panel)}
-  .gate .zi{font-size:2rem;filter:grayscale(.2)}
-  .gate h3{font-family:"Archivo",sans-serif;font-weight:900;font-size:1.35rem;margin-top:8px;letter-spacing:-.01em}
-  .gate p{color:var(--mute);margin:8px auto 0;max-width:30em}
-
-  /* ---- SECTION SCAFFOLD ---- */
-  section.s{padding:88px 0;border-top:1px solid var(--line-soft)}
-  .s-head{max-width:34em}
-  .s-head h2{font-family:"Archivo",sans-serif;font-weight:900;font-size:clamp(1.5rem,3.2vw,2.2rem);line-height:1.05;letter-spacing:-.02em;margin-top:18px}
-  .s-head p.lead{margin-top:18px;color:#c2c2bb;font-size:1.08rem}
-
-  /* catch */
-  .catch{background:var(--panel)}
-  .catch-card{margin-top:30px;border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:12px;padding:30px 30px;background:var(--metal);max-width:46em}
-  .catch-card p{color:#cfcfc8}
-  .catch-card p+p{margin-top:14px}
-  .catch-card .pun{color:var(--amber);font-weight:600}
-
-  /* modules grid */
-  .mods{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:42px}
-  .mod{
-    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px 20px;
-    position:relative;transition:transform .2s, border-color .2s;
-  }
-  .mod:hover{transform:translateY(-3px);border-color:var(--amber)}
-  .mod .ix{font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.14em;color:var(--mute-2)}
-  .mod h3{font-family:"Archivo",sans-serif;font-weight:700;font-size:1.18rem;margin:10px 0 8px}
-  .mod p{font-size:.92rem;color:var(--mute);line-height:1.5}
-  .mod .price{margin-top:16px;font-family:"IBM Plex Mono",monospace;font-size:.8rem;letter-spacing:.06em;color:var(--ink)}
-  .mod.free{border-color:var(--amber);background:linear-gradient(180deg,rgba(244,163,0,.07),var(--panel))}
-  .mod.free .ix{color:var(--amber)}
-  .mod.free .price{color:var(--amber)}
-  .mod .light{position:absolute;top:18px;right:18px;width:8px;height:8px;border-radius:50%;background:#3a3a42;transition:.2s}
-  .mod:hover .light{background:var(--red);box-shadow:0 0 8px var(--red)}
-  .mod.free .light{background:var(--amber);box-shadow:0 0 8px var(--amber)}
-  .mods-note{margin-top:20px;font-size:.85rem;color:var(--mute-2);font-family:"IBM Plex Mono",monospace;letter-spacing:.04em}
-  .mods-note a{color:var(--amber)}
-  .mods-note a:hover{text-decoration:underline}
-
-  /* most-popular starter bundle */
-  .starter{margin-top:34px;border:1px solid var(--go);border-radius:14px;padding:24px 26px;background:linear-gradient(180deg,rgba(27,164,90,.10),var(--panel));display:flex;flex-wrap:wrap;align-items:center;gap:20px 28px;position:relative}
-  .starter .badge{position:absolute;top:-11px;left:22px;font-family:"IBM Plex Mono",monospace;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--go-ink);background:var(--go);padding:4px 12px;border-radius:999px;font-weight:600}
-  .starter-main{flex:1 1 300px;min-width:260px}
-  .starter-main h3{font-family:"Archivo",sans-serif;font-weight:900;font-size:1.35rem;letter-spacing:-.01em}
-  .starter-main p{margin-top:8px;color:var(--mute);font-size:.96rem;max-width:34em}
-  .starter-price{text-align:right;white-space:nowrap}
-  .starter-price .amt{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:1.7rem;color:var(--go)}
-  .starter-price .amt small{font-size:.8rem;color:var(--mute-2);font-weight:400}
-  .starter-price .sub{font-size:.72rem;color:var(--mute-2);margin-top:2px}
-  .starter .btn{margin-top:12px}
-  @media(max-width:620px){.starter{flex-direction:column;align-items:flex-start}.starter-price{text-align:left}}
-
-  /* growth-path ladder */
-  .ladder{margin-top:24px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
-  .rung{display:grid;grid-template-columns:64px 1fr auto;gap:20px;align-items:start;padding:19px 22px;border-top:1px solid var(--line-soft)}
-  .rung:first-child{border-top:none}
-  .rung .px{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:1.12rem;color:var(--amber);letter-spacing:.02em}
-  .rung h3{font-family:"Archivo",sans-serif;font-weight:700;font-size:1.14rem;margin:0}
-  .rung .stage{font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--mute-2);margin-top:3px}
-  .rung .k{display:block;font-family:"IBM Plex Mono",monospace;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mute-2);margin:11px 0 3px}
-  .rung .v{color:var(--mute);font-size:.93rem}
-  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
-  .chips span{font-size:.72rem;color:var(--mute);background:var(--metal);border:1px solid var(--line-soft);border-radius:6px;padding:3px 9px;line-height:1.4}
-  .mtrade{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:.82rem;letter-spacing:.02em;color:var(--mute);background:var(--metal);border:1px solid var(--line);border-radius:8px;padding:9px 15px;transition:.2s}
-  .mtrade:hover{border-color:var(--amber);color:var(--ink);background:var(--panel);transform:translateY(-1px)}
-  .rung .amt{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:.96rem;color:var(--amber);text-align:right;white-space:nowrap}
-  .rung .amt small{display:block;color:var(--mute-2);font-size:.66rem;font-weight:400;margin-top:2px;letter-spacing:.03em}
-  .rung.free{background:linear-gradient(180deg,rgba(255,196,46,.06),transparent)}
-  .rung.flag{background:linear-gradient(180deg,rgba(37,199,102,.07),transparent)}
-  .rung.flag .px,.rung.flag .amt{color:var(--go)}
-  .rung .tag{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:#111;background:var(--amber);padding:2px 8px;border-radius:999px;margin-left:8px;vertical-align:3px}
-  .rung .buy{display:inline-block;margin-top:9px;font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--go-ink);background:var(--go);border:1px solid var(--go);padding:7px 15px;border-radius:8px;font-weight:600;transition:transform .15s,filter .2s}
-  .rung .buy:hover{filter:brightness(1.09);transform:translateY(-1px)}
-  .rung .buy-alt{display:block;margin-top:7px;font-size:.68rem;color:var(--mute-2);text-decoration:underline;text-underline-offset:2px}
-  .rung .buy-alt:hover{color:var(--amber)}
-  .rung.flag .buy{background:var(--go);color:var(--go-ink);border-color:var(--go)}
-  .rung{grid-template-columns:54px 1fr auto}
-  .pick{display:flex;align-items:center;justify-content:center}
-  /* pricing picks = mini kill-switch handle levers (housing + slot + handle) */
-  .pick input{appearance:none;-webkit-appearance:none;width:38px;height:56px;border-radius:9px;background:linear-gradient(180deg,#2a2a31,#141418);border:1px solid #3a3a42;position:relative;cursor:pointer;margin:0;flex:0 0 auto;box-shadow:inset 0 2px 6px rgba(0,0,0,.75),0 0 14px -5px rgba(255,85,70,.42);transition:box-shadow .25s,border-color .25s}
-  .pick input::after{content:"";position:absolute;left:50%;top:5px;transform:translateX(-50%);width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 6px rgba(255,85,70,.75);transition:background .25s,box-shadow .25s}
-  .pick input::before{content:"";position:absolute;left:50%;transform:translateX(-50%);width:26px;height:15px;border-radius:6px;top:17px;background:linear-gradient(180deg,#d2d6df,#868a94);border:1px solid #5a5e68;box-shadow:0 2px 5px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.4);transition:top .22s cubic-bezier(.18,2.4,.42,1),background .25s,box-shadow .25s,border-color .25s;z-index:2}
-  .pick input:checked{border-color:var(--go);box-shadow:inset 0 2px 6px rgba(0,0,0,.5),0 0 18px -3px rgba(27,164,90,.72)}
-  .pick input:checked::before{top:34px;background:linear-gradient(180deg,#8effb9,#1BA45A);border-color:#0f7a40;box-shadow:0 0 14px rgba(27,164,90,.9),inset 0 1px 0 rgba(255,255,255,.4)}
-  .pick input:checked::after{background:var(--go);box-shadow:0 0 8px var(--go),0 0 14px var(--go)}
-  .pick input:focus-visible{outline:2px solid var(--go);outline-offset:3px}
-  .rung.sel{background:rgba(255,196,46,.08)}
-  .pcart{max-width:560px;margin:26px auto 0;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px}
-  .pcart-row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;margin-bottom:14px;font-size:.9rem;color:var(--mute)}
-  .pcart-row strong{font-family:"IBM Plex Mono",monospace;color:var(--amber);font-size:1.3rem;white-space:nowrap}
-  .pcart .btn{width:100%;justify-content:center}
-  .pcart-note{margin-top:10px;font-size:.8rem;min-height:16px;color:var(--mute-2)}
-  @media(max-width:880px){.rung{grid-template-columns:52px 1fr;gap:12px;padding:17px 15px}.rung .amt{grid-column:2 / -1;text-align:left;margin-top:8px}}
-
-  /* essentials ⇄ everything reveal switch */
-  .mtoggle{display:flex;align-items:center;justify-content:center;gap:16px;margin:40px auto 6px;padding:14px 22px;max-width:max-content;border:1px solid var(--line);border-radius:999px;background:var(--panel);box-shadow:0 0 0 4px rgba(255,196,46,.05);font-family:"IBM Plex Mono",monospace;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase}
-  .mtoggle .off-lbl{color:var(--amber);transition:color .25s;font-weight:600}
-  .mtoggle .on-lbl{color:var(--mute-2);transition:color .25s;font-weight:600}
-  .mtoggle-hint{text-align:center;font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mute-2);margin-top:10px}
-  .rung-p{font-family:"IBM Plex Mono",monospace;font-size:.72rem;color:var(--amber);letter-spacing:.06em;font-weight:600;margin-right:6px}
-  .rung.flag .rung-p{color:var(--go)}
-  .mtoggle.allon .off-lbl{color:var(--mute-2)}
-  .mtoggle.allon .on-lbl{color:var(--go)}
-  .mswitch{background:none;border:none;padding:5px;cursor:pointer;line-height:0}
-  .mswitch .track{display:block;width:58px;height:30px;border-radius:999px;background:var(--metal);border:1px solid var(--line);position:relative;transition:.25s}
-  .mswitch .thumb{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);transition:.25s}
-  .mswitch:focus-visible{outline:2px solid var(--go);outline-offset:3px;border-radius:999px}
-  .mswitch[aria-checked="true"] .track{background:color-mix(in srgb,var(--go) 24%,var(--metal));border-color:var(--go)}
-  .mswitch[aria-checked="true"] .thumb{left:33px;background:var(--go);box-shadow:0 0 10px var(--go)}
-  .rung.more{display:none}
-  .ladder.showall .rung.more{display:grid}
-  @media(max-width:880px){.ladder.showall .rung.more{display:grid}}
-
-  /* proof */
-  .proof-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:42px}
-  .pcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px;display:flex;flex-direction:column;min-height:210px;transition:.2s}
-  .pcard:hover{border-color:var(--line);transform:translateY(-3px);background:var(--metal)}
-  .pcard .tag{font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber)}
-  .pcard h3{font-family:"Archivo",sans-serif;font-weight:700;font-size:1.3rem;margin:12px 0 8px}
-  .pcard p{font-size:.92rem;color:var(--mute);flex:1}
-  .pcard .go{margin-top:14px;font-size:.85rem;color:var(--ink);font-weight:500}
-  .pcard .go .arrow{color:var(--amber)}
-
-  /* assurance row */
-  .assure{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:42px}
-  .acell{border:1px solid var(--line-soft);border-radius:12px;padding:22px}
-  .acell .k{font-family:"Archivo",sans-serif;font-weight:900;font-size:1.5rem;color:var(--amber)}
-  .acell .v{margin-top:8px;color:var(--mute);font-size:.92rem}
-
-  /* final cta */
-  .final{position:relative;text-align:center;padding:96px 0}
-  .final h2{font-family:"Archivo",sans-serif;font-weight:900;font-size:clamp(1.7rem,4.2vw,2.7rem);line-height:1.02;letter-spacing:-.02em}
-  .final h2 .free{color:var(--amber)}
-  .final p{margin:22px auto 0;color:#c2c2bb;max-width:32em;font-size:1.08rem}
-  .final .hero-actions{justify-content:center}
-
-  footer{border-top:1px solid var(--line-soft);padding:46px 0 40px}
-  .foot-in{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:flex-start}
-  .foot-brand{font-family:"Archivo",sans-serif;font-weight:900;font-size:1.1rem;letter-spacing:.04em;display:inline-flex;align-items:center;gap:8px}
-  .foot-brand .dot{width:9px;height:9px;border-radius:50%;background:var(--red);display:inline-block;margin-left:4px}
-  .foot-tag{color:var(--mute);font-size:.88rem;margin-top:8px;max-width:24em}
-  .foot-tag .lh{color:var(--mute-2);display:block;margin-top:6px;font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase}
-  .foot-links{display:flex;gap:22px;flex-wrap:wrap}
-  .foot-links a{color:var(--mute);font-size:.88rem;transition:.2s}
-  .foot-links a:hover{color:var(--amber)}
-  .copy{margin-top:30px;color:var(--mute-2);font-size:.8rem;font-family:"IBM Plex Mono",monospace;letter-spacing:.06em}
-
-  /* reveal */
-  .reveal{opacity:0;transform:translateY(18px);transition:opacity .7s ease, transform .7s ease}
-  .reveal.in{opacity:1;transform:none}
-
-  @media(max-width:880px){
-    .hero-grid{grid-template-columns:1fr;gap:40px}
+  @media(max-width:900px){
+    .hero-grid{grid-template-columns:1fr;gap:36px}
     .panel-unit{max-width:340px;margin:0 auto;width:100%}
-    .mods,.proof-grid,.assure{grid-template-columns:1fr}
-    .mods{gap:12px}
+    .nav-links{gap:16px}
+    .nav-links a{font-size:.86rem}
+  }
+  @media(max-width:560px){
+    .nav-in{padding:14px 20px}
+    .nav-links a:nth-child(1){display:none}
+    .foot-in{flex-direction:column;align-items:flex-start}
   }
   @media(prefers-reduced-motion:reduce){
-    *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
-    .reveal{opacity:1;transform:none}
+    *{animation:none!important;transition:none!important}
   }
-  /* subtle technical grid, fading out (behind all content) */
-  body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
-    background-image:linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
-    background-size:46px 46px;
-    -webkit-mask-image:radial-gradient(120% 78% at 50% 0%,#000 42%,transparent 82%);
-    mask-image:radial-gradient(120% 78% at 50% 0%,#000 42%,transparent 82%)}
-
-  /* ---- SELF-SERVE CHAT (start your free site online, no call) ---- */
-  .ksbot-launch{position:fixed;right:20px;bottom:20px;z-index:80;display:inline-flex;align-items:center;gap:10px;
-    font-family:"Archivo",sans-serif;font-weight:700;font-size:.95rem;color:var(--go-ink);background:var(--go);
-    border:1px solid var(--go);border-radius:999px;padding:13px 20px 13px 16px;cursor:pointer;
-    box-shadow:0 14px 32px -12px rgba(27,164,90,.7);transition:transform .15s,filter .2s}
-  .ksbot-launch:hover{transform:translateY(-2px);filter:brightness(1.08)}
-  .ksbot-launch svg{width:20px;height:20px;flex:0 0 auto}
-  .ksbot-launch .pulse{width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 8px #fff;animation:pulse 1.4s infinite}
-  @media(max-width:520px){.ksbot-launch .lbl{display:none}.ksbot-launch{padding:15px;border-radius:50%}.ksbot-launch .pulse{display:none}}
-
-  .ksbot{position:fixed;right:20px;bottom:20px;z-index:81;width:min(384px,calc(100vw - 32px));
-    height:min(608px,calc(100vh - 40px));display:none;flex-direction:column;
-    background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;
-    box-shadow:0 44px 90px -34px rgba(0,0,0,.88)}
-  .ksbot.open{display:flex}
-  .ksbot-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 16px;
-    border-bottom:1px solid var(--line-soft);background:linear-gradient(180deg,var(--metal-hi),var(--metal))}
-  .ksbot-head .t{font-family:"Archivo",sans-serif;font-weight:700;font-size:.98rem;display:flex;align-items:center;gap:9px}
-  .ksbot-head .t svg{width:18px;height:18px;color:var(--go);flex:0 0 auto}
-  .ksbot-head .r{display:flex;align-items:center;gap:12px}
-  .ksbot-head .sub{font-family:"IBM Plex Mono",monospace;font-size:.56rem;letter-spacing:.13em;text-transform:uppercase;color:var(--go);display:flex;align-items:center;gap:6px;white-space:nowrap}
-  .ksbot-head .sub .d{width:7px;height:7px;border-radius:50%;background:var(--go);box-shadow:0 0 8px var(--go);animation:pulse 1.4s infinite}
-  .ksbot-x{background:none;border:none;color:var(--mute);font-size:1.5rem;line-height:1;cursor:pointer;padding:0 4px}
-  .ksbot-x:hover{color:var(--ink)}
-  .ksbot-progress{height:3px;background:var(--line-soft)}
-  .ksbot-progress i{display:block;height:100%;width:0;background:var(--go);transition:width .35s ease}
-  .ksbot-log{flex:1;overflow-y:auto;padding:18px 16px;display:flex;flex-direction:column;gap:11px}
-  .ksmsg{max-width:84%;padding:11px 14px;border-radius:14px;font-size:.92rem;line-height:1.5;word-wrap:break-word}
-  .ksmsg.bot{align-self:flex-start;background:var(--metal);border:1px solid var(--line-soft);border-bottom-left-radius:5px;color:var(--ink)}
-  .ksmsg.me{align-self:flex-end;background:var(--go);color:var(--go-ink);border-bottom-right-radius:5px}
-  .ksmsg.typing{color:var(--mute-2);font-style:italic}
-  .ksmsg a{color:var(--amber);text-decoration:underline}
-  .ksmsg.me a{color:#eafff2}
-  .kschips{display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 6px}
-  .kschip{font-family:"Inter",sans-serif;font-size:.85rem;color:var(--go);background:transparent;border:1px solid var(--go);
-    border-radius:999px;padding:8px 14px;cursor:pointer;transition:.15s;line-height:1.2}
-  .kschip:hover{background:var(--go);color:var(--go-ink)}
-  .ksbot-foot{border-top:1px solid var(--line-soft);padding:12px 14px;display:flex;gap:9px;align-items:center}
-  .ksbot-foot input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--ink);
-    font-family:inherit;font-size:.92rem;padding:11px 13px;outline:none}
-  .ksbot-foot input:focus{border-color:var(--go)}
-  .ksbot-foot button{background:var(--go);color:var(--go-ink);border:none;border-radius:10px;width:42px;height:42px;
-    font-size:1.15rem;cursor:pointer;flex:0 0 auto;display:flex;align-items:center;justify-content:center;transition:filter .2s}
-  .ksbot-foot button:hover{filter:brightness(1.09)}
-  @media(prefers-reduced-motion:reduce){.ksbot-launch .pulse,.ksbot-head .sub .d{animation:none}}
 </style>
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="KILLSWITCH" />
-<meta property="og:title" content="Free Website for Your Business, Built for You | KILLSWITCH" />
-<meta property="og:description" content="KILLSWITCH builds local service businesses a real website, free, and you own it. Add getting found on Google, booking, payments, and a 24/7 AI assistant when you are ready. Serving all 50 states." />
-<meta property="og:url" content="https://killswitch.domains/" />
-<meta property="og:image" content="https://killswitch.domains/og-image.svg" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Free Website for Your Business, Built for You | KILLSWITCH" />
-<meta name="twitter:description" content="KILLSWITCH builds local service businesses a real website, free, and you own it. Add getting found on Google, booking, payments, and a 24/7 AI assistant when you are ready. Serving all 50 states." />
-<meta name="twitter:image" content="https://killswitch.domains/og-image.svg" />
-<link rel="canonical" href="https://killswitch.domains/" />
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"ProfessionalService","name":"KILLSWITCH","description":"KILLSWITCH builds local service businesses a real website, free, and you own it. Add booking, payments, and a 24/7 AI assistant when you are ready.","url":"https://killswitch.domains/","areaServed":"US","priceRange":"Free to low monthly","parentOrganization":{"@type":"Organization","name":"LIMEN Helix LLC","url":"https://www.limenhelix.com"},"makesOffer":{"@type":"Offer","price":"0","priceCurrency":"USD","itemOffered":{"@type":"Service","name":"Free business website","description":"A free, custom, mobile-ready website on your own domain that you own outright."}},"sameAs":["https://www.limenhelix.com"]}
-</script>
 </head>
 <body>
 <div id="pglow" aria-hidden="true"></div>
@@ -403,767 +188,175 @@
 
 <header class="nav">
   <div class="wrap nav-in">
-    <a href="https://killswitch.domains/" class="brand"><svg class="brand-ic" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>KILLSWITCH</a>
+    <a href="/" class="brand"><svg class="brand-ic" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>KILLSWITCH</a>
     <nav class="nav-links">
-      <a href="/services">Services</a>
       <a href="/work">Work</a>
       <a href="/pricing">Pricing</a>
-      <a href="/switch" id="navAskAi">Ask the AI</a>
-      <a href="/start" id="navGetSite" class="nav-cta">Get my free site</a>
+      <a href="/switch">Ask the AI</a>
     </nav>
   </div>
 </header>
 
-<!-- HERO -->
-<section class="hero">
+<main>
   <div class="wrap hero-grid">
     <div>
-      <div class="eyebrow"><span class="mono">For local service businesses · trades, salons, clinics, shops · Nationwide</span></div>
+      <div class="eyebrow"><span class="mono">For local service businesses &middot; Nationwide</span></div>
       <h1 class="display hero-h">We'll build your<br>website. <span class="free">Free.</span></h1>
-      <p class="hero-own">You own it. No contract. <span class="amp">Turn on only what you need.</span></p>
-      <p class="hero-sub">A real, modern site on <strong>your</strong> domain, built by a real, live human. We hand you the keys on day one, no contract, no catch. <strong>Flip the switch and your free site goes live in minutes, no call needed.</strong></p>
-      <div class="hero-actions">
-        <a href="https://calendly.com/chrishubbel72/30min" id="primaryCta" class="btn btn-primary standby">
-          <span class="label">Flip the switch to start</span><span class="arrow">→</span>
-        </a>
-        <a href="https://killswitch.domains/switch" id="askAiHero" class="btn btn-ghost">Ask the AI first</a>
+      <p class="hero-sub">Yours to keep. Built by hand, <strong>usually the same day</strong>.</p>
+
+      <form class="cap" id="capForm" novalidate>
+        <div class="cap-row">
+          <label for="fBiz">Business name</label>
+          <input id="fBiz" name="business" type="text" required autocomplete="organization" placeholder="Dave's Auto Repair" />
+        </div>
+        <div class="cap-row">
+          <label for="fPhone">Phone</label>
+          <input id="fPhone" name="phone" type="tel" required autocomplete="tel" placeholder="(816) 555-0142" />
+        </div>
+        <div class="cap-row">
+          <label for="fEmail">Email</label>
+          <input id="fEmail" name="email" type="email" required autocomplete="email" placeholder="dave@davesauto.com" />
+        </div>
+        <button class="btn btn-primary" id="capBtn" type="submit">Get my free site</button>
+        <div class="cap-fine">Takes about 20 seconds</div>
+        <div class="cap-err" id="capErr"></div>
+      </form>
+
+      <div class="done" id="capDone">
+        <h2>You're in.</h2>
+        <p>We'll build your site and send you the link, usually the same day. Watch your phone.</p>
       </div>
-      <div class="hero-fine"><span class="pip"></span> Free site in minutes · no call required · you own it</div>
+
+      <p class="cap-note">Your site goes live at <b>killswitchwebsites.com/yourbusiness</b>, ready to share. Want your own web address like yourbusiness.com? That's the first upgrade whenever you want it.</p>
+
+      <div class="proof">
+        <span>Built recently:</span>
+        <a href="/demos/oouwees-barbershop-gladstone" target="_blank" rel="noopener">OouWee's Barbershop, Gladstone MO &rarr;</a>
+      </div>
+      <p class="talk">Prefer to talk? <a href="https://calendly.com/chrishubbel72/30min" target="_blank" rel="noopener">Book a quick call</a></p>
     </div>
 
     <div>
       <div class="panel-unit">
         <div class="panel-head">
-          <span class="lbl">KS-01 · Your site</span>
+          <span class="lbl">KS-01 &middot; Your site</span>
           <span class="status" id="status"><span class="sdot"></span><span id="statusText">Offline</span></span>
         </div>
         <div class="panel-body">
           <span class="top-haz" aria-hidden="true"></span>
-          <button class="klsw" id="killSwitch" role="switch" aria-checked="false" aria-label="Power on your free website"><span class="led"></span><span class="slot"></span><span class="lever"></span></button>
-          <p class="switch-caption">Status: <b id="capState">Standby</b><br><span style="color:var(--mute-2);font-size:.68rem">throw the switch to power on</span></p>
+          <button class="klsw" id="killSwitch" type="button" role="switch" aria-checked="false" aria-label="Power on your free website"><span class="led"></span><span class="slot"></span><span class="lever"></span></button>
+          <p class="switch-caption" id="cap">Status: <b id="capState">Standby</b><br><span style="color:var(--mute-2);font-size:.68rem">throw the switch to begin</span></p>
           <span class="bot-haz" aria-hidden="true"></span>
         </div>
       </div>
     </div>
   </div>
-</section>
+</main>
 
-<!-- THE CATCH -->
-<section class="s catch" id="catch">
+<footer class="foot">
   <div class="wrap">
-    <div class="s-head reveal">
-      <span class="mono">The catch</span>
-      <h2>There isn't one.<br>We give first. We earn the rest.</h2>
-      <p class="lead"><strong>You get a real website, free and yours, no contract, before you pay a cent.</strong> Then we do our best to earn your paid business by being good enough that you choose the add-ons. That order never changes: we give first, always.</p>
+    <div class="foot-in">
+      <div class="foot-b">
+        <a href="/" class="brand"><svg class="brand-ic" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>KILLSWITCH</a>
+        <a class="lh" href="https://www.limenhelix.com" target="_blank" rel="noopener">A LIMEN Helix company</a>
+      </div>
+      <div class="foot-links">
+        <a href="/services">Services</a>
+        <a href="/work">Work</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/trades">Trades</a>
+        <a href="/switch">Ask the AI</a>
+      </div>
     </div>
-    <div class="catch-card reveal">
-      <p>The website is <strong>genuinely free and yours</strong>: your domain, your content, your code. We hand you the keys and walk away if that's all you want.</p>
-      <p>We're betting you won't want to. Once it's pulling in customers, most folks want the stuff that turns a nice site into a machine: online booking, card payments, an AI that answers at 2&nbsp;a.m., a dashboard that catches every lead. <span class="pun">That's the part we charge for</span>, and it's always optional. We'll never switch on anything you didn't ask for.</p>
-      <p style="color:var(--mute);font-size:.92rem">Translation: we earn the free site back by being good enough that you <em>choose</em> to buy more. That's the whole deal.</p>
-    </div>
+    <div class="wrap copy" style="padding:0">&copy; 2026 KILLSWITCH &middot; Serving all 50 states &middot; <a href="/terms">Terms</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/master" style="opacity:.55">Operator</a></div>
   </div>
-</section>
-
-<!-- P0-P10 GROWTH PATH -->
-<section class="s" id="modules">
-  <div class="wrap">
-    <div class="s-head reveal">
-      <span class="mono">The growth path</span>
-      <h2>Start free. Add power as you grow.</h2>
-      <p class="lead">The website is free and yours. Everything else is a switch: each module does one job, turn on only what you need. Most run for a low monthly, and several you can own outright for a one-time price. Nothing turns on unless you flip it.</p>
-    </div>
-
-    <div id="growth">
-    <div class="starter reveal">
-      <span class="badge">Most popular</span>
-      <div class="starter-main">
-        <h3>The Starter Machine</h3>
-        <p>Your free website, plus the two things a new customer needs to find you and book you: <strong>get found on Google</strong> and <strong>online booking</strong>. Everything else stays optional.</p>
-      </div>
-      <div class="starter-price">
-        <div class="amt">$38<small>/mo</small></div>
-        <div class="sub">free site + both add-ons</div>
-        <button class="btn btn-primary armed" id="starterAdd" type="button">Add the Starter set →</button>
-      </div>
-    </div>
-
-    <div class="ladder showall reveal">
-      <div class="rung free">
-        <div class="pick"></div>
-        <div>
-          <h3>Website &amp; Domain <span class="tag">You're here · free</span></h3>
-          <span class="k">What it does</span><div class="v">Your own professional website, built for you and yours to keep.</div>
-          <span class="k">Sold under it</span><div class="chips"><span>Looks great on phones</span><span>Your own web address</span><span>Contact form</span><span>Built-in chat</span><span>You own all of it</span></div>
-        </div>
-        <div class="amt">$0<small>on the house</small>
-          <a class="buy" href="https://calendly.com/chrishubbel72/30min" target="_blank" rel="noopener">Claim free</a></div>
-      </div>
-
-      <div class="rung">
-        <label class="pick"><input type="checkbox" class="mcb" data-phase="P1" data-name="Get Found on Google" data-monthly="19" data-once="149" aria-label="Add Get Found on Google"></label>
-        <div>
-          <h3>Get Found on Google</h3>
-          <span class="k">What it does</span><div class="v">Show up on Google when nearby customers search for what you sell. This is your SEO and local listings, handled for you.</div>
-          <span class="k">Sold under it</span><div class="chips"><span>Your Google business listing</span><span>Higher in search results</span><span>On the local map</span><span>Found for the right searches</span><span>Every page findable</span></div>
-        </div>
-        <div class="amt">$19<small>/mo</small>
-          <a class="buy" href="https://buy.stripe.com/4gM8wR7M4gBr4XJcIR1ck05" target="_blank" rel="noopener">Start</a></div>
-      </div>
-
-      <div class="rung more">
-        <label class="pick"><input type="checkbox" class="mcb" data-phase="P2" data-name="Content & Email Marketing" data-monthly="29" data-once="149" aria-label="Add P2 Content and Email Marketing"></label>
-        <div>
-          <h3>Content &amp; Email Marketing</h3>
-          <span class="k">What it does</span><div class="v">We post and email your customers on a schedule so they don't forget you.</div>
-          <span class="k">Sold under it</span><div class="chips"><span>A news / updates page</span><span>Posts written for you</span><span>Email newsletter</span><span>Social posts scheduled</span><span>A simple plan of what goes out</span></div>
-        </div>
-        <div class="amt">$29<small>/mo</small>
-          <a class="buy" href="https://buy.stripe.com/7sY3cxc2k0CtfCn24d1ck06" target="_blank" rel="noopener">Start</a></div>
-      </div>
-
-      <div class="rung">
-        <label class="pick"><input type="checkbox" class="mcb" data-phase="P3" data-name="Online Booking & Scheduling" data-monthly="19" data-once="149" aria-label="Add P3 Online Booking and Scheduling"></label>
-        <div>
-          <h3>Online Booking &amp; Scheduling</h3>
-          <span class="k">What it does</span><div class="v">Customers book their own appointments online, day or night, no phone tag.</div>
-          <span class="k">Sold under it</span><div class="chips"><span>Book online 24/7</span><span>Syncs with your calendar</span><span>Automatic reminders</span><span>Request & quote forms</span><span>Waitlist</span></div>
-        </div>
-        <div class="amt">$19<small>/mo</small>
-          <a class="buy" href="https://buy.stripe.com/00waEZ7M4bh71LxcIR1ck07" target="_blank" rel="noopener">Start</a>
-          <a class="buy-alt" href="https://buy.stripe.com/9B68wRc2k4SJ89V8sB1ck0g" target="_blank" rel="noopener">or $149 once</a></div>
-      </div>
-
-      <div class="rung more">
-        <label class="pick"><input type="checkbox" class="mcb" data-phase="P4" data-name="Hosting & Maintenance" data-monthly="29" aria-label="Add P4 Hosting and Maintenance"></label>
-        <div>
-          <h3>Hosting &amp; Maintenance</h3>
-          <span class="k">What it does</span><div class="v">We keep your site online and safe, and make small changes whenever you ask.</div>
-          <span class="k">Sold under it</span><div class="chips"><span>We keep it online</span><span>Daily backups</span><span>Kept secure</span><span>Watched around the clock</span><span>Same-day small changes</span></div>
-        </div>
-        <div class="amt">$29<small>/month</small>
-          <a class="buy" href="https://buy.stripe.com/7sY00l8Q870Rduf8sB1ck08" target="_blank" rel="noopener">Start</a></div>
-      </div>
-
-      <div class="rung more">
-        <label class="pick"><input type="checkbox" class="mcb" data-phase="P5" data-name="CRM & Customer Database" data-monthly="29" data-once="499" aria-label="Add P5 CRM and Customer Database"></label>
-        <div>
-          <h3>CRM &amp; Customer Database</h3>
-          <span class="k">What it does</span><div class="v">One simple place that remembers every customer, so nobody slips through.</div>
-          <span class="k">Sold under it</span><div class="chips"><span>Your customer list</span><span>See each deal's stage</span><span>Full contact history</span><span>Simple overview screen</span><span>Reports you can save</span></div>
-        </div>
-        <div class="amt">$29<small>/mo</small>
-          <a class="buy" href="https://buy.stripe.com/aFafZj4zS5WN1Lx8sB1ck09" target="_blank" rel="noopener">Start</a>
-          <a class="buy-alt" href="https://buy.stripe.com/14A9AVeas1Gxeyj8sB1ck0h" target="_blank" rel="noopener">or $499 once</a></div>
-      </div>
-
-      <div class="rung more">
-        <label class="pick"><input type="checkbox" class="mcb" data-phase="P6" data-name="Marketing Automation" data-monthly="29" data-once="199" aria-label="Add P6 Marketing Automation"></label>
-        <div>
-          <h3>Marketing Automation</h3>
-          <span class="k">What it does</span><div class="v">Follow-ups and reminders that win business get sent automatically for you.</div>
-          <span class="k">Sold under it</span><div class="chips"><span>Automatic follow-ups</span><span>Sends leads to the right person</span><span>Asks happy customers for reviews</span><span>Connects your other apps</span><span>Alerts you and your team</span></div>
-        </div>
-        <div class="amt">$29<small>/mo</small>
-          <a class="buy" href="https://buy.stripe.com/cNi7sN7M4fxn4XJ6kt1ck0a" target="_blank" rel="noopener">Start</a></div>
-      </div>
-
-      <div class="rung more">
-        <label class="pick"><input type="checkbox" class="mcb" data-phase="P7" data-name="Payments & Checkout" data-monthly="19" data-once="149" aria-label="Add P7 Payments and Checkout"></label>
-        <div>
-          <h3>Payments &amp; Checkout</h3>
-          <span class="k">What it does</span><div class="v">Take card payments on your site, so you get paid on the spot.</div>
-          <span class="k">Sold under it</span><div class="chips"><span>Card payments</span><span>Send invoices</span><span>Recurring billing</span><span>List your products</span><span>Take deposits</span></div>
-        </div>
-        <div class="amt">$19<small>/mo</small>
-          <a class="buy" href="https://buy.stripe.com/4gM7sN1nGetjcqb9wF1ck0b" target="_blank" rel="noopener">Start</a>
-          <a class="buy-alt" href="https://buy.stripe.com/5kQbJ37M41Gx75R6kt1ck0j" target="_blank" rel="noopener">or $149 once</a></div>
-      </div>
-
-      <div class="rung more">
-        <label class="pick"><input type="checkbox" class="mcb" data-phase="P8" data-name="Analytics & Reporting" data-monthly="19" aria-label="Add P8 Analytics and Reporting"></label>
-        <div>
-          <h3>Analytics &amp; Reporting</h3>
-          <span class="k">What it does</span><div class="v">A simple plain-English report each month showing what's bringing you business.</div>
-          <span class="k">Sold under it</span><div class="chips"><span>Simple stats screen</span><span>See what becomes a sale</span><span>Plain-English monthly report</span><span>Track your goals</span><span>See where people click</span></div>
-        </div>
-        <div class="amt">$19<small>/month</small>
-          <a class="buy" href="https://buy.stripe.com/eVqaEZ7M470Rai3cIR1ck0c" target="_blank" rel="noopener">Start</a></div>
-      </div>
-
-      <div class="rung">
-        <label class="pick"><input type="checkbox" class="mcb" data-phase="P9" data-name="24/7 AI Assistant" data-monthly="29" data-once="99" aria-label="Add P9 24/7 AI Assistant"></label>
-        <div>
-          <h3>24/7 AI Assistant</h3>
-          <span class="k">What it does</span><div class="v">A friendly helper that answers questions and books customers any time, even overnight.</div>
-          <span class="k">Sold under it</span><div class="chips"><span>Answers 24/7</span><span>Answers & screens questions</span><span>Books appointments</span><span>Knows your business</span><span>Passes leads to you</span></div>
-        </div>
-        <div class="amt">$29<small>/mo</small>
-          <a class="buy" href="https://buy.stripe.com/8x29AVeas3OF9dZ6kt1ck0d" target="_blank" rel="noopener">Start</a></div>
-      </div>
-
-      <div class="rung flag more">
-        <label class="pick"><input type="checkbox" class="mcb" data-phase="P10" data-name="AI Sales Agent & Custom Software" data-custom="1" aria-label="Add P10 AI Sales Agent"></label>
-        <div>
-          <h3>AI Sales Agent &amp; Custom Software <span class="tag" style="background:var(--go);color:var(--go-ink)">The Switch</span></h3>
-          <span class="k">What it does</span><div class="v">We build a system that finds and reaches new customers for you, plus any custom software you need.</div>
-          <span class="k">Sold under it</span><div class="chips"><span>Automatic sales rep</span><span>Finds new prospects</span><span>Personal outreach</span><span>Follows up & books</span><span>Any custom software</span></div>
-        </div>
-        <div class="amt">Custom<small>book a scope call</small>
-          <a class="buy" href="https://calendly.com/chrishubbel72/30min" target="_blank" rel="noopener">Book a call</a></div>
-      </div>
-    </div>
-    <div class="pcart reveal" id="mcart">
-      <div class="pcart-row"><span id="mcartList">No phases selected yet.</span><strong id="mcartTotal">$0/mo</strong></div>
-      <button class="btn btn-primary" id="mcheckout" type="button">Continue to secure checkout →</button>
-      <p class="pcart-note" id="mnote"></p>
-    </div>
-    <p class="mods-note reveal">// The website is free and yours · tick the add-ons you want and check out right here · one-time buys use each row's "or once" link · <a href="/pricing">full details on everything →</a></p>
-    <div class="hero-actions reveal" style="margin-top:30px">
-      <a href="https://calendly.com/chrishubbel72/30min" class="btn btn-primary armed">Book a call to map your path <span class="arrow">→</span></a>
-    </div>
-    </div><!-- /#growth -->
-  </div>
-</section>
-
-<!-- PROOF -->
-<section class="s" id="work">
-  <div class="wrap">
-    <div class="s-head reveal">
-      <span class="mono">Work we're proud of</span>
-      <h2>Real businesses. Real sites. Live right now.</h2>
-      <p class="lead">Three sites built and running today, click any of them and see for yourself. No mockups, no "coming soon."</p>
-    </div>
-    <div class="proof-grid">
-      <a class="pcard reveal" href="https://allaccesskc.com" target="_blank" rel="noopener">
-        <span class="tag">Live · Kansas City</span>
-        <h3>AllAccessKC</h3>
-        <p>A local guide business, city listings, game-day toolkits, food, and an ask-a-local chat, all on one site people actually use.</p>
-        <span class="go">Visit the site <span class="arrow">→</span></span>
-      </a>
-      <a class="pcard reveal" href="https://recursivelove.com" target="_blank" rel="noopener">
-        <span class="tag">Live · Community</span>
-        <h3>Recursive Love</h3>
-        <p>A resource hub for families, guides, a forum, and a 24/7 AI helper, the kind of site that keeps people coming back.</p>
-        <span class="go">Visit the site <span class="arrow">→</span></span>
-      </a>
-      <a class="pcard reveal" href="https://www.limenhelix.com" target="_blank" rel="noopener">
-        <span class="tag">Our flagship · live</span>
-        <h3>LIMEN Helix</h3>
-        <p>Our own intelligence platform. It reads the economic health of 20 industries through one brain-inspired pattern and surfaces distress the moment it appears. Proof we build far past a website.</p>
-        <span class="go">Visit limenhelix.com <span class="arrow">→</span></span>
-      </a>
-    </div>
-
-    <div class="assure">
-      <div class="acell reveal"><div class="k">You own it</div><div class="v">Your domain, your code, your content. No hostage situations, ever.</div></div>
-      <div class="acell reveal"><div class="k">No contract</div><div class="v">Add-ons are month-to-month. Cancel any of them anytime.</div></div>
-      <div class="acell reveal"><div class="k">A few a month</div><div class="v">We only take a handful of free builds at a time so each one's done right.</div></div>
-    </div>
-  </div>
-</section>
-
-<!-- WE GREW KILLSWITCH USING KILLSWITCH -->
-<section class="s catch" id="dogfood">
-  <div class="wrap">
-    <div class="s-head reveal">
-      <span class="mono">We eat our own cooking</span>
-      <h2>We grew Killswitch<br>using Killswitch.</h2>
-      <p class="lead">The machine we want to hand you is the same one we used to reach you. If it could not grow our own business, we would not put our name on it.</p>
-    </div>
-    <div class="mods">
-      <div class="mod"><div class="ix">Get found on Google</div><h3>This page found you.</h3><p>The site you landed on is running our own "get found on Google" module, pointed at ourselves. It is the exact same local SEO we build for you.</p></div>
-      <div class="mod"><div class="ix">24/7 AI assistant</div><h3>That chat is the product.</h3><p>The assistant in the corner is the same 24/7 AI we put on client sites. It answers questions, qualifies, and books, day or night.</p></div>
-      <div class="mod"><div class="ix">AI sales agent</div><h3>Switch reaches out first.</h3><p>Switch, our AI sales agent, finds businesses and starts the conversation for us. That is the top-tier module, working on our own behalf right now.</p></div>
-    </div>
-    <p class="mods-note reveal">// Free site, found on Google, answered by AI, booked automatically. We run the whole machine on ourselves before we ever sell it to you.</p>
-  </div>
-</section>
-
-<!-- BUILT FOR YOUR TRADE -->
-<section class="s" id="trades">
-  <div class="wrap">
-    <div class="s-head reveal">
-      <span class="mono">Built for your trade</span>
-      <h2>Your business is not generic. Neither is your site.</h2>
-      <p class="lead">Every trade loses work online in its own way. We build a free site tuned to yours, with the add-ons that actually win jobs for your kind of business.</p>
-    </div>
-    <div class="chips" style="margin-top:26px;gap:10px">
-      <a class="mtrade" href="/free-website-for-plumbers">Plumbers</a>
-      <a class="mtrade" href="/free-website-for-electricians">Electricians</a>
-      <a class="mtrade" href="/free-website-for-hvac">HVAC</a>
-      <a class="mtrade" href="/free-website-for-roofers">Roofers</a>
-      <a class="mtrade" href="/free-website-for-landscapers">Landscapers</a>
-      <a class="mtrade" href="/free-website-for-painters">Painters</a>
-      <a class="mtrade" href="/free-website-for-hair-salons">Hair salons</a>
-      <a class="mtrade" href="/free-website-for-barbershops">Barbershops</a>
-      <a class="mtrade" href="/free-website-for-cleaning-services">Cleaning services</a>
-      <a class="mtrade" href="/free-website-for-auto-repair">Auto repair</a>
-    </div>
-    <div class="hero-actions reveal" style="margin-top:26px">
-      <a href="/trades" class="btn btn-primary armed">See all trades <span class="arrow">→</span></a>
-    </div>
-  </div>
-</section>
-
-<!-- FINAL CTA -->
-<section class="final" id="start">
-  <div class="hazard" aria-hidden="true" style="opacity:.5;margin-bottom:60px"></div>
-  <div class="wrap">
-    <h2 class="reveal">Your free site is one<br>switch away.</h2>
-    <p class="reveal">Answer a few quick questions and we build your free site in minutes, then email you the link, no call required. Prefer a real, live human? A quick call works too.</p>
-    <div class="hero-actions reveal">
-      <a href="https://calendly.com/chrishubbel72/30min" id="finalStart" class="btn btn-primary armed">Start my free site online <span class="arrow">→</span></a>
-      <a href="https://calendly.com/chrishubbel72/30min" class="btn btn-ghost">Prefer to talk? Book a call</a>
-    </div>
-  </div>
-</section>
-
-<footer>
-  <div class="wrap foot-in">
-    <div>
-      <div class="foot-brand"><svg class="brand-ic" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>KILLSWITCH</div>
-      <div class="foot-tag">Custom software, disguised as a website. Built for businesses nationwide.
-        <a class="lh" href="https://www.limenhelix.com" target="_blank" rel="noopener">A LIMEN Helix company</a></div>
-    </div>
-    <div class="foot-links">
-      <a href="/services">Services</a>
-      <a href="/work">Work</a>
-      <a href="/pricing">Pricing</a>
-      <a href="/switch">Ask the AI</a>
-      <a href="/start">Get my free site</a>
-    </div>
-  </div>
-  <div class="wrap copy">© 2026 KILLSWITCH · Serving all 50 states &middot; <a href="/terms">Terms</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/master" style="opacity:.55">Operator</a></div>
 </footer>
 
-<!-- SELF-SERVE CHAT: start your free site online, no call required -->
-<button class="ksbot-launch" id="ksbotLaunch" type="button" aria-label="Start your free site online">
-  <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>
-  <span class="lbl">Start online</span><span class="pulse" aria-hidden="true"></span>
-</button>
-<section class="ksbot" id="ksbot" aria-label="Start your free site" role="dialog">
-  <div class="ksbot-head">
-    <div class="t"><svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>Start your free site</div>
-    <div class="r"><span class="sub"><span class="d"></span>No call needed</span><button class="ksbot-x" id="ksbotClose" type="button" aria-label="Close">×</button></div>
-  </div>
-  <div class="ksbot-progress"><i id="ksbotBar"></i></div>
-  <div class="ksbot-log" id="ksbotLog" aria-live="polite"></div>
-  <div class="kschips" id="ksbotChips"></div>
-  <form class="ksbot-foot" id="ksbotForm">
-    <input id="ksbotInput" autocomplete="off" placeholder="Type here…" aria-label="Your message" />
-    <button type="submit" aria-label="Send">→</button>
-  </form>
-</section>
-
 <script>
-  /* ---- shared electric FX: buzz (Web Audio, no files) + cumulative glow ---- */
-  var __muted=false; try{__muted=localStorage.getItem('ks-muted')==='1';}catch(e){}
-  var __ac;
-  function __ctx(){ if(!__ac){ try{__ac=new (window.AudioContext||window.webkitAudioContext)();}catch(e){__ac=null;} } if(__ac&&__ac.state==='suspended'){try{__ac.resume();}catch(e){}} return __ac; }
-  function ksLevel(){ var m=document.getElementById('killSwitch'); var n=(m&&m.classList.contains('on'))?1:0; document.querySelectorAll('.mcb:checked').forEach(function(){ n++; }); return n; }
-  function ksGlow(){ document.body.style.setProperty('--power', ksLevel()); }
-  function ksFlick(){ document.body.classList.add('zap'); setTimeout(function(){ document.body.classList.remove('zap'); }, 180); }
-  function ksFlash(el){ if(!el) return; el.classList.add('flash'); setTimeout(function(){ el.classList.remove('flash'); }, 480); }
-  function ksZap(){
-    var c=__ctx(); if(!c||__muted) return;
-    var t=c.currentTime, lvl=ksLevel();
-    // SNAP — short mechanical throw click
-    var sn=c.createOscillator(); sn.type='square'; sn.frequency.setValueAtTime(340,t); sn.frequency.exponentialRampToValueAtTime(80,t+0.03);
-    var sg=c.createGain(); sg.gain.setValueAtTime(0.30,t); sg.gain.exponentialRampToValueAtTime(0.0001,t+0.05);
-    sn.connect(sg).connect(c.destination); sn.start(t); sn.stop(t+0.06);
-    // BUZZ — longer sustained electric hum after the snap
-    var bt=t+0.04, dur=1.25+lvl*0.06;
-    var o=c.createOscillator(); o.type='sawtooth'; var base=84+lvl*7;
-    o.frequency.setValueAtTime(base*1.3,bt); o.frequency.linearRampToValueAtTime(base,bt+dur);
-    var lfo=c.createOscillator(); lfo.type='square'; lfo.frequency.value=26+lvl*4;
-    var lfg=c.createGain(); lfg.gain.value=20; lfo.connect(lfg).connect(o.frequency);
-    var g=c.createGain(); g.gain.setValueAtTime(0.0001,bt); g.gain.exponentialRampToValueAtTime(0.2,bt+0.02); g.gain.setValueAtTime(0.2,bt+dur-0.14); g.gain.exponentialRampToValueAtTime(0.0001,bt+dur);
-    o.connect(g).connect(c.destination);
-    var len=Math.floor(c.sampleRate*dur), buf=c.createBuffer(1,len,c.sampleRate), d=buf.getChannelData(0);
-    for(var i=0;i<len;i++){ d[i]=(Math.random()*2-1)*(0.45+0.55*Math.pow(1-i/len,1.3))*0.6; }
-    var ns=c.createBufferSource(); ns.buffer=buf;
-    var bp=c.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1500+lvl*120; bp.Q.value=0.7;
-    var ng=c.createGain(); ng.gain.value=0.22; ns.connect(bp).connect(ng).connect(c.destination);
-    o.start(bt); lfo.start(bt); o.stop(bt+dur); lfo.stop(bt+dur); ns.start(bt); ns.stop(bt+dur);
+(function(){
+  var WEB3FORMS_KEY = 'fd068540-d6c4-44e3-9f5b-3d46da7c44ed';
+  var CALENDLY = 'https://calendly.com/chrishubbel72/30min';
+
+  /* ---- the lever: brand device, lights the page and focuses the form ---- */
+  var sw = document.getElementById('killSwitch');
+  var statusEl = document.getElementById('status');
+  var statusText = document.getElementById('statusText');
+  var capEl = document.getElementById('cap');
+  var capState = document.getElementById('capState');
+  var on = false;
+
+  function setSwitch(next, focus){
+    on = next;
+    sw.classList.toggle('on', on);
+    sw.setAttribute('aria-checked', on ? 'true' : 'false');
+    statusEl.classList.toggle('live', on);
+    capEl.classList.toggle('live', on);
+    statusText.textContent = on ? 'Live' : 'Offline';
+    capState.textContent = on ? 'Armed' : 'Standby';
+    document.body.classList.toggle('lit', on);
+    if(on && focus){ var b = document.getElementById('fBiz'); if(b) b.focus(); }
   }
-  function ksThunk(){
-    var c=__ctx(); if(!c||__muted) return; var t=c.currentTime;
-    var o=c.createOscillator(); o.type='square'; o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(58,t+0.09);
-    var g=c.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.13,t+0.006); g.gain.exponentialRampToValueAtTime(0.0001,t+0.14);
-    o.connect(g).connect(c.destination); o.start(t); o.stop(t+0.15);
-  }
-  /* white lightning burst — a "short circuit" thrown off the switch on ON */
-  function ksSparks(el){
-    if(!el || !el.getBoundingClientRect) return;
-    var r=el.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2, S=160, c=S/2;
-    var ns='http://www.w3.org/2000/svg';
-    var svg=document.createElementNS(ns,'svg');
-    svg.setAttribute('width',S); svg.setAttribute('height',S); svg.setAttribute('viewBox','0 0 '+S+' '+S);
-    svg.style.cssText='position:fixed;left:'+(cx-c)+'px;top:'+(cy-c)+'px;z-index:95;pointer-events:none;overflow:visible';
-    var N=8;
-    for(var i=0;i<N;i++){
-      var ang=(360/N)*i+(Math.random()*38-19), seg=32+Math.random()*40, n=4, pts=[c+','+c], x=c, y=c;
-      for(var j=1;j<=n;j++){ y=c-(seg/n)*j; x=c+(Math.random()*12-6); pts.push(x.toFixed(1)+','+y.toFixed(1)); }
-      var pl=document.createElementNS(ns,'polyline');
-      pl.setAttribute('points',pts.join(' ')); pl.setAttribute('fill','none'); pl.setAttribute('stroke','#fff');
-      pl.setAttribute('stroke-width',(1.4+Math.random()*1.4).toFixed(1)); pl.setAttribute('stroke-linecap','round'); pl.setAttribute('stroke-linejoin','round');
-      pl.setAttribute('transform','rotate('+ang.toFixed(0)+' '+c+' '+c+')');
-      pl.style.filter='drop-shadow(0 0 3px #fff) drop-shadow(0 0 8px #8effb9)';
-      svg.appendChild(pl);
-    }
-    document.body.appendChild(svg);
-    try{ svg.animate([{opacity:1,transform:'scale(.45)'},{opacity:1,transform:'scale(1)'},{opacity:0,transform:'scale(1.4)'}],{duration:300,easing:'ease-out'}); }catch(e){}
-    setTimeout(function(){ svg.remove(); }, 320);
-  }
+  sw.addEventListener('click', function(){ setSwitch(!on, true); });
 
-  (function(){
-    var sw = document.getElementById('killSwitch');
-    var status = document.getElementById('status');
-    var statusText = document.getElementById('statusText');
-    var capState = document.getElementById('capState');
-    var cta = document.getElementById('primaryCta');
-    var ctaLabel = cta.querySelector('.label');
-    var on = false;
+  /* ---- capture ---- */
+  var form = document.getElementById('capForm');
+  var btn  = document.getElementById('capBtn');
+  var err  = document.getElementById('capErr');
+  var done = document.getElementById('capDone');
 
-    function flip(){
-      on = !on;
-      sw.classList.toggle('on', on);
-      sw.setAttribute('aria-checked', on ? 'true' : 'false');
-      status.classList.toggle('live', on);
-      statusText.textContent = on ? 'Live' : 'Offline';
-      capState.textContent = on ? 'Powered on' : 'Standby';
-      if(on){
-        cta.classList.remove('standby');
-        cta.classList.add('armed');
-        ctaLabel.textContent = 'Claim my free build';
-      } else {
-        cta.classList.add('standby');
-        cta.classList.remove('armed');
-        ctaLabel.textContent = 'Flip the switch to start';
-      }
-      ksFlash(sw);
-      if(on) ksFlick();
-      ksGlow();
-    }
+  function showErr(msg){ err.innerHTML = msg; err.classList.add('show'); }
 
-    sw.addEventListener('click', flip);
-    sw.addEventListener('keydown', function(e){
-      if(e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); flip(); }
-    });
-    // clicking the CTA flips the switch on (if needed), then opens the
-    // self-serve chat so they can start online — no call required.
-    cta.addEventListener('click', function(e){
-      e.preventDefault();
-      var wasOff = !on;
-      if(wasOff) flip();
-      setTimeout(function(){
-        if(window.ksbotOpen) window.ksbotOpen('intake');
-        else window.location.href = cta.getAttribute('href');
-      }, wasOff ? 350 : 0);
-    });
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    err.classList.remove('show');
 
-    // scroll reveal
-    var io = new IntersectionObserver(function(entries){
-      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target);} });
-    }, {threshold:.12});
-    document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
-  })();
+    var business = document.getElementById('fBiz').value.trim();
+    var phone    = document.getElementById('fPhone').value.trim();
+    var email    = document.getElementById('fEmail').value.trim();
 
-  /* Essentials ⇄ Everything — reveal the rest of the growth path on a switch */
-  (function(){
-    var sw = document.getElementById('showAll'),
-        lad = document.querySelector('.ladder'),
-        wrap = document.getElementById('mtoggle');
-    if(!sw || !lad) return;
-    sw.addEventListener('click', function(){
-      var on = sw.getAttribute('aria-checked') === 'true';
-      sw.setAttribute('aria-checked', on ? 'false' : 'true');
-      lad.classList.toggle('showall', !on);
-      if(wrap) wrap.classList.toggle('allon', !on);
-    });
-  })();
+    if(business.length < 2){ showErr('Add your business name so we know what to build.'); document.getElementById('fBiz').focus(); return; }
+    if(phone.replace(/\D/g,'').length < 10){ showErr('Add a 10 digit phone so we can send you the link.'); document.getElementById('fPhone').focus(); return; }
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){ showErr('Check the email address so the link reaches you.'); document.getElementById('fEmail').focus(); return; }
 
-  /* Growth-path checkout — tick phases, buy the set in one Stripe checkout, right here */
-  (function(){
-    var cbs = document.querySelectorAll('.mcb'); if(!cbs.length) return;
-    var listEl = document.getElementById('mcartList'), totEl = document.getElementById('mcartTotal'),
-        note = document.getElementById('mnote'), btn = document.getElementById('mcheckout');
-    function money(n){ return '$' + n.toLocaleString('en-US'); }
-    function tally(){
-      var mo = 0, items = [], hasCustom = false;
-      cbs.forEach(function(cb){
-        var rung = cb.closest('.rung');
-        if(cb.checked){
-          if(rung) rung.classList.add('sel');
-          var custom = cb.getAttribute('data-custom');
-          if(custom) hasCustom = true; else mo += (+cb.getAttribute('data-monthly') || 0);
-          items.push({ phase: cb.getAttribute('data-phase'), name: cb.getAttribute('data-name'), custom: !!custom });
-        } else if(rung){ rung.classList.remove('sel'); }
-      });
-      listEl.textContent = items.length ? items.map(function(it){ return it.name; }).join(' + ') : 'No add-ons selected yet.';
-      totEl.textContent = money(mo) + '/mo';
-      return { mo: mo, items: items, hasCustom: hasCustom };
-    }
-    cbs.forEach(function(cb){ cb.addEventListener('change', function(){ tally(); if(cb.checked) ksFlick(); ksGlow(); }); });
-    tally();
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
 
-    // "Add the Starter set" — pre-tick Get Found on Google (P1) + Online Booking (P3)
-    var starter = document.getElementById('starterAdd');
-    if(starter){
-      starter.addEventListener('click', function(){
-        cbs.forEach(function(cb){
-          var p = cb.getAttribute('data-phase');
-          if(p === 'P1' || p === 'P3') cb.checked = true;
-        });
-        tally(); ksFlick(); ksGlow();
-        var cart = document.getElementById('mcart');
-        if(cart) cart.scrollIntoView({ behavior:'smooth', block:'center' });
-      });
-    }
-    btn.addEventListener('click', function(){
-      var b = tally(), buyable = b.items.filter(function(it){ return !it.custom; });
-      if(!buyable.length){
-        note.style.color = 'var(--red)';
-        note.textContent = b.items.length ? 'The AI Sales Agent is a custom build, so book a call for that one.' : 'Tick at least one add-on to check out.';
-        return;
-      }
-      var phases = buyable.map(function(it){ return it.phase; });
-      note.style.color = ''; note.textContent = 'Opening secure checkout…'; btn.disabled = true;
-      fetch('/api/checkout', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ phases: phases }) })
-        .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, d: d }; }); })
-        .then(function(res){
-          if(res.ok && res.d && res.d.url){ window.location.href = res.d.url; return; }
-          note.style.color = 'var(--red)';
-          note.textContent = 'Could not start checkout (' + ((res.d && res.d.error) || 'try again') + '). You can still use Buy now on each rung.';
-          btn.disabled = false;
-        })
-        .catch(function(){
-          note.style.color = 'var(--red)';
-          note.textContent = 'Network error. You can still use Buy now on each rung.';
-          btn.disabled = false;
-        });
-    });
-  })();
-
-  /* ============================================================
-     SELF-SERVE CHAT — start a free site online, no phone call.
-     Guided intake (deterministic capture → Web3Forms lead), with a
-     free-question mode that routes to /api/chat (Claude). Zero deps.
-     ============================================================ */
-  (function(){
-    function byId(id){ return document.getElementById(id); }
-    var launch = byId('ksbotLaunch'), panel = byId('ksbot'), closeBtn = byId('ksbotClose'),
-        log = byId('ksbotLog'), chipsBox = byId('ksbotChips'), form = byId('ksbotForm'),
-        input = byId('ksbotInput'), bar = byId('ksbotBar');
-    if(!launch || !panel) return;
-
-    var WEB3FORMS_KEY = 'fd068540-d6c4-44e3-9f5b-3d46da7c44ed';
-    var CALENDLY = 'https://calendly.com/chrishubbel72/30min';
-
-    var emailOk = function(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || "That doesn't look like an email — mind trying again?"; };
-    var STEPS = [
-      { key:'business', q:"Great choice, let's build it. First up: what's your business called?", ph:'Your business name', v:function(x){ return x.length >= 2 || "Just pop in your business name."; } },
-      { key:'trade',    q:"Nice. What do you do? (plumber, salon, dentist, landscaper, that kind of thing)", ph:'What you do' },
-      { key:'city',     q:"Which town or area do you serve?", ph:'City / area' },
-      { key:'current',  q:"Got a website right now? Paste the link, or just say “no.”", ph:'Current site, or “no”' },
-      { key:'name',     q:"Almost there. What's your name?", ph:'Your name', v:function(x){ return x.length >= 2 || "Your first name is fine."; } },
-      { key:'email',    q:"Best email to send your finished site to?", ph:'you@business.com', v:emailOk },
-      { key:'extra',    q:"Last one: anything you'd like on the site, or a phone number for a quick heads-up? (optional — type “skip” if not)", ph:'Optional — or “skip”', optional:true }
-    ];
-
-    var mode = 'menu', step = 0, data = {}, started = false, askHist = [];
-
-    function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-    function md(text){
-      var s = esc(text);
-      s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+|\/[^\s)]*)\)/g, function(m, label, url){
-        var ext = /^https?:/i.test(url);
-        return '<a href="'+url+'"'+(ext?' target="_blank" rel="noopener"':'')+'>'+label+'</a>';
-      });
-      s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-      return s.replace(/\n/g, '<br>');
-    }
-    function bubble(text, who, isHTML){
-      var d = document.createElement('div');
-      d.className = 'ksmsg ' + (who || 'bot');
-      if(isHTML) d.innerHTML = md(text); else d.textContent = text;
-      log.appendChild(d); log.scrollTop = log.scrollHeight;
-      return d;
-    }
-    function botSay(text, cb, isHTML){
-      var t = bubble('typing…', 'bot typing');
-      setTimeout(function(){
-        t.remove();
-        bubble(text, 'bot', isHTML);
-        if(cb) cb();
-      }, 480);
-    }
-    function setChips(items){
-      chipsBox.innerHTML = '';
-      (items || []).forEach(function(it){
-        var b = document.createElement('button');
-        b.type = 'button'; b.className = 'kschip'; b.textContent = it.label;
-        b.addEventListener('click', it.fn);
-        chipsBox.appendChild(b);
-      });
-    }
-    function clearChips(){ chipsBox.innerHTML = ''; }
-    function setBar(f){ bar.style.width = Math.round(Math.max(0, Math.min(1, f)) * 100) + '%'; }
-    function firstName(n){ return (n || '').trim().split(/\s+/)[0] || 'there'; }
-
-    function greet(){
-      botSay("Hey! 👋 I can get your free website started right here — no phone call. Want to jump in, or ask a question first?", function(){
-        setChips([
-          { label:'Start my free site →', fn:beginIntake },
-          { label:'Ask a question first', fn:beginAsk }
-        ]);
-      });
-    }
-    function beginIntake(){
-      clearChips(); mode = 'intake'; step = 0; data = {};
-      askStep();
-    }
-    function askStep(){
-      if(step >= STEPS.length){ return finish(); }
-      setBar(step / STEPS.length);
-      var s = STEPS[step];
-      input.placeholder = s.ph || 'Type your answer…';
-      botSay(s.q);
-    }
-    function handleIntake(v){
-      var s = STEPS[step];
-      if(s.optional && /^(skip|no|none|n\/?a|nope)$/i.test(v)) v = '';
-      if(s.v && v){ var res = s.v(v); if(res !== true){ botSay(res); return; } }
-      if(s.v && !v && !s.optional){ botSay(s.v(v)); return; }
-      data[s.key] = v; step++; setBar(step / STEPS.length); askStep();
-    }
-    function finish(){
-      setBar(1); mode = 'done'; input.placeholder = 'Type here…';
-      botSay("Perfect — that's everything I need. Locking it in… 🔧", submitLead);
-    }
-    function submitLead(){
-      var payload = {
+    fetch('https://api.web3forms.com/submit', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Accept':'application/json' },
+      body: JSON.stringify({
         access_key: WEB3FORMS_KEY,
-        subject: '🔔 FREE SITE request (self-serve chat) — KILLSWITCH',
+        subject: '🔔 FREE SITE request — KILLSWITCH',
         from_name: 'KILLSWITCH Website',
-        name: data.name || '',
-        contact: data.email || '',
-        business: data.business || '',
-        source: 'free site — self-serve chat',
-        message: 'FREE SITE REQUEST (self-serve chat, no call)\n' +
-          'Business: ' + (data.business || '') + '\n' +
-          'Trade: ' + (data.trade || '') + '\n' +
-          'Area: ' + (data.city || '') + '\n' +
-          'Current site: ' + (data.current || '—') + '\n' +
-          'Name: ' + (data.name || '') + '\n' +
-          'Email: ' + (data.email || '') + '\n' +
-          'Notes / phone: ' + (data.extra || '—')
-      };
-      fetch('https://api.web3forms.com/submit', {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json', 'Accept':'application/json' },
-        body: JSON.stringify(payload)
+        name: business,
+        business: business,
+        phone: phone,
+        contact: email,
+        source: 'free site — homepage form',
+        message: 'FREE SITE REQUEST (homepage form)\n' +
+                 'Business: ' + business + '\n' +
+                 'Phone: ' + phone + '\n' +
+                 'Email: ' + email
       })
-      .then(function(r){ return r.json().catch(function(){ return {}; }); })
-      .then(function(d){
-        if(d && d.success){
-          botSay("🎉 You're in, " + firstName(data.name) + "! No call needed. We'll build your free site and email the link to **" + esc(data.email) + "**, usually within minutes.\n\nWant it found on Google or taking bookings from day one? Those are on the growth path just above — add them whenever you're ready.", function(){
-            setChips([{ label:'Prefer to talk? Book a quick call', fn:function(){ window.open(CALENDLY, '_blank', 'noopener'); } }]);
-          }, true);
-        } else { sendFailed(); }
-      })
-      .catch(sendFailed);
-    }
-    function sendFailed(){
-      botSay("Hmm — I couldn't send that through just now. Nothing lost. You can [book a quick 30-min call](" + CALENDLY + ") and we'll start it together, or tap retry.", function(){
-        setChips([
-          { label:'Retry sending', fn:submitLead },
-          { label:'Book a call instead', fn:function(){ window.open(CALENDLY, '_blank', 'noopener'); } }
-        ]);
-      }, true);
-    }
+    })
+    .then(function(r){ return r.json().catch(function(){ return {}; }); })
+    .then(function(d){
+      if(d && d.success){
+        form.style.display = 'none';
+        done.classList.add('show');
+        setSwitch(true, false);
+        done.scrollIntoView({ behavior:'smooth', block:'center' });
+      } else { fail(); }
+    })
+    .catch(fail);
 
-    function beginAsk(){
-      clearChips(); mode = 'ask'; setBar(0); input.placeholder = 'Ask anything…';
-      botSay("Sure — ask me anything about pricing, timelines, or what we can build. When you're ready, hit “Start my free site.”", pinStart);
+    function fail(){
+      btn.disabled = false;
+      btn.textContent = 'Get my free site';
+      showErr('That did not send. Try again, or <a href="' + CALENDLY + '" target="_blank" rel="noopener" style="color:var(--amber);border-bottom:1px solid">book a quick call</a> and we will start it together.');
     }
-    function pinStart(){ setChips([{ label:'Start my free site →', fn:beginIntake }]); }
-    function handleAsk(v){
-      askHist.push({ role:'user', content:v });
-      var t = bubble('typing…', 'bot typing');
-      fetch('/api/chat', {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({ messages: askHist.slice(-8) })
-      })
-      .then(function(r){ return r.ok ? r.json() : null; })
-      .then(function(d){
-        t.remove();
-        var reply = (d && d.reply) ? d.reply : "A real person can nail that one down. Want to start your free site, or book a quick call?";
-        bubble(reply, 'bot', true);
-        askHist.push({ role:'assistant', content:reply });
-        pinStart();
-      })
-      .catch(function(){
-        t.remove();
-        bubble("I couldn't reach the assistant just now. You can start your free site above, or [book a quick call](" + CALENDLY + ").", 'bot', true);
-        pinStart();
-      });
-    }
-
-    function openPanel(startMode){
-      panel.classList.add('open');
-      launch.style.display = 'none';
-      if(!started){
-        started = true;
-        if(startMode === 'intake') beginIntake();
-        else if(startMode === 'ask') beginAsk();
-        else greet();
-      } else if(startMode === 'intake' && mode !== 'intake'){ beginIntake(); }
-        else if(startMode === 'ask' && mode !== 'ask'){ beginAsk(); }
-      setTimeout(function(){ input.focus(); }, 120);
-    }
-    function closePanel(){ panel.classList.remove('open'); launch.style.display = ''; }
-
-    launch.addEventListener('click', function(){ openPanel(); });
-    closeBtn.addEventListener('click', closePanel);
-    form.addEventListener('submit', function(e){
-      e.preventDefault();
-      var v = input.value.trim(); if(!v) return;
-      bubble(v, 'me'); input.value = '';
-      if(mode === 'intake') return handleIntake(v);
-      if(mode === 'ask') return handleAsk(v);
-      // menu/done → treat free text as a question
-      if(mode !== 'ask'){ mode = 'ask'; }
-      handleAsk(v);
-    });
-
-    // Repoint the other CTAs to the self-serve chat (call becomes optional).
-    function wire(id, m){
-      var el = byId(id);
-      if(el) el.addEventListener('click', function(e){ e.preventDefault(); openPanel(m); });
-    }
-    
-    wire('finalStart', 'intake');
-    wire('askAiHero', 'ask');
-    wire('navAskAi', 'ask');
-
-    // Let the hero primary CTA (in the other IIFE) open this too.
-    window.ksbotOpen = openPanel;
-  })();
-
-  /* Label each growth-path rung with its phase code (P0–P10) so the phases
-     read on the front, essentials or expanded. */
-  (function(){
-    document.querySelectorAll('#modules .rung').forEach(function(rung){
-      var h = rung.querySelector('h3'); if(!h || h.querySelector('.rung-p')) return;
-      var inp = rung.querySelector('input[data-phase]');
-      var code = inp ? inp.getAttribute('data-phase') : (rung.classList.contains('free') ? 'P0' : '');
-      if(!code) return;
-      var s = document.createElement('span'); s.className = 'rung-p'; s.textContent = code;
-      h.insertBefore(s, h.firstChild);
-    });
-  })();
+  });
+})();
 </script>
 </body>
 </html>

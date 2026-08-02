@@ -52,7 +52,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitch.domains';
+  const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitchwebsites.com';
 
   const params = new URLSearchParams();
   params.append('mode', 'subscription');
