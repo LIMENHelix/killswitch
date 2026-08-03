@@ -32,24 +32,50 @@ async function stripeGet(path) {
   return r.json().catch(() => null);
 }
 
-// customerId -> { mrr (dollars), switches:[label] } from active subscriptions
+// customerId -> { mrr (dollars), switches:[label], renewsAt, endsAt } from active subs.
+//
+// PAGINATES. Stripe caps a page at 100 and this used to request limit=100 with no
+// has_more loop, so past 100 active subscriptions the MRR silently under-reported
+// and paying customers rendered as free. It failed quietly, which is the worst
+// way to fail. MAX_PAGES bounds the function's runtime; if it is ever hit the
+// result is flagged truncated rather than pretending to be complete.
+const MAX_PAGES = 25; // 2,500 subscriptions
+
 async function stripeByCustomer() {
   const out = {};
-  const subs = await stripeGet('/subscriptions?status=active&limit=100');
-  if (!subs || !Array.isArray(subs.data)) return out;
-  for (const s of subs.data) {
-    const cust = typeof s.customer === 'string' ? s.customer : (s.customer && s.customer.id);
-    if (!cust) continue;
-    const rec = (out[cust] = out[cust] || { mrr: 0, switches: [] });
-    const items = (s.items && s.items.data) || [];
-    for (const it of items) {
-      const p = it.price || {};
-      const monthly = p.recurring && p.recurring.interval === 'month' ? (p.unit_amount || 0) : 0;
-      rec.mrr += monthly / 100;
-      const label = PRICE_LABEL[p.id] || (p.nickname || 'Add-on');
-      if (!rec.switches.includes(label)) rec.switches.push(label);
+  let startingAfter = null, pages = 0, truncated = false;
+
+  for (;;) {
+    const q = '/subscriptions?status=active&limit=100' + (startingAfter ? '&starting_after=' + startingAfter : '');
+    const subs = await stripeGet(q);
+    if (!subs || !Array.isArray(subs.data)) break;
+
+    for (const s of subs.data) {
+      const cust = typeof s.customer === 'string' ? s.customer : (s.customer && s.customer.id);
+      if (!cust) continue;
+      const rec = (out[cust] = out[cust] || { mrr: 0, switches: [], renewsAt: null, endsAt: null });
+      const items = (s.items && s.items.data) || [];
+      for (const it of items) {
+        const p = it.price || {};
+        const monthly = p.recurring && p.recurring.interval === 'month' ? (p.unit_amount || 0) : 0;
+        rec.mrr += monthly / 100;
+        const label = PRICE_LABEL[p.id] || (p.nickname || 'Add-on');
+        if (!rec.switches.includes(label)) rec.switches.push(label);
+        // same source api/switch.js uses: Stripe moved period end onto the line item
+        const per = it.current_period_end || s.current_period_end || null;
+        if (per && (!rec.renewsAt || per < rec.renewsAt)) rec.renewsAt = per;
+        // cancel_at_period_end means it is winding down: that date is an END, not a renewal
+        if (s.cancel_at_period_end && per && (!rec.endsAt || per < rec.endsAt)) rec.endsAt = per;
+      }
     }
+
+    pages++;
+    if (!subs.has_more || !subs.data.length) break;
+    if (pages >= MAX_PAGES) { truncated = true; break; }
+    startingAfter = subs.data[subs.data.length - 1].id;
   }
+
+  Object.defineProperty(out, '__truncated', { value: truncated, enumerable: false });
   return out;
 }
 
@@ -91,6 +117,8 @@ export default async function handler(req, res) {
         linked: !!a.stripeCustomerId,
         mrr: s ? +s.mrr.toFixed(2) : 0,
         switches: s ? s.switches : [],
+        renewsAt: s ? s.renewsAt : null,   // unix seconds, next charge
+        endsAt: s ? s.endsAt : null,       // unix seconds, winding down (cancel_at_period_end)
         portalUrl: host + '/panel?e=' + encodeURIComponent(a.email) + (tok ? '&t=' + tok : ''),
       };
     }).sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt)));
@@ -99,8 +127,13 @@ export default async function handler(req, res) {
       customers: accounts.length,
       paying: accounts.filter((a) => a.mrr > 0).length,
       mrr: +accounts.reduce((n, a) => n + a.mrr, 0).toFixed(2),
+      ending: accounts.filter((a) => a.endsAt).length,
     };
-    res.status(200).json({ ok: true, accounts, totals, stripe: !!process.env.STRIPE_SECRET_KEY });
+    res.status(200).json({
+      ok: true, accounts, totals,
+      stripe: !!process.env.STRIPE_SECRET_KEY,
+      truncated: !!byCust.__truncated, // true = more subs than we read; MRR is a floor, not a total
+    });
   } catch (e) {
     console.error('[master] error', e);
     res.status(500).json({ error: 'server_error' });
