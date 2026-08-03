@@ -10,6 +10,7 @@ import { getAccount, upsertAccount } from '../lib/store.js';
 import { verifyPanel, panelToken } from '../lib/panel-auth.js';
 import { MONTHLY, PRICE_TO_PHASE } from '../lib/prices.js';
 import { stripeGet, stripePost, stripeDelete } from '../lib/stripe.js';
+import { notifyOperator, labelPhases } from '../lib/notify.js';
 
 const LIVE_STATUSES = ['active', 'trialing', 'past_due'];
 
@@ -33,7 +34,7 @@ export default async function handler(req, res) {
   try {
     if (action === 'state') { res.status(200).json(await readState(account)); return; }
     if (action === 'apply') { res.status(200).json(await applyChanges(account, body.on, host, email)); return; }
-    if (action === 'link')  { res.status(200).json(await link(account, body.session_id)); return; }
+    if (action === 'link')  { res.status(200).json(await link(account, body.session_id, host)); return; }
     res.status(400).json({ error: 'unknown_action' });
   } catch (err) {
     console.error('[switch]', action, err);
@@ -82,6 +83,7 @@ async function applyChanges(account, on, host, email) {
   let items = itemsByPhase(subs);
   const ending = { ...(account.ending || {}) };
   const now = Math.floor(Date.now() / 1000);
+  const turnedOff = []; // confirmed removals, for the operator notification
 
   // 1) Reactivate any cancel-at-period-end subscription holding a desired phase.
   const uncancel = new Set();
@@ -102,11 +104,11 @@ async function applyChanges(account, on, host, email) {
     if (!remove.length) continue;
     if (remove.length === g.phases.length) {
       const r = await stripePost('/subscriptions/' + subId, { cancel_at_period_end: true });
-      if (!r.error) remove.forEach((p) => { ending[p] = r.current_period_end || g.endsAt || now; });
+      if (!r.error) remove.forEach((p) => { ending[p] = r.current_period_end || g.endsAt || now; turnedOff.push(p); });
     } else {
       for (const p of remove) {
         const r = await stripeDelete('/subscription_items/' + items[p].itemId, { proration_behavior: 'none' });
-        if (!r.error) ending[p] = items[p].endsAt || now;
+        if (!r.error) { ending[p] = items[p].endsAt || now; turnedOff.push(p); }
       }
     }
   }
@@ -136,19 +138,54 @@ async function applyChanges(account, on, host, email) {
   for (const p of Object.keys(ending)) if (!(ending[p] > now)) delete ending[p];
   await upsertAccount({ email: account.email, ending });
 
+  // Tell the operator. Awaited so it actually runs before the serverless function
+  // is frozen, but it can never throw and never blocks the customer's result.
+  const who = account.name || account.site || email;
+  if (turnedOff.length || toAdd.length) {
+    const lines = [`Customer: ${who}`, `Email: ${email}`];
+    if (toAdd.length) lines.push(url
+      ? `STARTED CHECKOUT for: ${labelPhases(toAdd)} (not paid yet, they still have to finish on Stripe)`
+      : `TURNED ON: ${labelPhases(toAdd)} (billing starts now)`);
+    if (turnedOff.length) lines.push(`TURNED OFF: ${labelPhases(turnedOff)} (runs to the end of the paid cycle, then stops)`);
+    await notifyOperator({
+      subject: turnedOff.length && !toAdd.length
+        ? `Switch OFF - ${who}`
+        : `Switch change - ${who}`,
+      heading: turnedOff.length && !toAdd.length ? 'A customer turned something off' : 'A customer changed their modules',
+      lines,
+      url: host + '/master', urlText: 'Open Master Panel',
+    });
+  }
+
   if (url) return { url };
   const st = await readState({ ...account, ending });
   return { ok: true, ...st };
 }
 
-async function link(account, sessionId) {
+async function link(account, sessionId, host) {
   if (!sessionId) return { error: 'no_session' };
   const sess = await stripeGet('/checkout/sessions/' + encodeURIComponent(sessionId));
   if (!sess) return { error: 'session_not_found' };
   const customer = typeof sess.customer === 'string' ? sess.customer : (sess.customer && sess.customer.id);
   if (!customer) return { error: 'no_customer' };
-  if (!account.stripeCustomerId || account.stripeCustomerId !== customer) {
+  const isNew = !account.stripeCustomerId || account.stripeCustomerId !== customer;
+  if (isNew) {
     await upsertAccount({ email: account.email, stripeCustomerId: customer });
+  }
+  // This is the moment money actually starts: checkout came back paid.
+  if (isNew && sess.payment_status === 'paid') {
+    const who = account.name || account.site || account.email;
+    await notifyOperator({
+      subject: `PAID - ${who} is now a paying customer`,
+      heading: 'First payment went through',
+      lines: [
+        `Customer: ${who}`,
+        `Email: ${account.email}`,
+        sess.amount_total ? `Amount: $${(sess.amount_total / 100).toFixed(2)}` : '',
+        'Their subscription is live. Check Master for what they switched on.',
+      ].filter(Boolean),
+      url: (host || '') + '/master', urlText: 'Open Master Panel',
+    });
   }
   return { ok: true };
 }
