@@ -152,6 +152,17 @@
   .klsw.on .lever::before{top:55px;background:linear-gradient(180deg,#8effb9,#1BA45A);border-color:#0f7a40;box-shadow:0 0 22px rgba(27,164,90,.95),inset 0 1px 0 rgba(255,255,255,.4)}
   .klsw.on .led{background:var(--go);box-shadow:0 0 12px var(--go),0 0 24px var(--go)}
 
+  /* what-happens-next, under the switch panel */
+  .next{margin-top:26px}
+  .nx-h{display:block;margin-bottom:12px;color:var(--mute-2)}
+  .next ol{list-style:none;counter-reset:n;margin:0}
+  .next ol li{counter-increment:n;position:relative;padding-left:30px;margin-bottom:11px;font-size:.92rem;color:var(--mute);line-height:1.5}
+  .next ol li::before{content:counter(n);position:absolute;left:0;top:1px;width:20px;height:20px;border-radius:50%;background:var(--go);color:#fff;font-family:"IBM Plex Mono",monospace;font-size:.68rem;font-weight:600;display:flex;align-items:center;justify-content:center}
+  .next ol li b{color:var(--ink);font-weight:600}
+  .nx-f{margin-top:16px;padding-top:14px;border-top:1px solid var(--line-soft);font-size:.82rem;color:var(--mute-2);line-height:1.7}
+  .nx-f a{color:var(--ink);border-bottom:1px solid var(--line)}
+  .nx-f a:hover{color:var(--go);border-color:var(--go)}
+
   /* FOOTER */
   .foot{position:relative;z-index:2;border-top:1px solid var(--line-soft);padding:26px 0 20px;margin-top:auto}
   .foot-in{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
@@ -248,6 +259,16 @@
           <p class="switch-caption" id="cap">Status: <b id="capState">Standby</b><br><span style="color:#8E8779;font-size:.68rem">throw the switch to begin</span></p>
           <span class="bot-haz" aria-hidden="true"></span>
         </div>
+      </div>
+
+      <div class="next">
+        <div class="mono nx-h">What happens next</div>
+        <ol>
+          <li><b>You send</b> your business name and number.</li>
+          <li><b>We build it</b> by hand, usually the same day.</li>
+          <li><b>We send you the link.</b> It's yours to keep.</li>
+        </ol>
+        <p class="nx-f">Built in Kansas City &middot; serving all 50 states<br>Questions? Call or text <a href="tel:+19139331687"><b>(913) 933-1687</b></a></p>
       </div>
     </div>
   </div>

@@ -91,6 +91,27 @@
   select.stage.s-called{border-color:var(--blue);color:var(--blue)}
   select.stage.s-dead{opacity:.5}
   input.note{background:var(--metal);border:1px solid var(--line);border-radius:6px;color:var(--ink);font:inherit;font-size:.8rem;padding:4px 8px;width:100%}
+
+  /* manager runbook */
+  .runbook{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin:0 0 20px}
+  .runbook>summary{cursor:pointer;padding:15px 20px;font-family:"Archivo",sans-serif;font-weight:700;font-size:1rem;color:var(--amber);list-style:none}
+  .runbook>summary::-webkit-details-marker{display:none}
+  .runbook>summary::before{content:"\25B8";display:inline-block;margin-right:10px;transition:transform .2s}
+  .runbook[open]>summary::before{transform:rotate(90deg)}
+  .runbook[open]>summary{border-bottom:1px solid var(--line)}
+  .rb{padding:6px 22px 22px;color:var(--mute);font-size:.92rem;line-height:1.6}
+  .rb h3{font-family:"Archivo",sans-serif;color:var(--ink);font-size:.95rem;margin:20px 0 8px}
+  .rb b{color:var(--ink)}
+  .rb a{color:var(--amber);text-decoration:underline}
+  .rb ol{margin:0 0 0 20px}
+  .rb ol li{margin-bottom:7px}
+  .rbt{width:100%;border-collapse:collapse}
+  .rbt td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:top}
+  .rbt tr:first-child td{border-top:none}
+  .rbt td:first-child{white-space:nowrap;color:var(--ink);font-weight:600;width:1%;padding-right:18px}
+  .rbt td.ok{color:var(--go)}
+  .rbt td.bad{color:var(--red)}
+  .rb .warn{background:var(--metal);border-left:3px solid var(--amber);border-radius:0 8px 8px 0;padding:11px 14px;margin:12px 0 0}
   .msg{font-size:.85rem;color:var(--mute);min-height:18px;margin-top:8px}
 </style>
 </head>
@@ -109,6 +130,62 @@
       <div><h1>Outreach autopilot</h1><div class="sub">Mail runs on your approval, then work the calls. Board updates live as postcards go out.</div></div>
       <button class="btn ghost sm" id="signout">Sign out</button>
     </div>
+
+    <details class="runbook">
+      <summary>How to run this system &mdash; read me first</summary>
+      <div class="rb">
+
+        <h3>The four screens</h3>
+        <table class="rbt">
+          <tr><td><a href="/" target="_blank">killswitchwebsites.com</a></td><td>The public site. The form on the front page is how new customers ask for a free website.</td></tr>
+          <tr><td><a href="/admin" target="_blank">/admin</a></td><td>This page. The postcard machine and the lead board.</td></tr>
+          <tr><td><a href="/master" target="_blank">/master</a></td><td>Customer accounts, live monthly revenue, and where you onboard someone after you build their site.</td></tr>
+          <tr><td><a href="/panel" target="_blank">/panel</a></td><td>The customer's own screen. They reach it by a private link we email them. There is no password.</td></tr>
+        </table>
+
+        <h3>How you find out something happened</h3>
+        <table class="rbt">
+          <tr><td class="ok">Email</td><td><b>Someone wants a free website.</b> Subject starts with &#128276; FREE SITE request. Their business name, phone and email are in it.</td></tr>
+          <tr><td class="ok">Email</td><td><b>An existing customer wants a change to their site.</b> Subject is &ldquo;Killswitch Websites &middot; site change request&rdquo;.</td></tr>
+          <tr><td class="bad">Nothing</td><td><b>A customer switched a paid module ON.</b> No email is sent. You only see it in Stripe, or by opening /master.</td></tr>
+          <tr><td class="bad">Nothing</td><td><b>A customer switched a paid module OFF.</b> Same. No email. Check Stripe or /master.</td></tr>
+          <tr><td class="bad">Nothing</td><td><b>Autopilot hit its budget ceiling.</b> No email, and it switches itself off. You find out by opening this page and seeing OFF.</td></tr>
+        </table>
+        <p class="warn">Because of the three rows above, <b>open /master once a week</b> even if no email arrives. That is currently the only way to catch someone starting or stopping a paid module.</p>
+
+        <h3>What to do each day</h3>
+        <ol>
+          <li>Check email for the two subjects above.</li>
+          <li><b>Free site request:</b> build their site, then go to <a href="/master" target="_blank">/master</a> &rarr; Onboard a customer &rarr; enter their email. That emails them a $0 receipt and their private panel link.</li>
+          <li><b>Change request:</b> make the change, then reply to them yourself.</li>
+          <li>Work the call list on this page. Every business with a demo already built has a live link in the call script.</li>
+        </ol>
+
+        <h3>The postcard machine, in plain terms</h3>
+        <table class="rbt">
+          <tr><td>Postcards / day</td><td>How many go out automatically each day. Set 0 to pause without switching anything off.</td></tr>
+          <tr><td>Budget ceiling</td><td><b>Total spend for all time, not new spend.</b> Every postcard ever sent counts against it. This is the number that confuses people.</td></tr>
+          <tr><td>The switch</td><td>Turns automatic mailing on. It refuses to switch on if the ceiling is already used up.</td></tr>
+          <tr><td>Run a batch now</td><td>Sends immediately instead of waiting for the daily run.</td></tr>
+        </table>
+        <p class="warn">Each postcard costs about <b>$0.94</b>, billed by Lob. To allow more mail, the ceiling must be <b>what you have already spent, plus 94 cents per new card</b>. The page tells you the minimum if you get it wrong.</p>
+
+        <h3>How to stop things</h3>
+        <table class="rbt">
+          <tr><td>Stop the mail</td><td>Flip the autopilot switch off on this page. Nothing further is sent, and nothing is charged.</td></tr>
+          <tr><td>Stop a customer's paid module</td><td>They can switch it off themselves in their panel. It keeps running until the end of the cycle they already paid for, then stops. You can also cancel it in Stripe.</td></tr>
+          <tr><td>Stop everything at once</td><td>Autopilot off here, and pause the account in Stripe. The free websites stay online either way, and they belong to the customer.</td></tr>
+        </table>
+
+        <h3>What money is where</h3>
+        <table class="rbt">
+          <tr><td>Lob</td><td>Postage. Real money leaves here every time a postcard is sent. If it runs dry, sends just fail quietly.</td></tr>
+          <tr><td>Stripe</td><td>Customer subscriptions, $19 to $29 a month per module. This is the income.</td></tr>
+          <tr><td>The ceiling on this page</td><td>A safety limit we set on ourselves. It does not hold money, it just stops the mailing.</td></tr>
+        </table>
+
+      </div>
+    </details>
 
     <!-- LIVE STATUS BOARD -->
     <section class="board">
