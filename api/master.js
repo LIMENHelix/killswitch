@@ -8,6 +8,7 @@
 import { getAccounts } from '../lib/store.js';
 import { onboardCustomer } from '../lib/onboard.js';
 import { panelToken } from '../lib/panel-auth.js';
+import { getSites, upsertSite, slugify } from '../lib/sites.js';
 
 const PRICE_LABEL = {
   price_1ToXlLPmxnF3rtBM5NRurfkt: 'Get Found on Google',
@@ -97,6 +98,34 @@ export default async function handler(req, res) {
       const out = await onboardCustomer({ email: body.email, site: body.site, name: body.name, host, source: 'master-onboard' });
       if (out.error) { res.status(400).json({ error: out.error }); return; }
       res.status(200).json({ ok: true, email: out.email, portalUrl: out.portalUrl, emailed: out.emailed, tokenReady: out.tokenReady });
+      return;
+    }
+
+    // ---- one-template site records ----
+    if (action === 'site-list') {
+      const m = await getSites();
+      const sites = Object.values(m).map((s) => ({
+        slug: s.slug, business: s.business, email: s.email || '', trade: s.trade || '',
+        published: !!s.published, modules: s.modules || ['P0'],
+      })).sort((a, b) => a.business.localeCompare(b.business));
+      res.status(200).json({ ok: true, sites });
+      return;
+    }
+    if (action === 'site-save') {
+      const p = body.site || {};
+      if (!p.business && !p.slug) { res.status(400).json({ error: 'business_required' }); return; }
+      const saved = await upsertSite({
+        slug: slugify(p.slug || p.business), email: p.email, business: p.business, trade: p.trade,
+        tagline: p.tagline, phone: p.phone, email_public: p.email_public,
+        street: p.street, city: p.city, state: p.state, zip: p.zip,
+        about: p.about, accent: p.accent, bookingUrl: p.bookingUrl, payUrl: p.payUrl,
+        hours: Array.isArray(p.hours) ? p.hours : undefined,
+        services: Array.isArray(p.services) ? p.services : undefined,
+        posts: Array.isArray(p.posts) ? p.posts : undefined,
+        modules: Array.isArray(p.modules) ? p.modules : undefined,
+        published: p.published === undefined ? undefined : !!p.published,
+      });
+      res.status(200).json({ ok: true, site: saved, url: '/s/' + saved.slug });
       return;
     }
 

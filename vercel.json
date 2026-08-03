@@ -5,6 +5,9 @@
   "crons": [
     { "path": "/api/cron-mail", "schedule": "0 14,20 * * *" }
   ],
+  "rewrites": [
+    { "source": "/s/:slug", "destination": "/api/site?slug=:slug" }
+  ],
   "redirects": [
     {
       "source": "/",

@@ -11,6 +11,7 @@ import { verifyPanel, panelToken } from '../lib/panel-auth.js';
 import { MONTHLY, PRICE_TO_PHASE } from '../lib/prices.js';
 import { stripeGet, stripePost, stripeDelete } from '../lib/stripe.js';
 import { notifyOperator, labelPhases } from '../lib/notify.js';
+import { syncModules } from '../lib/sites.js';
 
 const LIVE_STATUSES = ['active', 'trialing', 'past_due'];
 
@@ -137,6 +138,15 @@ async function applyChanges(account, on, host, email) {
 
   for (const p of Object.keys(ending)) if (!(ending[p] > now)) delete ending[p];
   await upsertAccount({ email: account.email, ending });
+
+  // THE POINT OF THE WHOLE THING: push the new on/off state onto their live site,
+  // so flipping a switch here changes what renders at /s/<slug>. No rebuild, no
+  // deploy, no manual fulfilment. Wrapped because a site record may not exist yet
+  // (a customer can have billing before we have built their page).
+  try {
+    const liveNow = new Set([...desired].filter((p) => !turnedOff.includes(p)));
+    await syncModules(email, [...liveNow]);
+  } catch (err) { console.error('[switch] site sync', err); }
 
   // Tell the operator. Awaited so it actually runs before the serverless function
   // is frozen, but it can never throw and never blocks the customer's result.
