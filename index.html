@@ -20,24 +20,24 @@
 <link rel="canonical" href="https://killswitchwebsites.com/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"ProfessionalService","name":"Killswitch Websites","alternateName":"KILLSWITCH","telephone":"+1-913-933-1687","description":"Killswitch Websites builds local service businesses a real website, free, and yours to keep.","url":"https://killswitchwebsites.com/","areaServed":"US","priceRange":"Free to low monthly","parentOrganization":{"@type":"Organization","name":"LIMEN Helix LLC","url":"https://www.limenhelix.com"},"makesOffer":{"@type":"Offer","price":"0","priceCurrency":"USD","itemOffered":{"@type":"Service","name":"Free business website","description":"A free, custom, mobile-ready website for your business, yours to keep."}},"sameAs":["https://www.limenhelix.com"]}
 </script>
 <style>
   :root{
-    --bg:#121214;
-    --panel:#1a1a1e;
-    --metal:#232328;
-    --line:#34343c;
-    --line-soft:#26262c;
-    --ink:#FFFFFF;
-    --mute:#b6bac2;
-    --mute-2:#888c96;
-    --amber:#FFC42E;
-    --amber-dim:#c79a34;
-    --red:#FF5546;
-    --go:#1BA45A;
+    --bg:#F6F1E7;
+    --panel:#FFFFFF;
+    --metal:#FFFFFF;
+    --line:#D8CFBC;
+    --line-soft:#E8E0D0;
+    --ink:#1E1B16;
+    --mute:#5A5347;
+    --mute-2:#78705F;
+    --amber:#A66A00;
+    --amber-dim:#8A5A00;
+    --red:#C4291B;
+    --go:#12703C;
     --go-ink:#ffffff;
     --maxw:1140px;
     --r:14px;
@@ -46,10 +46,7 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
   body{
-    background:
-      radial-gradient(900px 520px at 80% -14%, rgba(37,199,102,.10), transparent 66%),
-      radial-gradient(720px 460px at 8% 2%, rgba(255,196,46,.06), transparent 64%),
-      var(--bg);
+    background:var(--bg);
     background-attachment:fixed;
     color:var(--ink);
     font-family:"Inter",system-ui,sans-serif;
@@ -64,18 +61,18 @@
 
   .mono{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.16em;font-size:.72rem;color:var(--mute)}
   .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px;width:100%}
-  .display{font-family:"Archivo",sans-serif;font-weight:900;line-height:.96;letter-spacing:-.02em}
+  .display{font-family:"Manrope",sans-serif;font-weight:900;line-height:.96;letter-spacing:-.02em}
 
   #pglow{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0;transition:opacity .6s ease;
-    background:radial-gradient(760px 520px at 72% 34%, rgba(27,164,90,.20), transparent 68%)}
+    background:radial-gradient(760px 520px at 72% 34%, rgba(18,112,60,.10), transparent 68%)}
   body.lit #pglow{opacity:1}
 
-  .hazard{height:10px;background:repeating-linear-gradient(-45deg,var(--amber) 0 16px,#161616 16px 32px);opacity:.85;position:relative;z-index:2}
+  .hazard{height:10px;background:repeating-linear-gradient(-45deg,var(--amber) 0 16px,#241C10 16px 32px);opacity:.85;position:relative;z-index:2}
 
   /* NAV */
-  .nav{position:relative;z-index:3;border-bottom:1px solid var(--line-soft);background:rgba(18,18,20,.72);backdrop-filter:blur(9px)}
+  .nav{position:relative;z-index:3;border-bottom:1px solid var(--line-soft);background:rgba(246,241,231,.82);backdrop-filter:blur(9px)}
   .nav-in{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;gap:20px}
-  .brand{display:inline-flex;align-items:center;gap:10px;font-family:"Archivo",sans-serif;font-weight:900;letter-spacing:.04em;color:var(--red);font-size:1.05rem}
+  .brand{display:inline-flex;align-items:center;gap:10px;font-family:"Manrope",sans-serif;font-weight:900;letter-spacing:.04em;color:var(--red);font-size:1.05rem}
   .brand-ic{width:20px;height:20px;flex:none}
   .nav-links{display:flex;align-items:center;gap:26px}
   .nav-links a{font-size:.92rem;color:var(--mute);transition:color .2s}
@@ -89,7 +86,7 @@
   .eyebrow{display:inline-flex;align-items:center;gap:10px;margin-bottom:22px}
   .eyebrow::before{content:"";width:26px;height:1px;background:var(--amber)}
   h1.hero-h{font-size:clamp(2.1rem,5.4vw,3.6rem)}
-  h1.hero-h .free{color:var(--amber);text-shadow:0 0 22px rgba(255,196,46,.55)}
+  h1.hero-h .free{color:var(--amber);text-shadow:none}
   .hero-sub{margin-top:20px;font-size:1.14rem;color:var(--mute);max-width:26em}
   .hero-sub strong{color:var(--ink);font-weight:600}
 
@@ -102,7 +99,7 @@
     background:var(--metal);color:var(--ink);font-family:"Inter",system-ui,sans-serif;font-size:1rem;
     transition:border-color .2s,box-shadow .2s;
   }
-  .cap input::placeholder{color:#6d717b}
+  .cap input::placeholder{color:#9A9284}
   .cap input:focus{outline:none;border-color:var(--go);box-shadow:0 0 0 3px rgba(27,164,90,.18)}
   .cap input:invalid:not(:placeholder-shown){border-color:var(--red)}
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:15px 26px;border-radius:12px;font-weight:600;font-size:1.02rem;cursor:pointer;border:1px solid transparent;transition:transform .18s,filter .18s,box-shadow .18s;font-family:"Inter",system-ui,sans-serif}
@@ -117,7 +114,7 @@
 
   .done{display:none;margin-top:30px;max-width:430px;padding:24px;border:1px solid var(--go);border-radius:var(--r);background:rgba(27,164,90,.09)}
   .done.show{display:block}
-  .done h2{font-family:"Archivo",sans-serif;font-size:1.35rem;margin-bottom:10px}
+  .done h2{font-family:"Manrope",sans-serif;font-size:1.35rem;margin-bottom:10px}
   .done p{color:var(--mute);font-size:.96rem}
 
   .proof{margin-top:26px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:.9rem;color:var(--mute-2)}
@@ -128,20 +125,20 @@
   .talk a:hover{color:var(--ink)}
 
   /* SWITCH PANEL */
-  .panel-unit{background:linear-gradient(180deg,var(--panel),#151519);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:0 20px 50px -28px rgba(0,0,0,.9)}
-  .panel-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line-soft)}
-  .panel-head .lbl{font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.18em;color:var(--mute);text-transform:uppercase}
-  .status{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;display:flex;align-items:center;gap:8px;color:var(--red);transition:color .3s}
+  .panel-unit{background:linear-gradient(180deg,#26262b,#151519);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:0 20px 50px -28px rgba(0,0,0,.9)}
+  .panel-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #33333a}
+  .panel-head .lbl{font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.18em;color:#A9A296;text-transform:uppercase}
+  .status{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;display:flex;align-items:center;gap:8px;color:#FF6A5C;transition:color .3s}
   .status .sdot{width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red);transition:.3s}
-  .status.live{color:var(--go)}
+  .status.live{color:#3ADD84}
   .status.live .sdot{background:var(--go);box-shadow:0 0 12px var(--go);animation:pulse 1.4s infinite}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
   .panel-body{padding:30px 18px 26px;display:flex;flex-direction:column;align-items:center;gap:18px;position:relative}
   .panel-body .top-haz,.panel-body .bot-haz{position:absolute;left:0;right:0;height:7px;background:repeating-linear-gradient(-45deg,var(--amber-dim) 0 12px,transparent 12px 24px);opacity:.5}
   .panel-body .top-haz{top:0}.panel-body .bot-haz{bottom:0}
-  .switch-caption{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.14em;font-size:.74rem;color:var(--mute);text-align:center}
-  .switch-caption b{color:var(--red);font-weight:600;transition:color .3s}
-  .switch-caption.live b{color:var(--go)}
+  .switch-caption{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.14em;font-size:.74rem;color:#C6BFB2;text-align:center}
+  .switch-caption b{color:#FF6A5C;font-weight:600;transition:color .3s}
+  .switch-caption.live b{color:#3ADD84}
 
   .klsw{background:linear-gradient(180deg,#2a2a31,#141418);border:1px solid #3a3a42;border-radius:14px;width:66px;height:134px;position:relative;cursor:pointer;padding:0;box-shadow:inset 0 2px 9px rgba(0,0,0,.8),0 0 20px -6px rgba(255,85,70,.5);transition:box-shadow .3s,border-color .3s}
   .klsw .slot{position:absolute;left:50%;top:12px;bottom:12px;width:20px;transform:translateX(-50%);background:#0b0b0e;border-radius:10px;box-shadow:inset 0 2px 6px rgba(0,0,0,.95)}
@@ -248,7 +245,7 @@
         <div class="panel-body">
           <span class="top-haz" aria-hidden="true"></span>
           <button class="klsw" id="killSwitch" type="button" role="switch" aria-checked="false" aria-label="Power on your free website"><span class="led"></span><span class="slot"></span><span class="lever"></span></button>
-          <p class="switch-caption" id="cap">Status: <b id="capState">Standby</b><br><span style="color:var(--mute-2);font-size:.68rem">throw the switch to begin</span></p>
+          <p class="switch-caption" id="cap">Status: <b id="capState">Standby</b><br><span style="color:#8E8779;font-size:.68rem">throw the switch to begin</span></p>
           <span class="bot-haz" aria-hidden="true"></span>
         </div>
       </div>

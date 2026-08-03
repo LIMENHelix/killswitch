@@ -9,32 +9,32 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230a0b0e'/%3E%3Cg fill='none' stroke='%23FF3826' stroke-width='9' stroke-linecap='round'%3E%3Cpath d='M62.5 30.4 A25 25 0 1 1 37.5 30.4'/%3E%3Cpath d='M50 22 V52'/%3E%3C/g%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
   :root{
-    --bg:#121214;--panel:#1a1a1e;--metal:#232328;--metal-hi:#2c2c33;
-    --line:#34343c;--line-soft:#26262c;--ink:#fff;--mute:#b6bac2;--mute-2:#888c96;
-    --amber:#FFC42E;--amber-dim:#c79a34;--red:#FF5546;--go:#1BA45A;--go-ink:#fff;--ok:#3ad17a;
+    --bg:#F6F1E7;--panel:#FFFFFF;--metal:#FFFFFF;--metal-hi:#FBF8F2;
+    --line:#D8CFBC;--line-soft:#E8E0D0;--ink:#1E1B16;--mute:#5A5347;--mute-2:#78705F;
+    --amber:#A66A00;--amber-dim:#8A5A00;--red:#C4291B;--go:#12703C;--go-ink:#fff;--ok:#12703C;
     --maxw:900px;--r:14px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
-  body{background:radial-gradient(900px 520px at 80% -14%,rgba(37,199,102,.10),transparent 66%),var(--bg);
+  body{background:var(--bg);
     background-attachment:fixed;color:var(--ink);font-family:"Inter",system-ui,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
   a{color:inherit;text-decoration:none}
   .mono{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.16em;font-size:.72rem;color:var(--mute)}
   .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
   .hazard{height:10px;background:repeating-linear-gradient(-45deg,var(--amber) 0 16px,#161616 16px 32px);opacity:.85}
 
-  header.nav{position:sticky;top:0;z-index:60;background:rgba(18,18,20,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line-soft)}
+  header.nav{position:sticky;top:0;z-index:60;background:rgba(246,241,231,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line-soft)}
   .nav-in{display:flex;align-items:center;justify-content:space-between;height:60px}
-  .brand{font-family:"Archivo",sans-serif;font-weight:900;letter-spacing:.04em;font-size:1.08rem;display:flex;align-items:center;gap:9px}
+  .brand{font-family:"Manrope",sans-serif;font-weight:900;letter-spacing:.04em;font-size:1.08rem;display:flex;align-items:center;gap:9px}
   .brand-ic{width:1.12em;height:1.12em;color:var(--red);flex:0 0 auto}
   .nav-in a.back{font-size:.86rem;color:var(--mute)}
   .nav-in a.back:hover{color:var(--ink)}
 
   .head{padding:38px 0 8px}
-  .head h1{font-family:"Archivo",sans-serif;font-weight:900;font-size:clamp(1.5rem,4vw,2.1rem);letter-spacing:-.02em}
+  .head h1{font-family:"Manrope",sans-serif;font-weight:900;font-size:clamp(1.5rem,4vw,2.1rem);letter-spacing:-.02em}
   .head .site{margin-top:6px;color:var(--mute);font-size:1rem}
   .head .site b{color:var(--amber);font-weight:600}
   .head .rule{margin-top:18px;border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:12px;padding:14px 18px;background:var(--metal);color:var(--mute);font-size:.9rem;max-width:44em}
@@ -47,12 +47,12 @@
   .mlist{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
   .mrow{display:grid;grid-template-columns:56px 1fr auto;gap:16px;align-items:center;padding:16px 20px;border-top:1px solid var(--line-soft)}
   .mrow:first-child{border-top:none}
-  .mrow .m-main h3{font-family:"Archivo",sans-serif;font-weight:700;font-size:1.06rem;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .mrow .m-main h3{font-family:"Manrope",sans-serif;font-weight:700;font-size:1.06rem;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
   .mrow .m-main p{color:var(--mute);font-size:.88rem;margin-top:3px}
   .pill{font-family:"IBM Plex Mono",monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:999px;white-space:nowrap}
   .pill.on{background:rgba(27,164,90,.16);color:var(--ok);border:1px solid rgba(27,164,90,.5)}
-  .pill.ending{background:rgba(255,85,70,.12);color:#ff8f84;border:1px solid rgba(255,85,70,.42)}
-  .pill.off{background:rgba(255,85,70,.12);color:#ff8f84;border:1px solid rgba(255,85,70,.42)}
+  .pill.ending{background:rgba(255,85,70,.12);color:#A81E10;border:1px solid rgba(255,85,70,.42)}
+  .pill.off{background:rgba(255,85,70,.12);color:#A81E10;border:1px solid rgba(255,85,70,.42)}
   .pill.locked{background:rgba(27,164,90,.16);color:var(--ok);border:1px solid rgba(27,164,90,.5)}
   .m-right{text-align:right;white-space:nowrap}
   .m-price{font-family:"IBM Plex Mono",monospace;font-size:.9rem;color:var(--ink)}
@@ -100,8 +100,8 @@
   /* cumulative power glow: the whole background brightens with each switch on */
   #pglow{position:fixed;inset:0;z-index:-1;pointer-events:none;transition:background .55s ease;
     background:
-      radial-gradient(145% 110% at 50% 0%, rgba(40,220,135,calc(var(--power,0)*.12)), transparent 62%),
-      radial-gradient(115% 90% at 50% 100%, rgba(27,164,90,calc(var(--power,0)*.08)), transparent 70%)}
+      radial-gradient(145% 110% at 50% 0%, rgba(18,112,60,calc(var(--power,0)*.05)), transparent 62%),
+      radial-gradient(115% 90% at 50% 100%, rgba(166,106,0,calc(var(--power,0)*.035)), transparent 70%)}
   body.zap{animation:zapflick .17s}
   @keyframes zapflick{0%,100%{filter:none}45%{filter:brightness(1.15)}}
   .sound-btn{background:none;border:1px solid var(--line);border-radius:8px;color:var(--mute);font-size:.95rem;padding:5px 10px;cursor:pointer;line-height:1}
@@ -115,7 +115,7 @@
   .totalbar .t-l b{color:var(--ink)}
   .totalbar .t-amt{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:1.5rem;color:var(--go)}
   .totalbar .t-amt small{font-size:.8rem;color:var(--mute-2);font-weight:400}
-  .savebtn{font-family:"Archivo",sans-serif;font-weight:700;font-size:.92rem;background:var(--go);color:var(--go-ink);border:1px solid var(--go);border-radius:10px;padding:11px 18px;cursor:pointer;transition:.15s}
+  .savebtn{font-family:"Manrope",sans-serif;font-weight:700;font-size:.92rem;background:var(--go);color:var(--go-ink);border:1px solid var(--go);border-radius:10px;padding:11px 18px;cursor:pointer;transition:.15s}
   .savebtn:hover{filter:brightness(1.08);transform:translateY(-1px)}
   .savenote{width:100%;font-size:.8rem;color:var(--mute-2);min-height:14px}
   .unsaved{width:100%;font-size:.82rem;color:var(--amber);font-weight:600}
@@ -131,7 +131,7 @@
   .edits-lock b{color:var(--ink)}
   .edits-lock a{color:var(--go);cursor:pointer;font-weight:600}
   .aibox-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line-soft);background:linear-gradient(180deg,var(--metal-hi),var(--metal))}
-  .aibox-head .t{font-family:"Archivo",sans-serif;font-weight:700;font-size:1rem;display:flex;align-items:center;gap:9px}
+  .aibox-head .t{font-family:"Manrope",sans-serif;font-weight:700;font-size:1rem;display:flex;align-items:center;gap:9px}
   .aibox-head .t svg{width:18px;height:18px;color:var(--go)}
   .aibox-head .sub{font-family:"IBM Plex Mono",monospace;font-size:.56rem;letter-spacing:.12em;text-transform:uppercase;color:var(--go);display:flex;align-items:center;gap:6px}
   .aibox-head .sub .d{width:7px;height:7px;border-radius:50%;background:var(--go);box-shadow:0 0 8px var(--go)}
@@ -146,7 +146,7 @@
   .aibox-foot input:focus{border-color:var(--go)}
   .aibox-foot .send{background:var(--go);color:var(--go-ink);border:none;border-radius:10px;width:42px;height:42px;font-size:1.15rem;cursor:pointer;flex:0 0 auto}
   .aibox-foot .send:hover{filter:brightness(1.09)}
-  .aibox-foot .deliver{font-family:"Archivo",sans-serif;font-weight:700;font-size:.86rem;background:transparent;color:var(--go);border:1px solid var(--go);border-radius:10px;padding:10px 14px;cursor:pointer;transition:.15s}
+  .aibox-foot .deliver{font-family:"Manrope",sans-serif;font-weight:700;font-size:.86rem;background:transparent;color:var(--go);border:1px solid var(--go);border-radius:10px;padding:10px 14px;cursor:pointer;transition:.15s}
   .aibox-foot .deliver:hover{background:color-mix(in srgb,var(--go) 14%,transparent)}
   .aibox-foot .dnote{font-size:.78rem;color:var(--mute-2);min-height:14px}
 
