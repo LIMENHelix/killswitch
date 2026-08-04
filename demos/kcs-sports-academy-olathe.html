@@ -4,223 +4,252 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="robots" content="noindex, nofollow" />
-<title>KC's Sports Academy — Certified Youth Speed &amp; Performance Coaching in Olathe, KS</title>
-<meta name="description" content="KC's Sports Academy Youth Sports Performance, Olathe KS. Ted Johnson is an NSPA Certified Speed &amp; Agility Coach and NASM CPT, CES and PES. Speed, movement screening and sport conditioning for young athletes. Call (816) 679-1642." />
+<title>KC's Sports Academy — Certified Youth Speed &amp; Performance Coaching, Olathe KS</title>
+<meta name="description" content="KC's Sports Academy Youth Sports Performance, Olathe KS. Ted Johnson is an NSPA Certified Speed &amp; Agility Coach and NASM CPT, CES and PES. Speed, movement screening and sport conditioning for young athletes. Book a session or call (816) 679-1642." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    /* turf & cones: the actual materials of a speed session */
-    --field:#0C1F14; --turf:#12291B; --turf2:#17331F; --turf3:#1d3f27;
-    --chalk:#F6F4ED; --chalk2:#ECE8DC; --chalk3:#E0DCCD;
-    --ink:#101A13;
-    --cone:#FF5A1F; --cone2:#FF7A45; --cone-dk:#C7400F;
-    --sage:#A3B7A9; --slate:#5A6B5E;
-    --line-d:rgba(246,244,237,.13); --line-d2:rgba(246,244,237,.24);
-    --line-l:rgba(16,26,19,.14); --line-l2:rgba(16,26,19,.26);
-    --ok:#2f7d4f;
+    /* pulled from the KCSA logo itself */
+    --void:#060709; --pit:#0B0E12; --rise:#12171D; --card:#171D25; --edge:#212932;
+    --volt:#32BBF1; --volt-dk:#1B8CC0; --volt-deep:#0E5C84;
+    --white:#FFFFFF; --ash:#9BA8B4; --dim:#6B7885;
+    --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.19);
+    --ok:#3ecf8e;
     --disp:'Big Shoulders Display','Oswald','Arial Narrow',Impact,sans-serif;
     --mono:'JetBrains Mono','SFMono-Regular',Consolas,monospace;
     --sans:'Inter',-apple-system,system-ui,'Segoe UI',Roboto,Arial,sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
-  body{background:var(--field);color:var(--chalk);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  body{background:var(--void);color:var(--white);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
   a{color:inherit;text-decoration:none}
   img,svg{display:block;max-width:100%}
-  .wrap{max-width:1140px;margin:0 auto;padding:0 22px}
-  :focus-visible{outline:3px solid var(--cone);outline-offset:3px;border-radius:4px}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 22px}
+  :focus-visible{outline:3px solid var(--volt);outline-offset:3px;border-radius:4px}
 
-  /* type roles */
-  .eyebrow{font-family:var(--mono);font-size:11.5px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--cone2)}
-  .eyebrow--dark{color:var(--cone-dk)}
-  h2{font-family:var(--disp);font-weight:800;text-transform:uppercase;letter-spacing:.005em;font-size:clamp(32px,5.4vw,58px);line-height:.95;margin:10px 0 12px}
-  .lede{font-size:17px;max-width:56ch}
-
-  .demo-bar{background:#060f09;color:#b9c9bd;font-size:12.5px;font-weight:500;text-align:center;padding:9px 16px;letter-spacing:.01em}
-  .demo-bar b{font-weight:700;color:#fff}
-
-  /* field-paint lane lines: the structural motif */
-  .lanes{height:8px;background:
-    repeating-linear-gradient(90deg,var(--chalk) 0 34px,transparent 34px 60px);
-    opacity:.5}
-  .lanes--cone{background:repeating-linear-gradient(90deg,var(--cone) 0 34px,transparent 34px 60px);opacity:.9}
+  .eyebrow{font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.3em;text-transform:uppercase;color:var(--volt)}
+  h2{font-family:var(--disp);font-weight:800;text-transform:uppercase;letter-spacing:.012em;font-size:clamp(32px,5.2vw,58px);line-height:.94;margin:12px 0 14px}
+  .rule{width:64px;height:3px;background:var(--volt);margin:20px 0 0;border-radius:2px}
+  section{padding:110px 0;position:relative}
+  .sec-head{max-width:680px;margin-bottom:46px}
+  .sec-head p{color:var(--ash);font-size:17px;margin-top:6px}
 
   /* nav */
-  .nav{position:sticky;top:0;z-index:50;background:rgba(12,31,20,.9);backdrop-filter:saturate(1.3) blur(12px);border-bottom:1px solid var(--line-d)}
-  .nav .wrap{display:flex;align-items:center;justify-content:space-between;height:70px;gap:16px}
-  .mark{display:flex;align-items:center;gap:13px}
-  .mark .glyph{width:46px;height:46px;flex:none;border-radius:11px;background:var(--cone);color:var(--field);
-    display:grid;place-items:center;font-family:var(--disp);font-weight:800;font-size:20px;letter-spacing:-.02em;line-height:1}
-  .mark b{font-family:var(--disp);font-size:21px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;line-height:1;display:block}
-  .mark small{font-family:var(--mono);color:var(--sage);font-size:10px;letter-spacing:.15em;text-transform:uppercase;display:block;margin-top:4px}
+  .nav{position:sticky;top:0;z-index:60;background:rgba(6,7,9,.9);backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid var(--line)}
+  .nav .wrap{display:flex;align-items:center;justify-content:space-between;height:76px;gap:16px}
+  .brand{display:flex;align-items:center;gap:14px;flex:none}
+  .brand .mk{width:46px;height:38px;flex:none}
+  .brand .mk path{fill:none;stroke:var(--volt);stroke-width:7}
+  .brand .mk circle{fill:var(--volt)}
+  .brand b{display:block;font-family:var(--disp);font-weight:800;font-size:21px;letter-spacing:.03em;text-transform:uppercase;line-height:1}
+  .brand small{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.19em;text-transform:uppercase;color:var(--dim);margin-top:5px}
+  .plate{background:#fff;border-radius:12px;padding:14px 18px;display:inline-block;flex:none}
+  .plate img{height:70px;width:auto}
   .nav-cta{display:flex;gap:10px;align-items:center}
-  .nav .call{font-family:var(--mono);font-size:14px;font-weight:500;padding:9px 13px;border-radius:9px;border:1px solid var(--line-d2)}
-  .nav .call:hover{border-color:var(--cone2)}
-  @media(max-width:620px){.nav .call{display:none}.mark small{display:none}}
+  .nav .call{font-family:var(--mono);font-size:14px;font-weight:500;padding:10px 14px;border-radius:9px;border:1px solid var(--line2);transition:border-color .16s,background .16s}
+  .nav .call:hover{border-color:var(--volt);background:rgba(50,187,241,.08)}
+  @media(max-width:660px){.nav .call{display:none}.plate img{height:32px}.nav .wrap{height:66px}}
 
   /* buttons */
-  .btn{display:inline-flex;flex-direction:column;align-items:flex-start;font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.03em;
-    border-radius:10px;padding:14px 24px;font-size:19px;line-height:1.05;border:1px solid transparent;transition:transform .16s ease,box-shadow .16s ease,background .16s ease}
-  .btn small{font-family:var(--mono);font-size:10.5px;font-weight:400;letter-spacing:.06em;text-transform:uppercase;opacity:.8;margin-top:5px}
-  .btn--cone{background:var(--cone);color:var(--field);box-shadow:0 10px 26px rgba(255,90,31,.3)}
-  .btn--cone:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(255,90,31,.42)}
-  .btn--chalk{background:var(--chalk);color:var(--ink)}
-  .btn--chalk:hover{transform:translateY(-2px)}
-  .btn--ghost{background:transparent;color:var(--chalk);border-color:var(--line-d2)}
-  .btn--ghost:hover{transform:translateY(-2px);background:rgba(246,244,237,.06)}
-  .btn--outline{background:transparent;color:var(--ink);border-color:var(--line-l2)}
-  .btn--outline:hover{transform:translateY(-2px);background:rgba(16,26,19,.05)}
+  .btn{display:inline-flex;flex-direction:column;align-items:flex-start;font-family:var(--disp);font-weight:800;text-transform:uppercase;letter-spacing:.03em;
+    border-radius:10px;padding:14px 26px;font-size:20px;line-height:1.05;border:1px solid transparent;cursor:pointer;
+    transition:transform .16s ease,box-shadow .16s ease,background .16s ease,border-color .16s ease}
+  .btn small{font-family:var(--mono);font-size:10.5px;font-weight:400;letter-spacing:.06em;text-transform:uppercase;opacity:.78;margin-top:5px}
+  .btn--volt{background:var(--volt);color:var(--void)}
+  .btn--volt:hover{transform:translateY(-2px);background:#4CC7F6}
+  .btn--ghost{background:transparent;color:var(--white);border-color:var(--line2)}
+  .btn--ghost:hover{transform:translateY(-2px);border-color:var(--volt);background:rgba(50,187,241,.07)}
   .nav .btn{padding:11px 18px;font-size:16px}
   .nav .btn small{display:none}
 
   /* hero */
-  .hero{position:relative;padding:74px 0 0;overflow:hidden;
-    background:radial-gradient(900px 560px at 78% 18%,rgba(255,90,31,.12),transparent 64%),linear-gradient(180deg,#0e2416,var(--field))}
-  .hero .drift{position:absolute;inset:-10% -40% auto -40%;height:140%;pointer-events:none;
-    background:repeating-linear-gradient(101deg,rgba(246,244,237,.055) 0 2px,transparent 2px 116px);
-    animation:lane 15s linear infinite}
-  @keyframes lane{from{transform:translateX(0)}to{transform:translateX(116px)}}
-  @media (prefers-reduced-motion:reduce){.hero .drift{animation:none}}
-  .hero .wrap{position:relative;display:grid;grid-template-columns:1.22fr .78fr;gap:52px;align-items:center;padding-bottom:74px}
-  @media(max-width:940px){.hero{padding-top:56px}.hero .wrap{grid-template-columns:1fr;gap:38px;padding-bottom:56px}}
-  .h1{font-family:var(--disp);font-weight:800;text-transform:uppercase;letter-spacing:.004em;
-    font-size:clamp(42px,7.4vw,86px);line-height:.9;margin:18px 0 0}
-  .h1 .hit{color:var(--cone)}
-  .hero .sub{color:var(--sage);font-size:17.5px;margin-top:22px;max-width:46ch}
-  .hero .cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px}
+  .hero{position:relative;overflow:hidden;padding:86px 0 0;
+    background:radial-gradient(1000px 620px at 76% 26%,rgba(50,187,241,.085),transparent 66%),linear-gradient(180deg,#0A0E13,var(--void))}
+  .hero .grid-bg{position:absolute;inset:0;pointer-events:none;opacity:.5;
+    background-image:linear-gradient(rgba(255,255,255,.032) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.032) 1px,transparent 1px);
+    background-size:64px 64px;mask-image:radial-gradient(900px 560px at 60% 30%,#000 30%,transparent 78%)}
+  .hero .wrap{position:relative;display:grid;grid-template-columns:1.14fr .86fr;gap:56px;align-items:center;padding-bottom:88px}
+  @media(max-width:960px){.hero{padding-top:56px}.hero .wrap{grid-template-columns:1fr;gap:44px;padding-bottom:64px}}
+  .h1{font-family:var(--disp);font-weight:800;text-transform:uppercase;letter-spacing:.006em;
+    font-size:clamp(42px,6.6vw,80px);line-height:.9;margin:18px 0 0}
+  .h1 .hit{color:var(--volt)}
+  .h1-sub{font-family:var(--disp);font-weight:600;text-transform:uppercase;letter-spacing:.02em;
+    font-size:clamp(19px,2.5vw,29px);line-height:1.14;color:var(--volt);margin-top:14px;max-width:29ch;text-wrap:balance}
+  .hero .sub{color:var(--ash);font-size:17.5px;margin-top:26px;max-width:47ch}
+  .hero .cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:34px}
+  .hero .creds{display:flex;flex-wrap:wrap;gap:8px;margin-top:34px}
+  .hero .creds span{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--ash);
+    border:1px solid var(--line2);border-radius:999px;padding:6px 13px}
+  .hero .creds b{color:var(--volt);font-weight:500}
 
-  /* the coach's credential card: the promise the board below pays off */
-  .card{background:var(--turf2);border:1px solid var(--line-d2);border-radius:14px;overflow:hidden;
-    box-shadow:0 26px 60px rgba(0,0,0,.45)}
-  .card .top{background:var(--cone);color:var(--field);font-family:var(--mono);font-size:10.5px;font-weight:700;
-    letter-spacing:.2em;text-transform:uppercase;padding:11px 22px}
-  .card .idb{padding:24px 22px 20px}
-  .card .idb .nm{font-family:var(--disp);font-weight:800;text-transform:uppercase;font-size:36px;letter-spacing:.02em;line-height:1}
-  .card .idb .ttl{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--sage);margin-top:9px}
-  .card .list{border-top:1px solid var(--line-d);padding:6px 22px 10px}
-  .card .list .r{display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid var(--line-d)}
-  .card .list .r:last-child{border-bottom:0}
-  .card .list .a{font-family:var(--disp);font-weight:800;font-size:24px;letter-spacing:.02em;line-height:1}
-  .card .list .b{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--cone2)}
-  .card .foot{background:rgba(6,15,9,.5);border-top:1px solid var(--line-d);padding:13px 22px;
-    font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--sage)}
+  /* hero pyramid */
+  .pyr-hero{display:grid;place-items:center}
+  .pyr-hero svg{width:min(430px,84vw);height:auto;filter:drop-shadow(0 26px 64px rgba(0,0,0,.6))}
+  .pyr-hero .fc{fill:var(--rise);stroke:var(--volt);stroke-width:2.4}
+  .pyr-hero .lt{fill:var(--white);font-family:var(--disp);font-weight:800;text-anchor:middle}
+  .pyr-hero .ring{fill:var(--volt)}
+  .pyr-hero .ringlt{fill:var(--void);font-family:var(--disp);font-weight:800;text-anchor:middle}
+  .pyr-hero .sweep{animation:sweep 5.5s ease-in-out infinite}
+  @keyframes sweep{0%,100%{opacity:.32}50%{opacity:.85}}
+  @media (prefers-reduced-motion:reduce){.pyr-hero .sweep{animation:none;opacity:.6}}
 
-  section{padding:88px 0;position:relative}
-  .sec-head{max-width:660px;margin-bottom:44px}
-  .sec-head p{color:var(--sage);font-size:17px;margin-top:4px}
+  /* the V/A/T method */
+  .method{background:var(--pit);border-top:1px solid var(--line)}
+  .method .split{display:grid;grid-template-columns:.82fr 1.18fr;gap:56px;align-items:center}
+  @media(max-width:900px){.method .split{grid-template-columns:1fr;gap:38px}}
+  .pyr-big svg{width:100%;height:auto;filter:drop-shadow(0 18px 46px rgba(0,0,0,.5))}
+  .pyr-big .tier{fill:var(--card);stroke:rgba(50,187,241,.42);stroke-width:2.4;transition:fill .3s ease,stroke .3s ease}
+  .pyr-big .tier.on{fill:rgba(50,187,241,.18);stroke:var(--volt)}
+  .pyr-big .lt{fill:var(--ash);font-family:var(--disp);font-weight:800;text-anchor:middle;transition:fill .3s ease}
+  .pyr-big .lt.on{fill:var(--volt)}
+  .tiers{display:flex;flex-direction:column;gap:0;border-top:1px solid var(--line)}
+  .tier-row{display:grid;grid-template-columns:96px 1fr;gap:20px;padding:24px 4px;border-bottom:1px solid var(--line);
+    cursor:default;position:relative;transition:background .2s ease}
+  .tier-row:hover,.tier-row:focus-within{background:rgba(50,187,241,.045)}
+  .tier-row .k{font-family:var(--disp);font-weight:800;font-size:54px;line-height:.8;color:var(--dim);transition:color .25s ease}
+  .tier-row:hover .k,.tier-row:focus-within .k{color:var(--volt)}
+  .tier-row .pos{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-top:9px}
+  .tier-row h3{font-family:var(--disp);font-weight:700;text-transform:uppercase;font-size:25px;letter-spacing:.02em;line-height:1.05}
+  .tier-row p{color:var(--ash);font-size:15px;margin-top:8px;max-width:52ch}
+  .fillin{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--volt);border:1px dashed rgba(50,187,241,.5);border-radius:7px;padding:7px 12px;background:rgba(50,187,241,.05)}
+  .fillin::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--volt);flex:none}
 
-  /* THE BOARD — signature element */
-  .board{background:var(--turf)}
-  .board .sec-head p{color:var(--sage)}
-  .cert{display:grid;grid-template-columns:190px 1fr;gap:0;border-top:1px solid var(--line-d);position:relative;transition:background .2s ease}
-  .cert:last-of-type{border-bottom:1px solid var(--line-d)}
-  .cert::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--cone);transform:scaleY(0);transform-origin:top;transition:transform .28s cubic-bezier(.2,.7,.3,1)}
-  .cert:hover{background:rgba(246,244,237,.028)}
+  /* credential board */
+  .cert{display:grid;grid-template-columns:196px 1fr;border-top:1px solid var(--line);position:relative;transition:background .2s ease}
+  .cert:last-of-type{border-bottom:1px solid var(--line)}
+  .cert::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--volt);transform:scaleY(0);transform-origin:top;
+    transition:transform .3s cubic-bezier(.2,.7,.3,1)}
+  .cert:hover{background:rgba(255,255,255,.026)}
   .cert:hover::before{transform:scaleY(1)}
-  .cert .code{padding:30px 26px 30px 22px;border-right:1px solid var(--line-d);display:flex;flex-direction:column;justify-content:center}
-  .cert .code .acr{font-family:var(--disp);font-weight:800;font-size:clamp(38px,5.6vw,62px);line-height:.86;letter-spacing:.005em;color:var(--chalk)}
-  .cert .code .iss{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--cone2);margin-bottom:10px}
-  .cert .body{padding:30px 8px 32px 30px}
+  .cert .code{padding:30px 26px 30px 22px;border-right:1px solid var(--line);display:flex;flex-direction:column;justify-content:center}
+  .cert .code .acr{font-family:var(--disp);font-weight:800;font-size:clamp(38px,5.4vw,60px);line-height:.86;color:var(--white)}
+  .cert .code .iss{font-family:var(--mono);font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--volt);margin-bottom:10px;line-height:1.6}
+  .cert .bd{padding:30px 8px 32px 30px}
   .cert .full{font-family:var(--disp);font-weight:700;text-transform:uppercase;font-size:24px;letter-spacing:.02em;line-height:1.05}
-  .cert .decode{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--cone2);margin:9px 0 14px;text-transform:uppercase}
-  .cert .body p{color:var(--sage);font-size:15.5px;max-width:62ch}
-  @media(max-width:760px){
+  .cert .decode{font-family:var(--mono);font-size:11px;letter-spacing:.07em;color:var(--volt);margin:9px 0 14px;text-transform:uppercase}
+  .cert .bd p{color:var(--ash);font-size:15.5px;max-width:64ch}
+  @media(max-width:780px){
     .cert{grid-template-columns:1fr}
-    .cert .code{border-right:0;border-bottom:1px solid var(--line-d);padding:24px 22px 20px}
-    .cert .body{padding:22px 22px 28px}
+    .cert .code{border-right:0;border-bottom:1px solid var(--line);padding:24px 22px 20px}
+    .cert .bd{padding:22px 22px 28px}
   }
-  .board-note{margin-top:26px;font-family:var(--mono);font-size:12px;color:var(--sage);letter-spacing:.03em;line-height:1.7}
-  .board-note a{color:var(--cone2);font-weight:500}
+  .verify{margin-top:26px;font-family:var(--mono);font-size:11.5px;color:var(--dim);letter-spacing:.03em;line-height:1.9}
+  .verify a{color:var(--volt)}
 
-  /* light half — the parent's side of the decision */
-  .light{background:var(--chalk);color:var(--ink)}
-  .light h2{color:var(--ink)}
-  .light .sec-head p{color:var(--slate)}
-  .light a.tx{color:var(--cone-dk);font-weight:600}
-
-  /* the sequence: screen -> build -> apply */
-  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:2px solid var(--ink)}
-  @media(max-width:820px){.steps{grid-template-columns:1fr}}
-  .step{padding:28px 26px 34px;border-right:1px solid var(--line-l)}
-  .step:last-child{border-right:0}
-  @media(max-width:820px){.step{border-right:0;border-bottom:1px solid var(--line-l)}.step:last-child{border-bottom:0}}
-  .step .n{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.18em;color:var(--cone-dk)}
-  .step h3{font-family:var(--disp);font-weight:800;text-transform:uppercase;font-size:29px;letter-spacing:.02em;margin:12px 0 10px;line-height:1}
-  .step p{color:var(--slate);font-size:15px}
-  .step .drv{margin-top:16px;padding-top:14px;border-top:1px solid var(--line-l);font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
-  .step .drv b{color:var(--cone-dk);font-weight:700}
-
-  /* sports */
-  .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
-  .chip{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:19px;
-    padding:9px 18px;border:1.5px solid var(--line-l2);border-radius:999px;color:var(--ink)}
-  .who{display:grid;grid-template-columns:1fr .9fr;gap:44px;align-items:start}
-  @media(max-width:860px){.who{grid-template-columns:1fr;gap:30px}}
-  .who-card{background:var(--chalk2);border:1px solid var(--line-l);border-radius:16px;padding:28px}
-  .who-card h3{font-family:var(--disp);font-weight:800;text-transform:uppercase;font-size:24px;letter-spacing:.02em;margin-bottom:12px}
-  .who-card p{color:var(--slate);font-size:15px}
-  .who-card .q{font-size:19px;line-height:1.5;color:var(--ink);border-left:3px solid var(--cone);padding-left:18px;margin:0 0 18px}
-  .who-card .qby{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);padding-left:21px}
+  /* booking */
+  .book{background:var(--pit);border-top:1px solid var(--line)}
+  .flow{background:var(--rise);border:1px solid var(--edge);border-radius:18px;overflow:hidden;max-width:800px;margin:0 auto}
+  .steps{display:flex;border-bottom:1px solid var(--edge)}
+  .stp{flex:1;padding:15px 16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+    border-right:1px solid var(--edge);display:flex;align-items:center;gap:9px}
+  .stp:last-child{border-right:0}
+  .stp .dot{width:20px;height:20px;border-radius:50%;border:1px solid var(--edge);display:grid;place-items:center;font-size:9px;flex:none}
+  .stp.on{color:var(--volt);background:rgba(50,187,241,.07)}
+  .stp.on .dot{border-color:var(--volt);background:var(--volt);color:var(--void);font-weight:700}
+  .stp.done{color:var(--ash)}
+  .stp.done .dot{border-color:var(--volt);color:var(--volt)}
+  @media(max-width:620px){.stp span.lbl{display:none}.stp{justify-content:center}}
+  .pane{padding:30px 28px 32px;display:none}
+  .pane.on{display:block}
+  .pane h3{font-family:var(--disp);font-weight:800;text-transform:uppercase;font-size:27px;letter-spacing:.02em;margin-bottom:6px}
+  .pane .hint{color:var(--ash);font-size:14.5px;margin-bottom:22px}
+  .opts{display:grid;gap:11px}
+  .opt{display:flex;align-items:center;gap:15px;padding:17px 18px;border:1px solid var(--edge);border-radius:12px;cursor:pointer;
+    background:var(--card);transition:border-color .18s,background .18s}
+  .opt:hover{border-color:var(--volt-dk)}
+  .opt input{position:absolute;opacity:0;pointer-events:none}
+  .opt .tick{width:20px;height:20px;border-radius:50%;border:1.6px solid var(--edge);flex:none;transition:border-color .18s,box-shadow .18s}
+  .opt.sel{border-color:var(--volt);background:rgba(50,187,241,.08)}
+  .opt.sel .tick{border-color:var(--volt);box-shadow:inset 0 0 0 5px var(--volt)}
+  .opt .txt{flex:1;min-width:0}
+  .opt .nm{display:block;font-family:var(--disp);font-weight:700;text-transform:uppercase;font-size:20px;letter-spacing:.02em;line-height:1.1}
+  .opt .ds{display:block;color:var(--ash);font-size:13.5px;margin-top:4px}
+  .opt .pr{margin-left:auto;text-align:right;flex:none}
+  .opt .pr .amt{font-family:var(--disp);font-weight:800;font-size:23px;color:var(--volt);line-height:1}
+  .opt .pr .tbd{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);
+    border:1px dashed var(--line2);border-radius:6px;padding:5px 9px;display:inline-block}
+  @media(max-width:560px){.opt{flex-wrap:wrap}.opt .pr{margin-left:35px;text-align:left}}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:560px){.grid2{grid-template-columns:1fr}}
+  label.fl{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:0 0 7px}
+  input,textarea,select{width:100%;font:inherit;font-size:15px;color:var(--white);background:var(--card);border:1px solid var(--edge);
+    border-radius:10px;padding:13px 14px}
+  input::placeholder,textarea::placeholder{color:#5d6873}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--volt);box-shadow:0 0 0 3px rgba(50,187,241,.2)}
+  textarea{min-height:88px;resize:vertical}
+  .fld{margin-bottom:14px}
+  .summary{background:var(--card);border:1px solid var(--edge);border-radius:12px;padding:18px 20px;margin-bottom:20px}
+  .summary .rw{display:flex;justify-content:space-between;gap:16px;padding:8px 0;font-size:14.5px;border-bottom:1px solid var(--line)}
+  .summary .rw:last-child{border-bottom:0}
+  .summary .rw span:first-child{color:var(--dim);font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;padding-top:3px}
+  .summary .rw span:last-child{text-align:right;font-weight:500}
+  /* the deliberately empty processor slot */
+  .slot{border:1.5px dashed rgba(50,187,241,.45);border-radius:12px;padding:22px 20px;background:rgba(50,187,241,.045);margin-bottom:20px}
+  .slot .lb{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--volt);margin-bottom:10px}
+  .slot .hd{font-family:var(--disp);font-weight:800;text-transform:uppercase;font-size:22px;letter-spacing:.02em}
+  .slot p{color:var(--ash);font-size:13.5px;margin-top:7px;max-width:52ch}
+  .navrow{display:flex;gap:11px;flex-wrap:wrap;margin-top:20px;align-items:center}
+  .lnk{background:none;border:0;color:var(--ash);font:inherit;font-size:14px;cursor:pointer;padding:8px 4px;text-decoration:underline;text-underline-offset:3px}
+  .lnk:hover{color:var(--white)}
+  .done-msg{text-align:center;padding:14px 0}
+  .done-msg .big{font-family:var(--disp);font-weight:800;font-size:40px;text-transform:uppercase;color:var(--volt);line-height:1}
+  .done-msg p{color:var(--ash);font-size:15px;margin-top:12px}
 
   /* coach */
-  .coach{background:var(--chalk2)}
-  .coach .split{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}
-  @media(max-width:860px){.coach .split{grid-template-columns:1fr;gap:32px}}
-  .coach p{color:var(--slate);font-size:16px;margin-bottom:14px}
-  .coach p strong{color:var(--ink);font-weight:600}
-  .proof{background:var(--field);color:var(--chalk);border-radius:16px;padding:32px 30px 30px}
-  .proof .eyebrow{color:var(--cone2)}
-  .proof .big{font-family:var(--disp);font-weight:800;font-size:76px;line-height:.9;letter-spacing:.01em;margin:14px 0 2px}
-  .proof .biglab{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--sage)}
-  .proof p{color:var(--sage);font-size:15px;margin:20px 0 0}
-  .proof .hr{height:1px;background:var(--line-d);margin:24px 0}
-  .proof .hand{font-family:var(--disp);font-weight:700;font-size:26px;letter-spacing:.02em;color:var(--chalk)}
-  .proof .btn{margin-top:20px}
+  .coach{border-top:1px solid var(--line)}
+  .coach .split{display:grid;grid-template-columns:1.08fr .92fr;gap:52px;align-items:start}
+  @media(max-width:900px){.coach .split{grid-template-columns:1fr;gap:36px}}
+  .coach p{color:var(--ash);font-size:16px;margin-bottom:15px}
+  .coach p strong{color:var(--white);font-weight:600}
+  .proof{background:linear-gradient(160deg,rgba(50,187,241,.13),var(--rise));border:1px solid var(--edge);border-radius:18px;padding:32px 30px}
+  .proof .big{font-family:var(--disp);font-weight:800;font-size:78px;line-height:.88;margin:14px 0 2px}
+  .proof .biglab{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ash)}
+  .proof p{color:var(--ash);font-size:14.5px;margin:20px 0 0}
+  .proof .hand{font-family:var(--disp);font-weight:700;font-size:26px;letter-spacing:.02em;margin-top:22px;padding-top:20px;border-top:1px solid var(--line)}
 
-  /* visit + contact */
-  .visit .split{display:grid;grid-template-columns:1.02fr .98fr;gap:48px;align-items:start}
-  @media(max-width:880px){.visit .split{grid-template-columns:1fr;gap:36px}}
-  .mapwrap{border-radius:14px;overflow:hidden;border:1px solid var(--line-l2);margin-top:18px;height:280px;background:var(--chalk2)}
-  .mapwrap iframe{width:100%;height:100%;border:0}
-  .info{display:flex;flex-direction:column;gap:18px;margin-top:24px}
+  /* visit */
+  .visit{background:var(--pit);border-top:1px solid var(--line)}
+  .visit .split{display:grid;grid-template-columns:1fr 1fr;gap:52px;align-items:start}
+  @media(max-width:900px){.visit .split{grid-template-columns:1fr;gap:36px}}
+  .mapwrap{border-radius:14px;overflow:hidden;border:1px solid var(--edge);margin-top:22px;height:290px;background:var(--card)}
+  .mapwrap iframe{width:100%;height:100%;border:0;filter:invert(.92) hue-rotate(180deg) saturate(.7) brightness(.94)}
+  .info{display:flex;flex-direction:column;gap:19px;margin-top:24px}
   .info .row{display:flex;gap:14px;align-items:flex-start}
-  .info .ic{width:40px;height:40px;border-radius:10px;background:var(--chalk2);border:1px solid var(--line-l);display:grid;place-items:center;color:var(--cone-dk);flex:none}
-  .info dt{font-family:var(--mono);font-weight:500;text-transform:uppercase;letter-spacing:.13em;font-size:10.5px;color:var(--slate)}
-  .info dd{font-size:15.5px;color:var(--ink);margin-top:3px}
-  .info dd a{color:var(--cone-dk);font-weight:600}
-  form{display:grid;gap:12px;margin-top:18px}
-  .frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  @media(max-width:520px){.frow{grid-template-columns:1fr}}
-  input,textarea,select{width:100%;font:inherit;font-size:15px;color:var(--ink);background:#fff;border:1px solid var(--line-l2);border-radius:10px;padding:14px 15px}
-  input::placeholder,textarea::placeholder{color:#8a978d}
-  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--cone);box-shadow:0 0 0 3px rgba(255,90,31,.18)}
-  textarea{min-height:96px;resize:vertical}
-  .submit{background:var(--cone);color:var(--field);font-family:var(--disp);font-weight:800;text-transform:uppercase;letter-spacing:.04em;font-size:20px;border:none;border-radius:10px;padding:15px;cursor:pointer;transition:transform .16s}
-  .submit:hover{transform:translateY(-2px)}
-  .ok{color:var(--ok);font-weight:600;font-size:14.5px;margin-top:2px}
-  .formnote{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--slate);line-height:1.7}
+  .info .ic{width:40px;height:40px;border-radius:10px;background:var(--card);border:1px solid var(--edge);display:grid;place-items:center;color:var(--volt);flex:none}
+  .info dt{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim)}
+  .info dd{font-size:15.5px;margin-top:4px}
+  .info dd a{color:var(--volt);font-weight:500}
 
   /* final */
-  .final{background:var(--turf2);text-align:center}
-  .final h2{max-width:18ch;margin-left:auto;margin-right:auto}
-  .final p{color:var(--sage);max-width:50ch;margin:0 auto 28px}
+  .final{border-top:1px solid var(--line);text-align:center;
+    background:radial-gradient(760px 400px at 50% 0,rgba(50,187,241,.08),transparent 68%)}
+  .final h2{max-width:17ch;margin-left:auto;margin-right:auto}
+  .final p{color:var(--ash);max-width:50ch;margin:0 auto 28px}
   .final .cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .final .rule{margin:20px auto 26px}
 
-  footer{background:#060f09;color:var(--sage);padding:34px 0;border-top:1px solid var(--line-d)}
-  footer .wrap{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;align-items:center;font-size:14px}
-  footer b{color:var(--chalk);font-family:var(--disp);text-transform:uppercase;letter-spacing:.03em;font-size:17px}
-  footer a{color:var(--cone2);font-weight:600}
-  .fine{background:#040b06;color:#7f9184;padding:18px 0;font-size:11.5px;line-height:1.75;text-align:center}
-  .fine .wrap{max-width:900px}
+  footer{background:#040507;border-top:1px solid var(--line);padding:40px 0 30px}
+  footer .top{display:flex;justify-content:space-between;gap:26px;flex-wrap:wrap;align-items:center}
+  footer .plate{padding:9px 14px}
+  footer .plate img{height:44px}
+  footer .lks{display:flex;gap:22px;flex-wrap:wrap;font-size:14.5px}
+  footer .lks a{color:var(--volt);font-weight:500}
+  footer .btm{margin-top:28px;padding-top:20px;border-top:1px solid var(--line);display:flex;justify-content:space-between;
+    gap:16px;flex-wrap:wrap;color:var(--dim);font-size:12.5px}
+  footer .btm a{color:var(--ash)}
+  footer .btm a:hover{color:var(--volt)}
 
   .bookbar{display:none}
   @media(max-width:640px){
-    .bookbar{display:flex;gap:10px;position:fixed;left:0;right:0;bottom:0;z-index:60;padding:10px 12px;background:rgba(6,15,9,.97);backdrop-filter:blur(8px);border-top:1px solid var(--line-d2)}
-    .bookbar a{flex:1;text-align:center;font-family:var(--disp);font-weight:800;text-transform:uppercase;letter-spacing:.03em;font-size:17px;padding:13px;border-radius:9px}
-    .bookbar .b{background:var(--cone);color:var(--field)}
-    .bookbar .c{background:transparent;color:var(--chalk);border:1px solid var(--line-d2)}
+    .bookbar{display:flex;gap:10px;position:fixed;left:0;right:0;bottom:0;z-index:70;padding:10px 12px;
+      background:rgba(6,7,9,.97);backdrop-filter:blur(10px);border-top:1px solid var(--line2)}
+    .bookbar a{flex:1;text-align:center;font-family:var(--disp);font-weight:800;text-transform:uppercase;letter-spacing:.03em;
+      font-size:17px;padding:13px;border-radius:9px}
+    .bookbar .b{background:var(--volt);color:var(--void)}
+    .bookbar .c{background:transparent;color:var(--white);border:1px solid var(--line2)}
     body{padding-bottom:72px}
     section{padding:64px 0}
   }
@@ -228,61 +257,117 @@
 </head>
 <body>
 
-<div class="demo-bar">DEMO built by <b>Killswitch Websites</b> for KC's Sports Academy &middot; not live yet &middot; yours, free, if you want it</div>
-
 <nav class="nav">
   <div class="wrap">
-    <a class="mark" href="#top">
-      <span class="glyph">KC</span>
-      <span><b>KC's Sports Academy</b><small>Youth Sports Performance &middot; Olathe, KS</small></span>
+    <a class="brand" href="#top" aria-label="KC's Sports Academy home">
+      <svg class="mk" viewBox="0 0 200 162" aria-hidden="true">
+        <path d="M100 8 L147 72 L53 72 Z"/>
+        <path d="M51 78 L97 78 L97 150 L8 150 Z"/>
+        <path d="M103 78 L149 78 L192 150 L103 150 Z"/>
+        <circle cx="62" cy="116" r="15"/>
+      </svg>
+      <span><b>KC's Sports Academy</b><small>Youth Sports Performance</small></span>
     </a>
     <div class="nav-cta">
       <a class="call" href="tel:+18166791642">(816) 679-1642</a>
-      <a class="btn btn--cone" href="#book">Book a session</a>
+      <a class="btn btn--volt" href="#book">Book a session</a>
     </div>
   </div>
 </nav>
 
 <header class="hero" id="top">
-  <div class="drift" aria-hidden="true"></div>
+  <div class="grid-bg" aria-hidden="true"></div>
   <div class="wrap">
     <div>
-      <div class="eyebrow">Youth sports performance &middot; Olathe, Kansas</div>
-      <h1 class="h1">Any coach can make a kid <span class="hit">tired.</span></h1>
-      <p class="sub">Ted Johnson is certified to make them faster. Four credentials in speed, movement and sport conditioning, applied to one young athlete at a time.</p>
+      <div class="eyebrow">Private youth sports performance &middot; Olathe &amp; Johnson County</div>
+      <h1 class="h1">Top-of-the-line<br>training.</h1>
+      <p class="h1-sub">For the athlete you have already invested in.</p>
+      <div class="rule"></div>
+      <p class="sub">Club fees. Travel. Showcases. Camps. Certified coaching is what makes the rest of it count. Four credentials in speed, movement and sport conditioning, applied one athlete at a time.</p>
       <div class="cta">
-        <a class="btn btn--cone" href="#book">Book a session<small>Start with a movement screen</small></a>
-        <a class="btn btn--ghost" href="tel:+18166791642">Call or text Ted<small>(816) 679-1642</small></a>
+        <a class="btn btn--volt" href="#book">Request a session<small>Private &amp; small-group programming</small></a>
+        <a class="btn btn--ghost" href="tel:+18166791642">Speak with Ted<small>(816) 679-1642</small></a>
+      </div>
+      <div class="creds">
+        <span><b>NSPA</b> &nbsp;C.S.A.C.</span>
+        <span><b>NASM</b> &nbsp;C.P.T.</span>
+        <span><b>NASM</b> &nbsp;C.E.S.</span>
+        <span><b>NASM</b> &nbsp;P.E.S.</span>
       </div>
     </div>
-    <div class="card">
-      <div class="top">Coach credentials</div>
-      <div class="idb">
-        <div class="nm">Ted Johnson</div>
-        <div class="ttl">Movement Specialist &middot; Owner</div>
-      </div>
-      <div class="list">
-        <div class="r"><span class="a">C.S.A.C.</span><span class="b">NSPA</span></div>
-        <div class="r"><span class="a">C.P.T.</span><span class="b">NASM</span></div>
-        <div class="r"><span class="a">C.E.S.</span><span class="b">NASM</span></div>
-        <div class="r"><span class="a">P.E.S.</span><span class="b">NASM</span></div>
-      </div>
-      <div class="foot">Olathe, Kansas &middot; (816) 679-1642</div>
+    <div class="pyr-hero" aria-hidden="true">
+      <svg viewBox="0 0 200 162" role="img" aria-label="The KC's Sports Academy training pyramid">
+        <path class="fc sweep" d="M100 8 L147 72 L53 72 Z"/>
+        <path class="fc" d="M51 78 L97 78 L97 150 L8 150 Z"/>
+        <path class="fc" d="M103 78 L149 78 L192 150 L103 150 Z"/>
+        <text class="lt" x="100" y="63" font-size="42">V</text>
+        <circle class="ring" cx="66" cy="114" r="23"/>
+        <text class="ringlt" x="66" y="129" font-size="38">A</text>
+        <text class="lt" x="140" y="129" font-size="38">T</text>
+      </svg>
     </div>
   </div>
 </header>
 
-<section class="board">
+<section class="method">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">The method</div>
+      <h2>V. A. T.</h2>
+      <p>The academy mark is a three-part pyramid: one tier at the apex, two at the base, the A circled. What those letters stand for is Ted's to say, and it belongs on this page in his own words rather than anyone else's.</p>
+    </div>
+    <div class="split">
+      <div class="pyr-big">
+        <svg viewBox="0 0 200 162" role="img" aria-label="Training pyramid with V at the apex and A and T at the base">
+          <path class="tier" id="t-v" d="M100 8 L147 72 L53 72 Z"/>
+          <path class="tier" id="t-a" d="M51 78 L97 78 L97 150 L8 150 Z"/>
+          <path class="tier" id="t-t" d="M103 78 L149 78 L192 150 L103 150 Z"/>
+          <text class="lt" id="l-v" x="100" y="63" font-size="42">V</text>
+          <text class="lt" id="l-a" x="55" y="128" font-size="38">A</text>
+          <text class="lt" id="l-t" x="145" y="128" font-size="38">T</text>
+        </svg>
+      </div>
+      <div class="tiers">
+        <div class="tier-row" data-tier="v" tabindex="0">
+          <div><div class="k">V</div><div class="pos">Apex</div></div>
+          <div>
+            <h3>Alone at the top</h3>
+            <p>One tier, above the other two.</p>
+            <div style="margin-top:13px"><span class="fillin">Ted defines V</span></div>
+          </div>
+        </div>
+        <div class="tier-row" data-tier="a" tabindex="0">
+          <div><div class="k">A</div><div class="pos">Base left</div></div>
+          <div>
+            <h3>The circled one</h3>
+            <p>The only letter ringed on the mark.</p>
+            <div style="margin-top:13px"><span class="fillin">Ted defines A</span></div>
+          </div>
+        </div>
+        <div class="tier-row" data-tier="t" tabindex="0">
+          <div><div class="k">T</div><div class="pos">Base right</div></div>
+          <div>
+            <h3>The other base tier</h3>
+            <p>Sits beside the A, same level.</p>
+            <div style="margin-top:13px"><span class="fillin">Ted defines T</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
   <div class="wrap">
     <div class="sec-head">
       <div class="eyebrow">The credentials</div>
-      <h2>Four certifications. Here's what each one does for your athlete.</h2>
-      <p>Youth speed training is an unlicensed field. Most of it is run by people who were fast once. These are the letters that mean someone sat an exam before writing a program for somebody else's kid.</p>
+      <h2>Anyone can call themselves a speed coach.</h2>
+      <p>Youth performance training is an unlicensed field, which makes the letters the only real standard in it. Ted holds four, from two national bodies, and every one of them can be checked. Here is what each is worth to your athlete.</p>
     </div>
 
     <div class="cert">
-      <div class="code"><div class="iss">National Sports Performance Association</div><div class="acr">C.S.A.C.</div></div>
-      <div class="body">
+      <div class="code"><div class="iss">National Sports<br>Performance Association</div><div class="acr">C.S.A.C.</div></div>
+      <div class="bd">
         <div class="full">Certified Speed &amp; Agility Coach</div>
         <div class="decode">Sprint mechanics &middot; acceleration &middot; change of direction</div>
         <p>The credential that separates a speed coach from a conditioning coach. NSPA's course is built around improving speed and agility for an athlete in any sport: how the foot strikes, how an athlete accelerates out of a cut, how to change direction without giving up a step. The goal is not more running. It is better running.</p>
@@ -290,17 +375,17 @@
     </div>
 
     <div class="cert">
-      <div class="code"><div class="iss">National Academy of Sports Medicine</div><div class="acr">C.P.T.</div></div>
-      <div class="body">
+      <div class="code"><div class="iss">National Academy<br>of Sports Medicine</div><div class="acr">C.P.T.</div></div>
+      <div class="bd">
         <div class="full">Certified Personal Trainer</div>
         <div class="decode">The accredited foundation &middot; programming &middot; safe progression</div>
-        <p>NASM's CPT is the NCCA-accredited base credential and the most widely recognized certification in fitness. It is the one that says a coach was examined on anatomy, program design and how to load a body safely, before ever handing a young athlete a workout.</p>
+        <p>NASM's CPT is the NCCA-accredited base credential and the most widely recognised certification in fitness. It is the one that says a coach was examined on anatomy, program design and how to load a body safely, before ever handing a young athlete a workout.</p>
       </div>
     </div>
 
     <div class="cert">
-      <div class="code"><div class="iss">National Academy of Sports Medicine</div><div class="acr">C.E.S.</div></div>
-      <div class="body">
+      <div class="code"><div class="iss">National Academy<br>of Sports Medicine</div><div class="acr">C.E.S.</div></div>
+      <div class="bd">
         <div class="full">Corrective Exercise Specialist</div>
         <div class="decode">Find the movement fault before it becomes an injury</div>
         <p>This is the parent's credential. CES is movement assessment and correction: spotting the knee that collapses inward, the ankle that will not bend, the hip that never fully extends, then fixing the cause instead of stretching the symptom. Growing athletes compensate faster than they adapt, and a compensation trained at speed is how a season ends early.</p>
@@ -308,118 +393,129 @@
     </div>
 
     <div class="cert">
-      <div class="code"><div class="iss">National Academy of Sports Medicine</div><div class="acr">P.E.S.</div></div>
-      <div class="body">
+      <div class="code"><div class="iss">National Academy<br>of Sports Medicine</div><div class="acr">P.E.S.</div></div>
+      <div class="bd">
         <div class="full">Performance Enhancement Specialist</div>
         <div class="decode">Strength and conditioning built for a sport, not a gym</div>
-        <p>NASM's strength-and-conditioning track: plyometrics, speed, agility, resistance training and Olympic lifting, organized across a season rather than dropped in at random. It is what turns a number in the weight room into a faster first step in a real game.</p>
+        <p>NASM's strength-and-conditioning track: plyometrics, speed, agility, resistance training and Olympic lifting, organised across a season rather than dropped in at random. It is what turns a number in the weight room into a faster first step in a real game.</p>
       </div>
     </div>
 
-    <p class="board-note">
-      Verify any of them yourself &mdash; that is the point of a certification.<br>
-      NSPA: <a href="https://nspa.org/certification/speedagility/" target="_blank" rel="noopener">nspa.org</a> &nbsp;&middot;&nbsp;
-      NASM: <a href="https://www.nasm.org/" target="_blank" rel="noopener">nasm.org</a> &nbsp;&middot;&nbsp;
-      Ted's credentials as listed on <a href="https://www.instagram.com/kc_sports_academy/" target="_blank" rel="noopener">@kc_sports_academy</a>
+    <p class="verify">
+      Verify any of them yourself. That is the point of a certification.<br>
+      NSPA <a href="https://nspa.org/certification/speedagility/" target="_blank" rel="noopener">nspa.org</a>
+      &nbsp;&middot;&nbsp; NASM <a href="https://www.nasm.org/" target="_blank" rel="noopener">nasm.org</a>
     </p>
   </div>
 </section>
 
-<div class="lanes lanes--cone" aria-hidden="true"></div>
-
-<section class="light">
+<section class="book" id="book">
   <div class="wrap">
     <div class="sec-head">
-      <div class="eyebrow eyebrow--dark">How training runs</div>
-      <h2>Screen first. Then build. Then take it to the field.</h2>
-      <p>The order matters. Loading speed onto a movement fault is how young athletes get hurt, so nothing gets programmed until the movement has been looked at.</p>
+      <div class="eyebrow">Enquire</div>
+      <h2>Request a place.</h2>
+      <p>Tell Ted what your athlete is working toward and when you are available. He responds personally. Prefer to speak first? <a href="tel:+18166791642" style="color:var(--volt);font-weight:600">(816) 679-1642</a>.</p>
     </div>
-    <div class="steps">
-      <div class="step">
-        <div class="n">STEP 01</div>
-        <h3>Screen</h3>
-        <p>A movement assessment before anything gets loaded. What bends, what does not, what compensates, and which side is doing more work than it should. This is where a training plan actually comes from.</p>
-        <div class="drv">Driven by <b>NASM C.E.S.</b></div>
+
+    <div class="flow">
+      <div class="steps">
+        <div class="stp on" id="s1"><span class="dot">1</span><span class="lbl">Session</span></div>
+        <div class="stp" id="s2"><span class="dot">2</span><span class="lbl">Athlete &amp; time</span></div>
+        <div class="stp" id="s3"><span class="dot">3</span><span class="lbl">Confirm</span></div>
       </div>
-      <div class="step">
-        <div class="n">STEP 02</div>
-        <h3>Build</h3>
-        <p>Correct the fault, then build strength and conditioning on top of clean movement. Progression is planned, not improvised, and it is scaled to a young athlete rather than borrowed from an adult program.</p>
-        <div class="drv">Driven by <b>NASM C.P.T. + P.E.S.</b></div>
+
+      <div class="pane on" id="p1">
+        <h3>What does your athlete need?</h3>
+        <p class="hint">Not sure which one? Say so below and Ted will tell you where to start.</p>
+        <div class="opts" id="opts"></div>
+        <div class="navrow"><button class="btn btn--volt" type="button" data-go="2">Continue</button></div>
       </div>
-      <div class="step">
-        <div class="n">STEP 03</div>
-        <h3>Apply</h3>
-        <p>Sprint mechanics, acceleration and change of direction, coached until they hold up under game speed. Speed that only shows up in a drill was never speed. It has to transfer to the field or the court.</p>
-        <div class="drv">Driven by <b>NSPA C.S.A.C.</b></div>
+
+      <div class="pane" id="p2">
+        <h3>Who is training, and when?</h3>
+        <p class="hint">Give a couple of windows that work and Ted will come back with a time.</p>
+        <div class="grid2">
+          <div class="fld"><label class="fl" for="f-parent">Your name</label><input id="f-parent" placeholder="Parent or guardian" autocomplete="name" /></div>
+          <div class="fld"><label class="fl" for="f-contact">Phone or email</label><input id="f-contact" placeholder="How Ted reaches you" /></div>
+        </div>
+        <div class="grid2">
+          <div class="fld"><label class="fl" for="f-athlete">Athlete's first name</label><input id="f-athlete" placeholder="Athlete" /></div>
+          <div class="fld"><label class="fl" for="f-sport">Sport &amp; age</label><input id="f-sport" placeholder="e.g. soccer, 13" /></div>
+        </div>
+        <div class="fld"><label class="fl" for="f-when">When works</label><input id="f-when" placeholder="e.g. weekday evenings, Saturday mornings" /></div>
+        <div class="fld"><label class="fl" for="f-notes">Anything Ted should know</label><textarea id="f-notes" placeholder="Coming back from an injury, a specific goal, a team that needs a block of sessions..."></textarea></div>
+        <div class="navrow">
+          <button class="btn btn--volt" type="button" data-go="3">Review booking</button>
+          <button class="lnk" type="button" data-go="1">Back</button>
+        </div>
+      </div>
+
+      <div class="pane" id="p3">
+        <h3>Confirm the booking</h3>
+        <p class="hint">Check it over. Ted gets this the moment you send it.</p>
+        <div class="summary" id="sum"></div>
+        <div class="slot" id="slot">
+          <div class="lb">Payment</div>
+          <div class="hd">Processor not yet connected</div>
+          <p>This booking flow is built to take payment at this step. The merchant account and gateway are the academy's call, so the slot is deliberately empty. Until it is wired, Ted confirms the session and settles it directly.</p>
+        </div>
+        <div class="navrow">
+          <button class="btn btn--volt" type="button" id="send">Send booking to Ted</button>
+          <button class="lnk" type="button" data-go="2">Back</button>
+        </div>
+      </div>
+
+      <div class="pane" id="p4">
+        <div class="done-msg">
+          <div class="big">Booking sent</div>
+          <p id="doneline">Ted will confirm shortly. If it is urgent, call or text (816) 679-1642.</p>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="light" style="padding-top:0">
-  <div class="wrap who">
-    <div>
-      <div class="eyebrow eyebrow--dark">Who it's for</div>
-      <h2>Young athletes who play on a field or a court.</h2>
-      <p style="color:var(--slate);font-size:16px;max-width:50ch;margin-bottom:22px">Speed, first-step quickness and the ability to change direction carry across sports. So does the movement screening underneath them. If your athlete competes in any of these, the work applies.</p>
-      <div class="chips">
-        <span class="chip">Football</span>
-        <span class="chip">Basketball</span>
-        <span class="chip">Soccer</span>
-        <span class="chip">Baseball</span>
-        <span class="chip">Softball</span>
-        <span class="chip">Volleyball</span>
-        <span class="chip">Track</span>
-      </div>
-      <p style="color:var(--slate);font-size:14px;margin-top:20px">Individual sessions, small groups and team work. Ask Ted what fits your athlete's season.</p>
-    </div>
-    <div class="who-card">
-      <p class="q">This program will develop young athletes, using adaptation and progression to promote efficiency and maximum effectiveness on the field or court.</p>
-      <div class="qby">KC's Sports Academy &mdash; in Ted's own words</div>
-      <div style="margin-top:26px;padding-top:22px;border-top:1px solid var(--line-l)">
-        <h3>Why a screen comes first</h3>
-        <p>Youth athletes grow in bursts, and a body that changed over a summer moves differently than it did in the spring. A screen catches what the growth spurt left behind before a season of sprinting bakes it in.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="light coach">
+<section class="coach">
   <div class="wrap split">
     <div>
-      <div class="eyebrow eyebrow--dark">The coach</div>
+      <div class="eyebrow">The coach</div>
       <h2>Ted Johnson</h2>
-      <p style="font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--cone-dk);margin-bottom:20px">Movement Specialist &middot; Owner, KC's Sports Academy</p>
+      <div style="font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--volt);margin:0 0 22px">Movement Specialist &middot; Owner</div>
       <p>Ted runs KC's Sports Academy Youth Sports Performance in Olathe, coaching speed, movement quality and sport conditioning for young athletes across the Kansas City metro.</p>
-      <p>He is a <strong>certified speed coach through the National Sports Performance Association</strong> and holds three credentials from the <strong>National Academy of Sports Medicine</strong>: Certified Personal Trainer, Corrective Exercise Specialist and Performance Enhancement Specialist. That combination is deliberate. One credential covers how to make an athlete faster, one covers how to load a body safely, one covers how to find the movement fault first, and one covers how to build a season around all three.</p>
-      <p>He does not train athletes from a template. Sessions are built off what the screen turns up, then adjusted as the athlete grows and the season changes.</p>
+      <p>He is a <strong>certified speed coach through the National Sports Performance Association</strong> and holds three credentials from the <strong>National Academy of Sports Medicine</strong>: Certified Personal Trainer, Corrective Exercise Specialist and Performance Enhancement Specialist. That combination is deliberate. One covers how to make an athlete faster, one covers how to load a body safely, one covers how to find the movement fault first, and one covers how to build a season around all three.</p>
+      <p>In his own words, the academy develops young athletes "using adaptation and progression to promote efficiency and maximum effectiveness on the field or court."</p>
+      <p>Boys and girls, field sports and court sports. Team enquiries go to <a href="mailto:teams@kcssportsacademy.com" style="color:var(--volt)">teams@kcssportsacademy.com</a>.</p>
     </div>
     <div class="proof">
       <div class="eyebrow">See the work</div>
       <div class="big">968</div>
       <div class="biglab">Followers on Instagram</div>
       <p>Sessions, drills and athlete work, posted as it happens. The quickest way to see how Ted coaches before you book anything.</p>
-      <div class="hr"></div>
       <div class="hand">@kc_sports_academy</div>
-      <a class="btn btn--cone" href="https://www.instagram.com/kc_sports_academy/" target="_blank" rel="noopener">Watch a session<small>Opens Instagram</small></a>
+      <div style="margin-top:20px"><a class="btn btn--volt" href="https://www.instagram.com/kc_sports_academy/" target="_blank" rel="noopener">Watch a session<small>Opens Instagram</small></a></div>
     </div>
   </div>
 </section>
 
-<section class="light visit" id="book">
+<section class="visit">
   <div class="wrap split">
     <div>
-      <div class="eyebrow eyebrow--dark">Where to find him</div>
+      <div class="eyebrow">Where to find him</div>
       <h2>Olathe, Kansas</h2>
-      <p style="color:var(--slate);font-size:16px;max-width:44ch">Training runs out of west Olathe, minutes from Gardner, Lenexa and south Overland Park.</p>
+      <div class="rule"></div>
+      <p style="color:var(--ash);font-size:16px;max-width:42ch;margin-top:20px">West Olathe, minutes from Gardner, Lenexa and south Overland Park.</p>
       <div class="mapwrap">
         <iframe loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Map to KC's Sports Academy, 19000 W 158th St, Olathe KS" src="https://www.google.com/maps/embed?origin=mfe&amp;pb=!1m3!2m1!1s19000%20W%20158th%20St%20Olathe%20KS%2066062!6i14"></iframe>
       </div>
+    </div>
+    <div>
+      <div class="eyebrow">Get in touch</div>
+      <h2>Reach Ted</h2>
+      <div class="rule"></div>
       <div class="info">
         <div class="row">
           <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg></div>
-          <div><dt>Address</dt><dd><a href="https://maps.google.com/?q=19000+W+158th+St+Olathe+KS" target="_blank" rel="noopener">19000 W 158th St, Olathe, KS 66062</a></dd></div>
+          <div><dt>Address</dt><dd><a href="https://maps.google.com/?q=19000+W+158th+St+Olathe+KS+66062" target="_blank" rel="noopener">19000 W 158th St, Olathe, KS 66062</a><br><span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--volt);border:1px dashed rgba(50,187,241,.5);border-radius:6px;padding:4px 9px;display:inline-block;margin-top:8px">Suite number &mdash; Ted to confirm</span></dd></div>
         </div>
         <div class="row">
           <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L20 13l1 4v3a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1z"/></svg></div>
@@ -427,7 +523,7 @@
         </div>
         <div class="row">
           <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 8l9 6 9-6"/></svg></div>
-          <div><dt>Email</dt><dd><a href="mailto:tjohnson@kcssportsacademy.com">tjohnson@kcssportsacademy.com</a><br><a href="mailto:teams@kcssportsacademy.com">teams@kcssportsacademy.com</a> &mdash; team enquiries</dd></div>
+          <div><dt>Email</dt><dd><a href="mailto:tjohnson@kcssportsacademy.com">tjohnson@kcssportsacademy.com</a><br><a href="mailto:teams@kcssportsacademy.com">teams@kcssportsacademy.com</a> for teams</dd></div>
         </div>
         <div class="row">
           <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></div>
@@ -439,59 +535,39 @@
         </div>
       </div>
     </div>
-
-    <div>
-      <div class="eyebrow eyebrow--dark">Book a session</div>
-      <h2>Start with a screen.</h2>
-      <p style="color:var(--slate);font-size:16px;max-width:44ch">Tell Ted about your athlete and he will come back with what a first session looks like. Want to talk it through instead? Call or text <a class="tx" href="tel:+18166791642">(816) 679-1642</a>.</p>
-      <form id="bookForm">
-        <div class="frow">
-          <input name="parent" aria-label="Your name" placeholder="Your name" autocomplete="name" required />
-          <input name="contact" aria-label="Your phone number or email" placeholder="Phone or email" required />
-        </div>
-        <div class="frow">
-          <input name="athlete" aria-label="Athlete's first name" placeholder="Athlete's first name" required />
-          <input name="sport" aria-label="Athlete's sport and age" placeholder="Sport &amp; age" required />
-        </div>
-        <textarea name="message" aria-label="What you are after" placeholder="What are you after? (getting faster, coming back from an injury, off-season work, a team session...)" required></textarea>
-        <button class="submit" type="submit">Send to Ted</button>
-        <p class="ok" id="ok" hidden>Sent. Ted will get back to you at the number or email you gave.</p>
-        <p class="formnote">Goes straight to KC's Sports Academy. No newsletter, no list.</p>
-      </form>
-    </div>
   </div>
 </section>
 
-<div class="lanes" aria-hidden="true"></div>
-
 <section class="final">
   <div class="wrap">
-    <div class="eyebrow">Olathe, Kansas</div>
-    <h2>Your athlete's next season starts in the off-season.</h2>
-    <p>Speed is coachable. Movement faults are findable. Both take someone who was trained to look for them.</p>
+    <div class="eyebrow">Olathe &middot; Overland Park &middot; Leawood &middot; Lenexa &middot; Gardner</div>
+    <h2>The next season is won in this one.</h2>
+    <div class="rule"></div>
+    <p>Speed is coachable. Movement faults are findable. Both require someone credentialed to look for them.</p>
     <div class="cta">
-      <a class="btn btn--cone" href="#book">Book a session<small>Start with a movement screen</small></a>
-      <a class="btn btn--ghost" href="tel:+18166791642">Call or text Ted<small>(816) 679-1642</small></a>
+      <a class="btn btn--volt" href="#book">Request a session<small>Private &amp; small-group programming</small></a>
+      <a class="btn btn--ghost" href="tel:+18166791642">Speak with Ted<small>(816) 679-1642</small></a>
     </div>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    <div><b>KC's Sports Academy</b><br>Youth Sports Performance &middot; Speed &middot; Movement &middot; Conditioning &middot; Olathe, KS</div>
-    <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
-      <a href="tel:+18166791642">(816) 679-1642</a>
-      <a href="mailto:tjohnson@kcssportsacademy.com">Email Ted</a>
-      <a href="https://www.instagram.com/kc_sports_academy/" target="_blank" rel="noopener">Instagram &rarr;</a>
+    <div class="top">
+      <span class="plate"><img src="assets/kcsa-logo.jpg" alt="KC's Sports Academy" /></span>
+      <div class="lks">
+        <a href="tel:+18166791642">(816) 679-1642</a>
+        <a href="mailto:tjohnson@kcssportsacademy.com">Email Ted</a>
+        <a href="https://www.instagram.com/kc_sports_academy/" target="_blank" rel="noopener">Instagram</a>
+        <a href="#book">Book a session</a>
+      </div>
+    </div>
+    <div class="btm">
+      <div>&copy; KC's Sports Academy &middot; Youth Sports Performance &middot; Olathe, KS</div>
+      <div>Site by <a href="https://killswitchwebsites.com" target="_blank" rel="noopener">Killswitch Websites</a></div>
     </div>
   </div>
 </footer>
-
-<div class="fine">
-  <div class="wrap">
-    Free demo by Killswitch Websites (killswitchwebsites.com). Not affiliated with KC's Sports Academy yet. Business name, phone, email addresses, office hours and the quoted mission line are taken from the academy's own public Setmore booking page and Facebook listing; the four certifications are as listed by Ted Johnson on his own Instagram profile. Address, sports list, and session structure are drafted from those public listings for Ted to confirm or correct. No prices, reviews or athlete results are shown, because none have been published. If KC's Sports Academy wants it, the site, the domain and the code are theirs to keep.
-  </div>
-</div>
 
 <div class="bookbar">
   <a class="c" href="tel:+18166791642">Call Ted</a>
@@ -499,23 +575,151 @@
 </div>
 
 <script>
-  (function(){
-    var f=document.getElementById('bookForm'),ok=document.getElementById('ok');
-    if(!f)return;
-    f.addEventListener('submit',function(e){
-      e.preventDefault();
-      fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
-        body:JSON.stringify({
-          access_key:'fd068540-d6c4-44e3-9f5b-3d46da7c44ed',
-          subject:"Session request — KC's Sports Academy (Killswitch Websites demo)",
-          from_name:"KC's Sports Academy demo site",
-          name:f.parent.value,contact:f.contact.value,
-          athlete:f.athlete.value,sport:f.sport.value,message:f.message.value
-        })})
-        .then(function(r){return r.json();}).then(function(){ok.hidden=false;f.reset();})
-        .catch(function(){ok.hidden=false;ok.textContent='Something went wrong. Please call or text (816) 679-1642.';});
+(function(){
+  "use strict";
+
+  /* ----------------------------------------------------------------
+     PAYMENT GATEWAY
+     Deliberately unset. The academy owns the merchant relationship,
+     so the processor of record is their call. Set this and step 3
+     becomes a real checkout; leave it null and step 3 sends a
+     booking request instead.
+     ---------------------------------------------------------------- */
+  var GATEWAY = null;
+
+  /* ----------------------------------------------------------------
+     SESSION RATES
+     Ted's real numbers go here. `price: null` renders as
+     "Rate on request" rather than inventing a figure.
+     ---------------------------------------------------------------- */
+  var SESSIONS = [
+    { id:'private', name:'Private session',        desc:'One athlete, one coach. Sprint mechanics and acceleration.', price:null },
+    { id:'program', name:'Season program',         desc:'A structured block built around your athlete’s season.',  price:null },
+    { id:'screen',  name:'Movement assessment',    desc:'A standalone look at how your athlete currently moves.',    price:null },
+    { id:'small',   name:'Small group',            desc:'Up to a handful of athletes training together.',            price:null },
+    { id:'team',    name:'Team engagement',        desc:'A full roster, on a club or school schedule.',              price:null }
+  ];
+
+  var FORM_KEY = 'fd068540-d6c4-44e3-9f5b-3d46da7c44ed';
+  var PHONE = '(816) 679-1642';
+  var $ = function(s){ return document.querySelector(s); };
+  var picked = SESSIONS[0].id;
+
+  /* build the session options */
+  var optsEl = $('#opts');
+  SESSIONS.forEach(function(s, i){
+    var row = document.createElement('label');
+    row.className = 'opt' + (i === 0 ? ' sel' : '');
+    row.setAttribute('data-id', s.id);
+    row.innerHTML =
+      '<input type="radio" name="session" value="' + s.id + '"' + (i === 0 ? ' checked' : '') + ' />' +
+      '<span class="tick"></span>' +
+      '<span class="txt"><span class="nm">' + s.name + '</span><span class="ds">' + s.desc + '</span></span>' +
+      '<span class="pr">' + (s.price
+        ? '<span class="amt">' + s.price + '</span>'
+        : '<span class="tbd">Rate on request</span>') + '</span>';
+    row.addEventListener('click', function(){
+      picked = s.id;
+      Array.prototype.forEach.call(optsEl.children, function(c){ c.classList.remove('sel'); });
+      row.classList.add('sel');
     });
-  })();
+    optsEl.appendChild(row);
+  });
+
+  /* step machine */
+  function show(n){
+    [1,2,3,4].forEach(function(i){
+      var p = $('#p' + i); if (p) p.classList.toggle('on', i === n);
+    });
+    [1,2,3].forEach(function(i){
+      var s = $('#s' + i); if (!s) return;
+      s.classList.toggle('on', i === n);
+      s.classList.toggle('done', i < n);
+    });
+    if (n === 3) fillSummary();
+    var flow = $('.flow');
+    if (flow && n > 1) flow.scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  function val(id){ var e = $(id); return e && e.value.trim(); }
+
+  function fillSummary(){
+    var s = SESSIONS.filter(function(x){ return x.id === picked; })[0];
+    var rows = [
+      ['Session',  s.name + (s.price ? ' — ' + s.price : '')],
+      ['Athlete',  [val('#f-athlete'), val('#f-sport')].filter(Boolean).join(' · ') || 'Not given'],
+      ['Parent',   val('#f-parent') || 'Not given'],
+      ['Contact',  val('#f-contact') || 'Not given'],
+      ['When',     val('#f-when') || 'Flexible'],
+      ['Notes',    val('#f-notes') || 'None']
+    ];
+    $('#sum').innerHTML = rows.map(function(r){
+      return '<div class="rw"><span>' + r[0] + '</span><span>' + esc(r[1]) + '</span></div>';
+    }).join('');
+    $('#slot').style.display = GATEWAY ? 'none' : '';
+  }
+
+  function esc(t){
+    return String(t).replace(/[&<>"]/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c];
+    });
+  }
+
+  document.addEventListener('click', function(e){
+    var b = e.target.closest('[data-go]');
+    if (!b) return;
+    var to = +b.getAttribute('data-go');
+    if (to === 3 && (!val('#f-parent') || !val('#f-contact'))) {
+      alert('Ted needs a name and a way to reach you.');
+      return;
+    }
+    show(to);
+  });
+
+  $('#send').addEventListener('click', function(){
+    var btn = this;
+    var s = SESSIONS.filter(function(x){ return x.id === picked; })[0];
+    btn.disabled = true;
+    btn.style.opacity = .6;
+    fetch('https://api.web3forms.com/submit', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Accept':'application/json' },
+      body: JSON.stringify({
+        access_key: FORM_KEY,
+        subject: "Booking request — KC's Sports Academy",
+        from_name: "KC's Sports Academy website",
+        session: s.name,
+        name: val('#f-parent'),
+        contact: val('#f-contact'),
+        athlete: val('#f-athlete'),
+        sport: val('#f-sport'),
+        availability: val('#f-when'),
+        message: val('#f-notes')
+      })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(){ show(4); })
+    .catch(function(){
+      show(4);
+      $('#doneline').textContent = 'That did not send. Please call or text ' + PHONE + '.';
+    });
+  });
+
+  /* pyramid: hovering a tier definition lights the matching tier */
+  Array.prototype.forEach.call(document.querySelectorAll('.tier-row'), function(row){
+    var t = row.getAttribute('data-tier');
+    function set(on){
+      var shape = document.getElementById('t-' + t);
+      var letter = document.getElementById('l-' + t);
+      if (shape) shape.classList.toggle('on', on);
+      if (letter) letter.classList.toggle('on', on);
+    }
+    row.addEventListener('mouseenter', function(){ set(true); });
+    row.addEventListener('mouseleave', function(){ set(false); });
+    row.addEventListener('focus', function(){ set(true); });
+    row.addEventListener('blur', function(){ set(false); });
+  });
+})();
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
 </body>

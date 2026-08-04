@@ -56,6 +56,25 @@
   .trunc{background:rgba(255,85,70,.12);border:1px solid rgba(255,85,70,.45);color:#ffb3ab;border-radius:10px;padding:10px 13px;font-size:.83rem;margin-bottom:14px;display:none}
   .trunc.show{display:block}
   .msg{font-size:.85rem;color:var(--mute);min-height:18px;margin:8px 0}
+
+  /* site editor */
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:11px}
+  .grid2 .f input{min-width:0;width:100%}
+  #sEd textarea{background:var(--metal);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:inherit;font-size:.9rem;width:100%;resize:vertical}
+  #sEd textarea:focus,#sEd input:focus{outline:none;border-color:var(--go)}
+  .rl{font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mute2);margin-bottom:7px}
+  .reps{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:18px}
+  .rep{display:flex;gap:6px;margin-bottom:6px}
+  .rep input{flex:1;min-width:0;background:var(--metal);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font:inherit;font-size:.85rem}
+  .rep button{background:none;border:1px solid var(--line);color:var(--mute2);border-radius:8px;cursor:pointer;padding:0 9px;font-size:1rem}
+  .rep button:hover{color:var(--red);border-color:var(--red)}
+  .mods{display:flex;flex-wrap:wrap;gap:8px}
+  .mods label{display:flex;align-items:center;gap:6px;background:var(--metal);border:1px solid var(--line);border-radius:9px;padding:7px 11px;font-size:.83rem;cursor:pointer}
+  .mods label.on{border-color:var(--go);color:var(--go)}
+  .mods label.bo{opacity:.62}
+  .fine2{font-size:.76rem;color:var(--mute2);margin-top:9px;max-width:70ch}
+  .chk{display:flex;align-items:center;gap:8px;font-size:.9rem;cursor:pointer}
+  td.live .yes{color:var(--go);font-weight:600} td.live .no{color:var(--mute2)}
 </style>
 </head>
 <body>
@@ -91,6 +110,73 @@
       <div class="onres" id="oRes"></div>
     </div>
 
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+        <div>
+          <h2>Customer websites</h2>
+          <div class="h-sub">One template, many sites. Fill in the details, tick the modules, publish. Turning a module off here removes it from their live site.</div>
+        </div>
+        <button class="btn ghost sm" id="sNew">+ New website</button>
+      </div>
+
+      <div class="wrapt" style="margin-top:12px"><table><thead><tr>
+        <th>Business</th><th>Slug</th><th>Owner email</th><th>Modules on</th><th>Live</th><th></th>
+      </tr></thead><tbody id="sTb"></tbody></table></div>
+
+      <div id="sEd" style="display:none;margin-top:18px;border-top:1px solid var(--line);padding-top:16px">
+        <h2 id="sEdT" style="margin-bottom:12px">New website</h2>
+
+        <div class="grid2">
+          <label class="f">Business name<input id="f_business" placeholder="Dave's Trusted Auto" /></label>
+          <label class="f">Web address (slug)<input id="f_slug" placeholder="daves-trusted-auto" /></label>
+          <label class="f">Owner email (links their panel)<input id="f_email" type="email" placeholder="dave@davesauto.com" /></label>
+          <label class="f">Trade<input id="f_trade" placeholder="auto repair" /></label>
+          <label class="f">Public phone<input id="f_phone" placeholder="(816) 555-0142" /></label>
+          <label class="f">Public email<input id="f_email_public" placeholder="hello@davesauto.com" /></label>
+          <label class="f">Street<input id="f_street" placeholder="123 Main St" /></label>
+          <label class="f">City<input id="f_city" placeholder="Grandview" /></label>
+          <label class="f">State<input id="f_state" placeholder="MO" /></label>
+          <label class="f">ZIP<input id="f_zip" placeholder="64030" /></label>
+          <label class="f">Brand colour<input id="f_accent" placeholder="#12703C" /></label>
+          <label class="f">Booking link (optional)<input id="f_bookingUrl" placeholder="https://calendly.com/..." /></label>
+          <label class="f">Payment link (optional)<input id="f_payUrl" placeholder="https://buy.stripe.com/..." /></label>
+        </div>
+
+        <label class="f" style="margin-top:12px;display:block">One-line tagline<input id="f_tagline" style="width:100%" placeholder="Honest auto repair in Grandview since 1998." /></label>
+        <label class="f" style="margin-top:12px;display:block">About<textarea id="f_about" rows="3" placeholder="Family run for 25 years..."></textarea></label>
+
+        <div class="reps">
+          <div>
+            <div class="rl">Opening hours</div>
+            <div id="r_hours"></div>
+            <button class="btn ghost sm" type="button" data-add="hours">+ Add hours</button>
+          </div>
+          <div>
+            <div class="rl">Services</div>
+            <div id="r_services"></div>
+            <button class="btn ghost sm" type="button" data-add="services">+ Add service</button>
+          </div>
+          <div>
+            <div class="rl">Updates / posts <span style="color:var(--mute2);font-weight:400">(needs module P2)</span></div>
+            <div id="r_posts"></div>
+            <button class="btn ghost sm" type="button" data-add="posts">+ Add post</button>
+          </div>
+        </div>
+
+        <div class="rl" style="margin-top:18px">Modules switched on</div>
+        <div class="mods" id="f_mods"></div>
+        <div class="fine2">P4, P5, P6, P10 and P11 are real products but back-office, so they change nothing on the page. They are listed so this screen matches what the customer is billed for.</div>
+
+        <div class="row" style="margin-top:18px;align-items:center">
+          <label class="chk"><input type="checkbox" id="f_published" /> <span>Published (live to the public)</span></label>
+          <button class="btn" id="sSave">Save website</button>
+          <a class="btn ghost sm" id="sView" target="_blank" rel="noopener" style="display:none">View live →</a>
+          <button class="btn ghost sm" type="button" id="sCancel">Cancel</button>
+        </div>
+        <div class="onres" id="sRes"></div>
+      </div>
+    </div>
+
     <div class="trunc" id="trunc"></div>
     <div class="msg" id="msg"></div>
     <div class="wrapt"><table><thead><tr>
@@ -116,6 +202,114 @@ function mdy(sec){ if(!sec) return ''; const d=new Date(Number(sec)*1000); if(is
   const p=n=>String(n).padStart(2,'0'); return p(d.getMonth()+1)+'/'+p(d.getDate())+'/'+d.getFullYear(); }
 function showLogin(m){ $('app').style.display='none'; $('login').style.display='block'; $('loginErr').textContent=m||''; }
 
+/* ---------------- customer website editor ---------------- */
+// Which modules exist, and whether each one actually changes the page. Anything
+// marked bo (back-office) is billed but renders nothing, and says so.
+var MODS=[['P1','Search listing',0],['P2','Updates & posts',0],['P3','Online booking',0],
+  ['P7','Pay online',0],['P8','Analytics',0],['P9','24/7 AI assistant',0],
+  ['P4','Hosting',1],['P5','CRM',1],['P6','Automation',1],['P10','AI sales agent',1],['P11','Care plan',1]];
+var REPS={hours:['d','h'],services:['name','desc'],posts:['title','body']};
+var REPPH={hours:['Mon to Fri','8am to 6pm'],services:['Brakes','Pads, rotors, inspection'],posts:['Winter offer','Free battery test']};
+var sites=[], editing=null;
+
+function slugify(s){return String(s||'').toLowerCase().trim().replace(/['']/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60);}
+
+function repRow(kind,vals){
+  const k=REPS[kind], ph=REPPH[kind];
+  const d=document.createElement('div'); d.className='rep';
+  d.innerHTML=k.map((f,i)=>`<input data-f="${f}" placeholder="${esc(ph[i])}" value="${esc((vals&&vals[f])||'')}" />`).join('')
+    +'<button type="button" title="Remove">&times;</button>';
+  d.querySelector('button').onclick=()=>d.remove();
+  return d;
+}
+function readReps(kind){
+  return [...document.querySelectorAll('#r_'+kind+' .rep')].map(r=>{
+    const o={}; r.querySelectorAll('input').forEach(i=>o[i.dataset.f]=i.value.trim());
+    return o;
+  }).filter(o=>Object.values(o).some(v=>v));
+}
+document.addEventListener('click',e=>{
+  const a=e.target.getAttribute&&e.target.getAttribute('data-add');
+  if(a) $('r_'+a).appendChild(repRow(a,null));
+});
+
+function drawMods(on){
+  $('f_mods').innerHTML='';
+  MODS.forEach(([id,label,bo])=>{
+    const l=document.createElement('label');
+    l.className=(on.includes(id)?'on ':'')+(bo?'bo':'');
+    l.innerHTML=`<input type="checkbox" value="${id}" ${on.includes(id)?'checked':''}/> <span>${id} · ${esc(label)}${bo?' (back-office)':''}</span>`;
+    l.querySelector('input').onchange=ev=>l.classList.toggle('on',ev.target.checked);
+    $('f_mods').appendChild(l);
+  });
+}
+function readMods(){ return ['P0',...[...document.querySelectorAll('#f_mods input:checked')].map(i=>i.value)]; }
+
+const FIELDS=['business','slug','email','trade','phone','email_public','street','city','state','zip','accent','bookingUrl','payUrl','tagline','about'];
+
+function openEditor(site){
+  editing=site||null;
+  $('sEdT').textContent = site ? ('Editing '+site.business) : 'New website';
+  FIELDS.forEach(f=>{ const el=$('f_'+f); if(el) el.value=(site&&site[f])||''; });
+  if(!site) $('f_accent').value='#12703C';
+  Object.keys(REPS).forEach(k=>{
+    $('r_'+k).innerHTML='';
+    ((site&&site[k])||[]).forEach(v=>$('r_'+k).appendChild(repRow(k,v)));
+  });
+  drawMods((site&&site.modules)||['P0']);
+  $('f_published').checked=!!(site&&site.published);
+  $('sRes').textContent='';
+  const v=$('sView');
+  if(site&&site.slug){ v.style.display='inline-block'; v.href='/s/'+site.slug; } else v.style.display='none';
+  $('sEd').style.display='block';
+  $('sEd').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+$('sNew').onclick=()=>openEditor(null);
+$('sCancel').onclick=()=>{ $('sEd').style.display='none'; editing=null; };
+$('f_business').addEventListener('blur',()=>{ if(!$('f_slug').value.trim()) $('f_slug').value=slugify($('f_business').value); });
+
+async function loadSites(){
+  const r=await api('site-list');
+  if(!r.ok){ return; }
+  sites=(r.d.sites)||[];
+  $('sTb').innerHTML = sites.length ? sites.map(s=>`<tr>
+    <td class="email">${esc(s.business||'(unnamed)')}</td>
+    <td class="mono" style="color:var(--mute2)">${esc(s.slug)}</td>
+    <td style="color:var(--mute2)">${esc(s.email||'—')}</td>
+    <td><div class="chips">${(s.modules||[]).filter(m=>m!=='P0').map(m=>`<span class="chip">${esc(m)}</span>`).join('')||'<span class="chip free">Base site</span>'}</div></td>
+    <td class="live">${s.published?'<span class="yes">Live</span>':'<span class="no">Draft</span>'}</td>
+    <td><button class="btn ghost sm" data-edit="${esc(s.slug)}">Edit</button>
+        ${s.published?`<a class="btn ghost sm" href="/s/${esc(s.slug)}" target="_blank" rel="noopener">View</a>`:''}</td>
+  </tr>`).join('') : '<tr><td colspan="6" style="color:var(--mute2);text-align:center;padding:22px">No websites yet. Create the first one.</td></tr>';
+  $('sTb').querySelectorAll('[data-edit]').forEach(b=>{
+    b.onclick=async()=>{
+      const slug=b.getAttribute('data-edit');
+      const full=await api('site-list');
+      openEditor((full.d.sites||[]).find(x=>x.slug===slug)||{slug});
+    };
+  });
+}
+
+$('sSave').onclick=async()=>{
+  const site={};
+  FIELDS.forEach(f=>{ const el=$('f_'+f); if(el) site[f]=el.value.trim(); });
+  if(!site.business){ $('sRes').style.color='var(--red)'; $('sRes').textContent='Business name is required.'; return; }
+  if(!site.slug) site.slug=slugify(site.business);
+  Object.keys(REPS).forEach(k=>site[k]=readReps(k));
+  site.modules=readMods();
+  site.published=$('f_published').checked;
+
+  $('sSave').disabled=true; $('sRes').style.color='var(--mute)'; $('sRes').textContent='Saving…';
+  const r=await api('site-save',{site});
+  $('sSave').disabled=false;
+  if(!r.ok){ $('sRes').style.color='var(--red)'; $('sRes').textContent='Could not save: '+(r.d.error||r.status); return; }
+  $('sRes').style.color='var(--go)';
+  $('sRes').innerHTML='Saved. <a href="/s/'+esc(r.d.site.slug)+'" target="_blank" rel="noopener">/s/'+esc(r.d.site.slug)+'</a>'
+    +(site.published?'':' <span style="color:var(--mute2)">(still a draft, tick Published to make it public)</span>');
+  const v=$('sView'); v.style.display='inline-block'; v.href='/s/'+r.d.site.slug;
+  loadSites();
+};
+
 async function boot(){
   if(!KEY){ showLogin(); return; }
   const res=await api('list');
@@ -123,6 +317,7 @@ async function boot(){
   if(!res.ok){ showLogin('Error: '+(res.d.error||res.status)); return; }
   $('login').style.display='none'; $('app').style.display='block';
   paint(res.d);
+  loadSites();
 }
 
 function paint(d){
