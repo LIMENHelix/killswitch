@@ -6,6 +6,7 @@
 <meta name="robots" content="noindex, nofollow" />
 <title>KC's Sports Academy — Certified Youth Speed &amp; Performance Coaching, Olathe KS</title>
 <meta name="description" content="KC's Sports Academy Youth Sports Performance, Olathe KS. Ted Johnson is an NSPA Certified Speed &amp; Agility Coach and NASM CPT, CES and PES. Speed, movement screening and sport conditioning for young athletes. Book a session or call (816) 679-1642." />
+<link rel="icon" href="assets/kcsa-badge.png" type="image/png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -22,7 +23,7 @@
     --sans:'Inter',-apple-system,system-ui,'Segoe UI',Roboto,Arial,sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  html{scroll-behavior:smooth}
+  html{scroll-behavior:smooth;scroll-padding-top:108px}
   body{background:var(--void);color:var(--white);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
   a{color:inherit;text-decoration:none}
   img,svg{display:block;max-width:100%}
@@ -38,19 +39,29 @@
 
   /* nav */
   .nav{position:sticky;top:0;z-index:60;background:rgba(6,7,9,.9);backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid var(--line)}
-  .nav .wrap{display:flex;align-items:center;justify-content:space-between;height:76px;gap:16px}
-  .brand{display:flex;align-items:center;gap:14px;flex:none}
-  .brand .mk{width:46px;height:38px;flex:none}
-  .brand .mk path{fill:none;stroke:var(--volt);stroke-width:7}
+  .nav .wrap{display:flex;align-items:center;justify-content:space-between;height:88px;gap:16px}
+  .brand{display:flex;align-items:center;gap:15px;flex:none}
+  .brand .mk{width:58px;height:47px;flex:none}
+  .brand .mk path{fill:none;stroke:var(--volt);stroke-width:7;stroke-linejoin:round}
   .brand .mk circle{fill:var(--volt)}
-  .brand b{display:block;font-family:var(--disp);font-weight:800;font-size:21px;letter-spacing:.03em;text-transform:uppercase;line-height:1}
-  .brand small{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.19em;text-transform:uppercase;color:var(--dim);margin-top:5px}
-  .plate{background:#fff;border-radius:12px;padding:14px 18px;display:inline-block;flex:none}
-  .plate img{height:70px;width:auto}
+  .brand b{display:block;font-family:var(--disp);font-weight:800;font-size:24px;letter-spacing:.03em;text-transform:uppercase;line-height:1}
+  .brand small{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-top:6px}
   .nav-cta{display:flex;gap:10px;align-items:center}
   .nav .call{font-family:var(--mono);font-size:14px;font-weight:500;padding:10px 14px;border-radius:9px;border:1px solid var(--line2);transition:border-color .16s,background .16s}
   .nav .call:hover{border-color:var(--volt);background:rgba(50,187,241,.08)}
-  @media(max-width:660px){.nav .call{display:none}.plate img{height:32px}.nav .wrap{height:66px}}
+  @media(max-width:660px){
+    .nav .call{display:none}
+    .nav .wrap{height:80px}
+    .brand .mk{width:46px;height:37px}
+    .brand b{font-size:19px}
+    .brand small{display:none}
+  }
+  @media(max-width:430px){
+    .brand{gap:11px}
+    .brand .mk{width:42px;height:34px}
+    .brand b{font-size:16px;letter-spacing:.01em;max-width:9ch}
+    .nav .btn{padding:10px 13px;font-size:14px}
+  }
 
   /* buttons */
   .btn{display:inline-flex;flex-direction:column;align-items:flex-start;font-family:var(--disp);font-weight:800;text-transform:uppercase;letter-spacing:.03em;
@@ -85,21 +96,62 @@
   .hero .creds b{color:var(--volt);font-weight:500}
 
   /* hero pyramid */
-  .pyr-hero{display:grid;place-items:center}
-  .pyr-hero svg{width:min(430px,84vw);height:auto;filter:drop-shadow(0 26px 64px rgba(0,0,0,.6))}
-  .pyr-hero .fc{fill:var(--rise);stroke:var(--volt);stroke-width:2.4}
-  .pyr-hero .lt{fill:var(--white);font-family:var(--disp);font-weight:800;text-anchor:middle}
-  .pyr-hero .ring{fill:var(--volt)}
-  .pyr-hero .ringlt{fill:var(--void);font-family:var(--disp);font-weight:800;text-anchor:middle}
-  .pyr-hero .sweep{animation:sweep 5.5s ease-in-out infinite}
-  @keyframes sweep{0%,100%{opacity:.32}50%{opacity:.85}}
-  @media (prefers-reduced-motion:reduce){.pyr-hero .sweep{animation:none;opacity:.6}}
+  .pyr-hero{display:flex;flex-direction:column;align-items:center;gap:0}
+  .emblem{width:min(300px,70vw);height:auto;border-radius:50%;
+    filter:drop-shadow(0 26px 64px rgba(0,0,0,.7)) drop-shadow(0 0 46px rgba(50,187,241,.16))}
+  /* full-width equation band */
+  .fband{background:var(--pit);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:44px 0 40px}
+  .fb-head{max-width:none;margin:0 0 26px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+  .fb-head h2{margin:0;font-size:clamp(19px,2.1vw,24px);letter-spacing:.02em;color:var(--ash);font-weight:700}
+  /* worked on a page, not stacked in boxes */
+  .nb{max-width:940px;margin:0}
+  .nb-row{display:grid;grid-template-columns:26px minmax(0,auto) 1fr;align-items:center;gap:0 26px;
+    padding:14px 0;border-bottom:1px solid var(--line)}
+  .nb-row.is-final{border-bottom:0}
+  .nb-n{font-family:var(--mono);font-size:9.5px;color:var(--dim);letter-spacing:.1em;align-self:start;padding-top:1.1em}
+  .nb-eq{font-family:var(--disp);display:flex;align-items:center;white-space:nowrap;line-height:1}
+  .nb-eq .m{font-weight:800;font-size:clamp(21px,2.7vw,28px);color:var(--white);letter-spacing:.01em}
+  .nb-eq .m.big{font-size:clamp(26px,3.6vw,38px);color:var(--volt)}
+  /* operators in the sans face: the condensed display face has weak math glyphs */
+  .nb-eq .op{font-family:var(--sans);font-weight:400;font-size:clamp(16px,2.1vw,23px);color:var(--dim);
+    margin:0 9px;position:relative;top:-.32em}
+  .nb-eq .op.eq{color:var(--volt);margin:0 12px}
+  .nb-row.is-final .op{font-size:clamp(19px,2.5vw,28px);margin:0 12px}
+  .nb-row.is-final .op.eq{margin:0 15px}
+  .nb-eq .frac{display:inline-flex;flex-direction:column;align-items:center;margin:0 5px;font-weight:800;
+    font-size:clamp(14px,1.8vw,19px);color:var(--white)}
+  .nb-eq .frac span:first-child{border-bottom:1.5px solid var(--dim);padding:0 5px 1px}
+  .nb-eq .frac span:last-child{padding:1px 5px 0}
+  .nb-note{color:var(--dim);font-size:13px;line-height:1.6;max-width:56ch}
+  .nb-note b{color:var(--ash);font-weight:600}
+  .nb-op{display:flex;align-items:center;gap:11px;padding:0 0 0 52px;margin:-4px 0;
+    font-family:var(--mono);font-size:11px;color:var(--volt)}
+  .nb-op span{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+  @media(max-width:860px){
+    .nb-row{grid-template-columns:22px 1fr;gap:0 14px;padding:14px 0}
+    .nb-note{grid-column:2;margin-top:10px;max-width:none}
+    .nb-op{padding-left:36px}
+    .nb-eq{flex-wrap:wrap;white-space:normal}
+  }
+  .fb-note{color:var(--dim);font-size:13px;max-width:none;margin:22px 0 0;line-height:1.6;
+    padding-top:18px;border-top:1px solid var(--line);
+    display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+  .fb-note p{max-width:52ch}
+  .fb-note b{color:var(--ash);font-weight:600}
+  .fb-note .curve{font-family:var(--mono);font-size:14px;color:var(--volt);letter-spacing:.02em;
+    white-space:nowrap;flex:none}
+  .fb-note .curve sub{font-size:.66em}
+  .fb-note .curve sup{font-size:.72em}
 
   /* the V/A/T method */
   .method{background:var(--pit);border-top:1px solid var(--line)}
   .method .split{display:grid;grid-template-columns:.82fr 1.18fr;gap:56px;align-items:center}
   @media(max-width:900px){.method .split{grid-template-columns:1fr;gap:38px}}
   .pyr-big svg{width:100%;height:auto;filter:drop-shadow(0 18px 46px rgba(0,0,0,.5))}
+  .eq{text-align:center;margin-top:26px;padding-top:22px;border-top:1px solid var(--line)}
+  .eq b{font-family:var(--disp);font-weight:800;font-size:34px;color:var(--volt);letter-spacing:.02em}
+  .eq i{font-family:var(--disp);font-weight:600;font-style:normal;font-size:26px;color:var(--dim);margin:0 6px}
+  .eq span{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-top:10px}
   .pyr-big .tier{fill:var(--card);stroke:rgba(50,187,241,.42);stroke-width:2.4;transition:fill .3s ease,stroke .3s ease}
   .pyr-big .tier.on{fill:rgba(50,187,241,.18);stroke:var(--volt)}
   .pyr-big .lt{fill:var(--ash);font-family:var(--disp);font-weight:800;text-anchor:middle;transition:fill .3s ease}
@@ -112,7 +164,13 @@
   .tier-row:hover .k,.tier-row:focus-within .k{color:var(--volt)}
   .tier-row .pos{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-top:9px}
   .tier-row h3{font-family:var(--disp);font-weight:700;text-transform:uppercase;font-size:25px;letter-spacing:.02em;line-height:1.05}
-  .tier-row p{color:var(--ash);font-size:15px;margin-top:8px;max-width:52ch}
+  .tier-row p{color:var(--ash);font-size:15px;margin-top:8px;max-width:54ch}
+  .tier-row .how{margin-top:14px;padding-left:15px;border-left:2px solid rgba(50,187,241,.42);
+    color:var(--ash);font-size:14px;max-width:54ch}
+  .tier-row .how .lbl{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--volt);margin-bottom:6px}
+  .tier-row .tag{display:inline-block;margin-top:14px;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--dim);border:1px solid var(--line2);border-radius:6px;padding:5px 10px}
   .fillin{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
     color:var(--volt);border:1px dashed rgba(50,187,241,.5);border-radius:7px;padding:7px 12px;background:rgba(50,187,241,.05)}
   .fillin::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--volt);flex:none}
@@ -139,8 +197,79 @@
   .verify{margin-top:26px;font-family:var(--mono);font-size:11.5px;color:var(--dim);letter-spacing:.03em;line-height:1.9}
   .verify a{color:var(--volt)}
 
+  /* inside a block */
+  .block{background:var(--pit);border-top:1px solid var(--line)}
+  .stages{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:2px solid var(--volt)}
+  @media(max-width:900px){.stages{grid-template-columns:1fr;border-top-width:2px}}
+  .stage{padding:30px 28px 34px;border-right:1px solid var(--line)}
+  .stage:last-child{border-right:0}
+  @media(max-width:900px){.stage{border-right:0;border-bottom:1px solid var(--line)}.stage:last-child{border-bottom:0}}
+  .stage .sn{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--volt)}
+  .stage h3{font-family:var(--disp);font-weight:800;text-transform:uppercase;font-size:27px;letter-spacing:.02em;margin:12px 0 8px;line-height:1}
+  .stage .gov{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+    border:1px solid var(--line2);border-radius:6px;padding:5px 10px;display:inline-block;margin-bottom:16px}
+  .stage p{color:var(--ash);font-size:14.5px}
+  .chain{list-style:none;margin:16px 0 0;counter-reset:c}
+  .chain li{counter-increment:c;position:relative;padding:10px 0 10px 34px;border-bottom:1px solid var(--line);
+    color:var(--ash);font-size:14px;line-height:1.5}
+  .chain li:last-child{border-bottom:0}
+  .chain li::before{content:counter(c);position:absolute;left:0;top:10px;width:22px;height:22px;border-radius:50%;
+    background:rgba(50,187,241,.14);color:var(--volt);font-family:var(--mono);font-size:10px;font-weight:700;
+    display:grid;place-items:center}
+  .chain li b{display:block;color:var(--white);font-family:var(--disp);font-weight:700;text-transform:uppercase;
+    font-size:17px;letter-spacing:.02em;line-height:1.1;margin-bottom:2px}
+  .stage .why{margin-top:18px;padding-top:16px;border-top:1px solid var(--line);color:var(--dim);font-size:13.5px;line-height:1.6}
+
+  /* free tools */
+  .toolsec{border-top:1px solid var(--line)}
+  .tools{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  @media(max-width:820px){.tools{grid-template-columns:1fr}}
+  .tool{border:1px solid var(--edge);border-radius:16px;padding:24px 22px;background:var(--rise);display:flex;flex-direction:column}
+  .toolhd{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .tool h3{font-family:var(--disp);font-weight:800;text-transform:uppercase;font-size:25px;letter-spacing:.02em;line-height:1}
+  .toolsrc{font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--volt)}
+  .toolwhat{color:var(--ash);font-size:14px;margin-bottom:12px}
+  .toolhelp{font-size:12.5px;color:var(--dim);background:rgba(255,255,255,.035);border-left:2px solid var(--line2);
+    border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:16px;line-height:1.6}
+  .toolhelp b{color:var(--ash);font-weight:600}
+  .toolin{display:flex;flex-wrap:wrap;gap:10px}
+  .toolin label{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+    display:flex;flex-direction:column;gap:5px;flex:1 1 46%;min-width:120px}
+  .toolin .row{display:flex;gap:6px}
+  .toolin input,.toolin select{border:1px solid var(--edge);border-radius:8px;padding:10px 11px;font-family:var(--sans);
+    font-size:14.5px;background:var(--card);color:var(--white);width:100%;min-width:0}
+  .toolin select{font-family:var(--mono);font-size:12.5px}
+  .toolbtn{margin-top:16px;background:var(--volt);color:var(--void);border:none;border-radius:9px;padding:12px 20px;
+    font-family:var(--disp);font-weight:800;text-transform:uppercase;letter-spacing:.03em;font-size:17px;cursor:pointer;
+    transition:background .16s,transform .16s;align-self:flex-start}
+  .toolbtn:hover{background:#4CC7F6;transform:translateY(-1px)}
+  .toolout{display:none;font-size:14px;color:var(--ash);line-height:1.6}
+  .toolout.on{display:block;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+  .toolout .kv{display:flex;justify-content:space-between;gap:14px;padding:7px 0;border-bottom:1px solid var(--line)}
+  .toolout .kv:last-of-type{border-bottom:0}
+  .toolout .kv span:first-child{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);padding-top:3px}
+  .toolout .kv b{color:var(--volt);font-family:var(--disp);font-weight:800;font-size:22px;line-height:1;white-space:nowrap}
+  .toolout .kv b em{font-style:normal;font-family:var(--mono);font-size:10px;color:var(--ash);font-weight:400;margin-left:4px}
+  .toolout .note{margin-top:12px;font-size:12.5px;color:var(--dim);line-height:1.6}
+  .toolout .err{color:#ff8b6b;font-size:13.5px}
+
+  /* who it is for */
+  .who{border-top:1px solid var(--line)}
+  .sports{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:44px}
+  .sports span{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.03em;font-size:20px;
+    padding:10px 20px;border:1px solid var(--line2);border-radius:999px;color:var(--white);transition:border-color .18s,color .18s}
+  .sports span:hover{border-color:var(--volt);color:var(--volt)}
+  .who-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--line)}
+  @media(max-width:860px){.who-grid{grid-template-columns:1fr}}
+  .wc{padding:28px 26px 30px;border-right:1px solid var(--line)}
+  .wc:last-child{border-right:0}
+  @media(max-width:860px){.wc{border-right:0;border-bottom:1px solid var(--line)}.wc:last-child{border-bottom:0}}
+  .wc .wn{font-family:var(--disp);font-weight:800;text-transform:uppercase;font-size:25px;letter-spacing:.02em;
+    color:var(--volt);margin-bottom:10px;line-height:1}
+  .wc p{color:var(--ash);font-size:14.5px}
+
   /* booking */
-  .book{background:var(--pit);border-top:1px solid var(--line)}
+  .book{border-top:1px solid var(--line)}
   .flow{background:var(--rise);border:1px solid var(--edge);border-radius:18px;overflow:hidden;max-width:800px;margin:0 auto}
   .steps{display:flex;border-bottom:1px solid var(--edge)}
   .stp{flex:1;padding:15px 16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
@@ -199,7 +328,7 @@
   .done-msg p{color:var(--ash);font-size:15px;margin-top:12px}
 
   /* coach */
-  .coach{border-top:1px solid var(--line)}
+  .coach{background:var(--pit);border-top:1px solid var(--line)}
   .coach .split{display:grid;grid-template-columns:1.08fr .92fr;gap:52px;align-items:start}
   @media(max-width:900px){.coach .split{grid-template-columns:1fr;gap:36px}}
   .coach p{color:var(--ash);font-size:16px;margin-bottom:15px}
@@ -223,6 +352,27 @@
   .info dd{font-size:15.5px;margin-top:4px}
   .info dd a{color:var(--volt);font-weight:500}
 
+  /* citations */
+  .cite{font-size:.62em;font-weight:600;color:var(--volt);vertical-align:super;margin-left:2px;
+    text-decoration:none;line-height:0;padding:0 1px}
+  .cite:hover{text-decoration:underline}
+  .toolsrc .cite{vertical-align:super;font-size:.85em}
+  .refs{background:var(--pit);border-top:1px solid var(--line)}
+  .reflist{list-style:none;counter-reset:r;border-top:1px solid var(--line)}
+  .reflist li{counter-increment:r;position:relative;padding:20px 0 20px 46px;border-bottom:1px solid var(--line)}
+  .reflist li::before{content:counter(r);position:absolute;left:0;top:22px;width:26px;height:26px;border-radius:50%;
+    background:rgba(50,187,241,.13);color:var(--volt);font-family:var(--mono);font-size:11px;font-weight:700;
+    display:grid;place-items:center}
+  .reflist li:target::before{background:var(--volt);color:var(--void)}
+  .reflist .f{display:block;color:var(--ash);font-size:14.5px;line-height:1.6;max-width:88ch}
+  .evref{display:inline-block;margin-top:9px;color:var(--volt);font-family:var(--mono);font-size:11.5px;
+    letter-spacing:.02em;text-decoration:none;line-height:1.5}
+  .evref:hover{text-decoration:underline}
+  .refnote{margin-top:26px;color:var(--dim);font-size:12.5px;line-height:1.7;max-width:88ch}
+  .refnote p{margin-bottom:10px}
+  .refnote b{color:var(--ash);font-weight:600}
+  .refnote a{color:var(--volt)}
+
   /* final */
   .final{border-top:1px solid var(--line);text-align:center;
     background:radial-gradient(760px 400px at 50% 0,rgba(50,187,241,.08),transparent 68%)}
@@ -233,8 +383,7 @@
 
   footer{background:#040507;border-top:1px solid var(--line);padding:40px 0 30px}
   footer .top{display:flex;justify-content:space-between;gap:26px;flex-wrap:wrap;align-items:center}
-  footer .plate{padding:9px 14px}
-  footer .plate img{height:44px}
+  footer .fbadge{width:104px;height:104px;border-radius:50%;flex:none}
   footer .lks{display:flex;gap:22px;flex-wrap:wrap;font-size:14.5px}
   footer .lks a{color:var(--volt);font-weight:500}
   footer .btm{margin-top:28px;padding-top:20px;border-top:1px solid var(--line);display:flex;justify-content:space-between;
@@ -264,7 +413,7 @@
         <path d="M100 8 L147 72 L53 72 Z"/>
         <path d="M51 78 L97 78 L97 150 L8 150 Z"/>
         <path d="M103 78 L149 78 L192 150 L103 150 Z"/>
-        <circle cx="62" cy="116" r="15"/>
+        <circle cx="62" cy="116" r="14"/>
       </svg>
       <span><b>KC's Sports Academy</b><small>Youth Sports Performance</small></span>
     </a>
@@ -280,8 +429,8 @@
   <div class="wrap">
     <div>
       <div class="eyebrow">Private youth sports performance &middot; Olathe &amp; Johnson County</div>
-      <h1 class="h1">Top-of-the-line<br>training.</h1>
-      <p class="h1-sub">For the athlete you have already invested in.</p>
+      <h1 class="h1">Measured.<br>Not guessed.</h1>
+      <p class="h1-sub">Certified speed coaching for the athlete you have already invested in.</p>
       <div class="rule"></div>
       <p class="sub">Club fees. Travel. Showcases. Camps. Certified coaching is what makes the rest of it count. Four credentials in speed, movement and sport conditioning, applied one athlete at a time.</p>
       <div class="cta">
@@ -295,26 +444,125 @@
         <span><b>NASM</b> &nbsp;P.E.S.</span>
       </div>
     </div>
-    <div class="pyr-hero" aria-hidden="true">
-      <svg viewBox="0 0 200 162" role="img" aria-label="The KC's Sports Academy training pyramid">
-        <path class="fc sweep" d="M100 8 L147 72 L53 72 Z"/>
-        <path class="fc" d="M51 78 L97 78 L97 150 L8 150 Z"/>
-        <path class="fc" d="M103 78 L149 78 L192 150 L103 150 Z"/>
-        <text class="lt" x="100" y="63" font-size="42">V</text>
-        <circle class="ring" cx="66" cy="114" r="23"/>
-        <text class="ringlt" x="66" y="129" font-size="38">A</text>
-        <text class="lt" x="140" y="129" font-size="38">T</text>
-      </svg>
+    <div class="pyr-hero">
+      <img class="emblem" src="assets/kcsa-badge.png" alt="KC's Sports Academy — Youth Sports Performance, Olathe KS" />
     </div>
   </div>
 </header>
+
+<div class="fband">
+  <div class="wrap">
+    <div class="fb-head">
+      <div class="eyebrow">The physics</div>
+      <h2>The mark is Newton's second law, wearing a pyramid.</h2>
+    </div>
+    <div class="nb">
+      <div class="nb-row">
+        <div class="nb-n">1</div>
+        <div class="nb-eq"><span class="m">F</span><span class="op">&middot;</span><span class="m">&Delta;t</span><span class="op eq">=</span><span class="m">m</span><span class="op">&middot;</span><span class="m">&Delta;v</span></div>
+        <div class="nb-note"><b>Impulse&ndash;momentum theorem.</b> Force applied over time changes momentum. The whole of sprint acceleration, in five symbols.</div>
+      </div>
+      <div class="nb-op">&divide; m <span>divide both sides by the athlete's mass</span></div>
+      <div class="nb-row">
+        <div class="nb-n">2</div>
+        <div class="nb-eq"><span class="m">&Delta;v</span><span class="op eq">=</span><span class="frac"><span>F</span><span>m</span></span><span class="op">&middot;</span><span class="m">&Delta;t</span></div>
+        <div class="nb-note">A heavier athlete needs more force for the same change in speed. This is why force gets coached <b>relative to bodyweight</b>, not in absolute pounds.</div>
+      </div>
+      <div class="nb-op">F/m = a <span>and force over mass is acceleration</span></div>
+      <div class="nb-row is-final">
+        <div class="nb-n">3</div>
+        <div class="nb-eq"><span class="m big">V</span><span class="op eq">=</span><span class="m big">A</span><span class="op">&times;</span><span class="m big">T</span></div>
+        <div class="nb-note"><b>The academy mark.</b> Velocity, acceleration, time. Which is why the two at the base carry the one at the top: they are what produce it.</div>
+      </div>
+    </div>
+    <div class="fb-note">
+      <div class="curve">v(t) = V<sub>max</sub>&thinsp;(1 &minus; e<sup>&minus;t/&tau;</sup>)</div>
+      <p>Velocity does not rise in a straight line, it follows this curve. <b>&tau;</b> sets how hard an athlete accelerates, <b>V<sub>max</sub></b> sets where they top out, and two split times solve for both. That is what the first tool below does.</p>
+    </div>
+  </div>
+</div>
+
+<section class="toolsec" id="tools">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Free tools &middot; no signup</div>
+      <h2>Read your own athlete's numbers.</h2>
+      <p>The same models a sports scientist would use, running in your browser. Bring a stopwatch and a measured distance. Nothing is stored, nothing is sent, and you do not have to book anything to use them.</p>
+    </div>
+    <div class="tools">
+
+      <div class="tool">
+        <div class="toolhd"><h3>Sprint Profile</h3><span class="toolsrc">Samozino et al. 2016<a class="cite" href="#ref-1">1</a></span></div>
+        <p class="toolwhat">Two split times and a bodyweight give you top speed, how hard the athlete accelerates, and the force they put into the ground.</p>
+        <p class="toolhelp"><b>How to run it:</b> one all-out sprint from a standing start. Take a split at a short distance and again at a long one, e.g. <b>10 and 40 yards</b>. Both splits must come from the <b>same run</b>.</p>
+        <div class="toolin">
+          <label>Units<select id="sp_u"><option value="0.9144">yards</option><option value="1">meters</option></select></label>
+          <label>Bodyweight<span class="row"><input id="sp_m" type="number" step="0.1" placeholder="120" /><select id="sp_mu"><option value="0.45359">lb</option><option value="1">kg</option></select></span></label>
+          <label>Short distance<input id="sp_d1" type="number" step="any" placeholder="10" /></label>
+          <label>Time at short<input id="sp_t1" type="number" step="any" placeholder="1.90" /></label>
+          <label>Long distance<input id="sp_d2" type="number" step="any" placeholder="40" /></label>
+          <label>Time at long<input id="sp_t2" type="number" step="any" placeholder="5.20" /></label>
+        </div>
+        <button class="toolbtn" type="button" data-calc="profile">Build the profile</button>
+        <div class="toolout" id="sp_out"></div>
+      </div>
+
+      <div class="tool">
+        <div class="toolhd"><h3>Acceleration Check</h3><span class="toolsrc">Uniform acceleration &middot; d = &frac12;at&sup2;</span></div>
+        <p class="toolwhat">One split from a dead stop, turned into average acceleration and the speed reached at that line.</p>
+        <p class="toolhelp"><b>How to run it:</b> start from a <b>complete standstill</b>, no rolling start, and time to a single marked line. Short distances work best, ten to twenty yards.</p>
+        <div class="toolin">
+          <label>Units<select id="ac_u"><option value="0.9144">yards</option><option value="1">meters</option></select></label>
+          <label>Distance<input id="ac_d" type="number" step="any" placeholder="10" /></label>
+          <label>Time<input id="ac_t" type="number" step="any" placeholder="1.90" /></label>
+        </div>
+        <button class="toolbtn" type="button" data-calc="accel">Compute acceleration</button>
+        <div class="toolout" id="ac_out"></div>
+      </div>
+
+      <div class="tool">
+        <div class="toolhd"><h3>Flying Speed</h3><span class="toolsrc">Max velocity &middot; v = d / t</span></div>
+        <p class="toolwhat">True top speed, measured in a zone the athlete enters already at full pace, with the acceleration taken out.</p>
+        <p class="toolhelp"><b>How to run it:</b> give a <b>run-up of at least 20 yards</b>, then time a short flying zone, e.g. 10 yards. The clock starts as they enter the zone, not when they start running.</p>
+        <div class="toolin">
+          <label>Units<select id="fl_u"><option value="0.9144">yards</option><option value="1">meters</option></select></label>
+          <label>Zone length<input id="fl_d" type="number" step="any" placeholder="10" /></label>
+          <label>Zone time<input id="fl_t" type="number" step="any" placeholder="1.05" /></label>
+        </div>
+        <button class="toolbtn" type="button" data-calc="fly">Compute top speed</button>
+        <div class="toolout" id="fl_out"></div>
+      </div>
+
+      <div class="tool">
+        <div class="toolhd"><h3>Stride Mechanics</h3><span class="toolsrc">v = stride length &times; frequency</span></div>
+        <p class="toolwhat">Splits speed into its two parts, so you can see whether an athlete is short-striding or slow-turning-over.</p>
+        <p class="toolhelp"><b>How to run it:</b> film the run on a phone and <b>count every foot contact</b> across the timed distance. Both feet count. Left, right, left is three.</p>
+        <div class="toolin">
+          <label>Units<select id="st_u"><option value="0.9144">yards</option><option value="1">meters</option></select></label>
+          <label>Distance<input id="st_d" type="number" step="any" placeholder="30" /></label>
+          <label>Time<input id="st_t" type="number" step="any" placeholder="4.10" /></label>
+          <label>Foot contacts<input id="st_n" type="number" step="1" placeholder="18" /></label>
+        </div>
+        <button class="toolbtn" type="button" data-calc="stride">Split the speed</button>
+        <div class="toolout" id="st_out"></div>
+      </div>
+
+    </div>
+    <p class="verify">
+      Models as published &mdash;
+      <a href="https://pubmed.ncbi.nlm.nih.gov/25996964/" target="_blank" rel="noopener">Samozino et&nbsp;al., sprint force&ndash;velocity profiling</a>,
+      <a href="https://jbmorin.net/2017/12/13/a-spreadsheet-for-sprint-acceleration-force-velocity-power-profiling/" target="_blank" rel="noopener">Morin sprint FVP spreadsheet</a>.
+      Hand timing carries roughly a tenth of a second of error, so treat these as a baseline to re-test against, not a verdict.
+    </p>
+  </div>
+</section>
 
 <section class="method">
   <div class="wrap">
     <div class="sec-head">
       <div class="eyebrow">The method</div>
-      <h2>V. A. T.</h2>
-      <p>The academy mark is a three-part pyramid: one tier at the apex, two at the base, the A circled. What those letters stand for is Ted's to say, and it belongs on this page in his own words rather than anyone else's.</p>
+      <h2>Velocity. Acceleration. Time.</h2>
+      <p>Acceleration and top speed are not the same quality, they are not produced the same way, and they are not trained the same way. In elite athletes the biggest differences over short distances show up at two and five meters, and they track how well force is put into the ground horizontally.<a class="cite" href="#ref-2">2</a></p>
     </div>
     <div class="split">
       <div class="pyr-big">
@@ -326,30 +574,34 @@
           <text class="lt" id="l-a" x="55" y="128" font-size="38">A</text>
           <text class="lt" id="l-t" x="145" y="128" font-size="38">T</text>
         </svg>
+        <div class="eq"><b>V</b> <i>=</i> <b>A</b> <i>&times;</i> <b>T</b><span>velocity = acceleration &times; time</span></div>
       </div>
       <div class="tiers">
         <div class="tier-row" data-tier="v" tabindex="0">
           <div><div class="k">V</div><div class="pos">Apex</div></div>
           <div>
-            <h3>Alone at the top</h3>
-            <p>One tier, above the other two.</p>
-            <div style="margin-top:13px"><span class="fillin">Ted defines V</span></div>
+            <h3>Velocity</h3>
+            <p>Top speed. Reached past roughly thirty meters, running tall, where force turns vertical and the foot is on the ground for a fraction of a second. It is also the first thing fatigue takes: after a match, top-end velocity degrades more than acceleration does.<a class="cite" href="#ref-7">7</a></p>
+            <div class="how"><span class="lbl">How it is trained</span>Upright mechanics and flying runs, entered at speed rather than from a start. Big vertical force in very short ground contacts, a phase that responds differently to load than acceleration does.<a class="cite" href="#ref-5">5</a></div>
+            <div class="tag">NSPA C.S.A.C.</div>
           </div>
         </div>
         <div class="tier-row" data-tier="a" tabindex="0">
           <div><div class="k">A</div><div class="pos">Base left</div></div>
           <div>
-            <h3>The circled one</h3>
-            <p>The only letter ringed on the mark.</p>
-            <div style="margin-top:13px"><span class="fillin">Ted defines A</span></div>
+            <h3>Acceleration</h3>
+            <p>How quickly speed is gained. The first steps out of a stance, a cut or a stop. Force goes into the ground behind the athlete, at roughly forty-five degrees.</p>
+            <div class="how"><span class="lbl">How it is trained</span>Short repeated efforts inside the first ten to thirty meters, plus resisted work. Eight weeks of resisted sled training has been shown to improve 5&nbsp;m and 20&nbsp;m sprint times.<a class="cite" href="#ref-3">3</a> The coaching point is the direction of force, not the size of it.</div>
+            <div class="tag">NSPA C.S.A.C. &middot; NASM P.E.S.</div>
           </div>
         </div>
         <div class="tier-row" data-tier="t" tabindex="0">
           <div><div class="k">T</div><div class="pos">Base right</div></div>
           <div>
-            <h3>The other base tier</h3>
-            <p>Sits beside the A, same level.</p>
-            <div style="margin-top:13px"><span class="fillin">Ted defines T</span></div>
+            <h3>Time</h3>
+            <p>The clock the other two are measured against. Acceleration without a stopwatch is an opinion. With one it is a number that either moved or did not.</p>
+            <div class="how"><span class="lbl">How it is trained</span>Not a drill. A split is taken at the start of a block and taken again at the end, over the same distance, so progress is reported rather than claimed.</div>
+            <div class="tag">Measured, then re-measured</div>
           </div>
         </div>
       </div>
@@ -379,7 +631,7 @@
       <div class="bd">
         <div class="full">Certified Personal Trainer</div>
         <div class="decode">The accredited foundation &middot; programming &middot; safe progression</div>
-        <p>NASM's CPT is the NCCA-accredited base credential and the most widely recognised certification in fitness. It is the one that says a coach was examined on anatomy, program design and how to load a body safely, before ever handing a young athlete a workout.</p>
+        <p>NASM's CPT is the NCCA-accredited base credential and the most widely recognized certification in fitness. It is the one that says a coach was examined on anatomy, program design and how to load a body safely, before ever handing a young athlete a workout.</p>
       </div>
     </div>
 
@@ -397,7 +649,7 @@
       <div class="bd">
         <div class="full">Performance Enhancement Specialist</div>
         <div class="decode">Strength and conditioning built for a sport, not a gym</div>
-        <p>NASM's strength-and-conditioning track: plyometrics, speed, agility, resistance training and Olympic lifting, organised across a season rather than dropped in at random. It is what turns a number in the weight room into a faster first step in a real game.</p>
+        <p>NASM's strength-and-conditioning track: plyometrics, speed, agility, resistance training and Olympic lifting, organized across a season rather than dropped in at random. It is what turns a number in the weight room into a faster first step in a real game.</p>
       </div>
     </div>
 
@@ -409,10 +661,119 @@
   </div>
 </section>
 
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Inside a block</div>
+      <h2>Every one of those letters is a method, not a badge.</h2>
+      <p>Each credential is built on a published framework that a coach is examined on before they are awarded it. Below is what NSPA and NASM actually require behind each set of initials, in their own sequence. It is why a certified coach and an enthusiastic one are not the same purchase.</p>
+    </div>
+    <div class="stages">
+      <div class="stage">
+        <div class="sn">Stage 01</div>
+        <h3>Screen the movement</h3>
+        <div class="gov">NASM C.E.S.</div>
+        <p>NASM's Corrective Exercise Continuum is a fixed four-step order for anything the screen turns up.</p>
+        <ol class="chain">
+          <li><b>Inhibit</b> quiet the overactive tissue</li>
+          <li><b>Lengthen</b> restore the range that was lost</li>
+          <li><b>Activate</b> wake up what stopped working</li>
+          <li><b>Integrate</b> put it back into a real pattern</li>
+        </ol>
+        <p class="why">Stretching the sore part treats the symptom. This sequence goes after the cause, in that order, every time.</p>
+      </div>
+      <div class="stage">
+        <div class="sn">Stage 02</div>
+        <h3>Build the engine</h3>
+        <div class="gov">NASM C.P.T. &middot; P.E.S.</div>
+        <p>NASM's OPT model is a periodized progression through three levels, and an athlete earns the next one.</p>
+        <ol class="chain">
+          <li><b>Stabilization</b> can the pattern be held under control</li>
+          <li><b>Strength</b> add speed of execution and change of direction</li>
+          <li><b>Power</b> game speed, and drills that stop being predictable</li>
+        </ol>
+        <p class="why">Jump training follows the same ladder. Early on a landing is held for three to five seconds before the next rep. Later it becomes repetitive and reactive, because by then the landing is safe.</p>
+      </div>
+      <div class="stage">
+        <div class="sn">Stage 03</div>
+        <h3>Take it to the field</h3>
+        <div class="gov">NSPA C.S.A.C.</div>
+        <p>NSPA's speed course is built around four training targets, coached separately because they are different skills.</p>
+        <ol class="chain">
+          <li><b>Acceleration</b> horizontal force, the first ten to thirty meters</li>
+          <li><b>Max velocity</b> vertical force, tall posture, short contacts</li>
+          <li><b>Agility</b> cutting and changing direction without losing a step</li>
+          <li><b>Game speed</b> the same qualities when the drill stops being predictable</li>
+        </ol>
+        <p class="why">Speed that only shows up in a straight line on a turf lane was never the point. It has to survive a game.</p>
+      </div>
+    </div>
+    <p class="verify">
+      Methodology as published by the certifying bodies &mdash;
+      <a href="https://blog.nasm.org/ces/a-guide-to-nasms-corrective-exercise-continuum" target="_blank" rel="noopener">NASM Corrective Exercise Continuum</a>,
+      <a href="https://www.nasm.org/certified-personal-trainer/the-opt-model" target="_blank" rel="noopener">NASM OPT Model</a>,
+      <a href="https://nspa.org/certification/speedagility/" target="_blank" rel="noopener">NSPA Certified Speed &amp; Agility Coach</a>.
+    </p>
+  </div>
+</section>
+
+
+
+<section class="who">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Who it is for</div>
+      <h2>Every sport that is decided by a first step.</h2>
+      <p>Acceleration, movement quality and change of direction are the same physical qualities underneath every field and court sport. Which is why the training is not built around a sport. It is built around an athlete.</p>
+    </div>
+    <div class="sports">
+      <span>Football</span><span>Soccer</span><span>Basketball</span><span>Baseball</span>
+      <span>Softball</span><span>Volleyball</span><span>Track</span><span>Lacrosse</span>
+      <span>Wrestling</span><span>Tennis</span>
+    </div>
+    <div class="who-grid">
+      <div class="wc">
+        <div class="wn">One coach</div>
+        <p>Not a class you are enrolled into and not a rotation of staff. Ted holds the credentials, Ted runs the session, and Ted is the one who saw your athlete move in week one.</p>
+      </div>
+      <div class="wc">
+        <div class="wn">Boys and girls</div>
+        <p>Two sprinters on the academy mark, one of each, and that is deliberate. A meta-analysis of 26 trials in female adolescent team-sport athletes found large improvements in sprint and change-of-direction speed from exactly this kind of training.<a class="cite" href="#ref-4">4</a></p>
+      </div>
+      <div class="wc">
+        <div class="wn">Private, small group, or team</div>
+        <p>One athlete, a handful of teammates, or a full roster on a club or school schedule. The framework does not change, only how many are running it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="coach">
+  <div class="wrap split">
+    <div>
+      <div class="eyebrow">The coach</div>
+      <h2>Ted Johnson</h2>
+      <div style="font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--volt);margin:0 0 22px">Movement Specialist &middot; Owner</div>
+      <p>Ted runs KC's Sports Academy Youth Sports Performance in Olathe, coaching speed, movement quality and sport conditioning for young athletes across the Kansas City metro.</p>
+      <p>He is a <strong>certified speed coach through the National Sports Performance Association</strong> and holds three credentials from the <strong>National Academy of Sports Medicine</strong>: Certified Personal Trainer, Corrective Exercise Specialist and Performance Enhancement Specialist. That combination is deliberate. One covers how to make an athlete faster, one covers how to load a body safely, one covers how to find the movement fault first, and one covers how to build a season around all three.</p>
+      <p>In his own words, the academy develops young athletes "using adaptation and progression to promote efficiency and maximum effectiveness on the field or court."</p>
+      <p>Boys and girls, field sports and court sports. Team inquiries go to <a href="mailto:teams@kcssportsacademy.com" style="color:var(--volt)">teams@kcssportsacademy.com</a>.</p>
+    </div>
+    <div class="proof">
+      <div class="eyebrow">See the work</div>
+      <div class="big">968</div>
+      <div class="biglab">Followers on Instagram</div>
+      <p>Sessions, drills and athlete work, posted as it happens. The quickest way to see how Ted coaches before you book anything.</p>
+      <div class="hand">@kc_sports_academy</div>
+      <div style="margin-top:20px"><a class="btn btn--volt" href="https://www.instagram.com/kc_sports_academy/" target="_blank" rel="noopener">Watch a session<small>Opens Instagram</small></a></div>
+    </div>
+  </div>
+</section>
+
 <section class="book" id="book">
   <div class="wrap">
     <div class="sec-head">
-      <div class="eyebrow">Enquire</div>
+      <div class="eyebrow">Inquire</div>
       <h2>Request a place.</h2>
       <p>Tell Ted what your athlete is working toward and when you are available. He responds personally. Prefer to speak first? <a href="tel:+18166791642" style="color:var(--volt);font-weight:600">(816) 679-1642</a>.</p>
     </div>
@@ -475,27 +836,7 @@
   </div>
 </section>
 
-<section class="coach">
-  <div class="wrap split">
-    <div>
-      <div class="eyebrow">The coach</div>
-      <h2>Ted Johnson</h2>
-      <div style="font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--volt);margin:0 0 22px">Movement Specialist &middot; Owner</div>
-      <p>Ted runs KC's Sports Academy Youth Sports Performance in Olathe, coaching speed, movement quality and sport conditioning for young athletes across the Kansas City metro.</p>
-      <p>He is a <strong>certified speed coach through the National Sports Performance Association</strong> and holds three credentials from the <strong>National Academy of Sports Medicine</strong>: Certified Personal Trainer, Corrective Exercise Specialist and Performance Enhancement Specialist. That combination is deliberate. One covers how to make an athlete faster, one covers how to load a body safely, one covers how to find the movement fault first, and one covers how to build a season around all three.</p>
-      <p>In his own words, the academy develops young athletes "using adaptation and progression to promote efficiency and maximum effectiveness on the field or court."</p>
-      <p>Boys and girls, field sports and court sports. Team enquiries go to <a href="mailto:teams@kcssportsacademy.com" style="color:var(--volt)">teams@kcssportsacademy.com</a>.</p>
-    </div>
-    <div class="proof">
-      <div class="eyebrow">See the work</div>
-      <div class="big">968</div>
-      <div class="biglab">Followers on Instagram</div>
-      <p>Sessions, drills and athlete work, posted as it happens. The quickest way to see how Ted coaches before you book anything.</p>
-      <div class="hand">@kc_sports_academy</div>
-      <div style="margin-top:20px"><a class="btn btn--volt" href="https://www.instagram.com/kc_sports_academy/" target="_blank" rel="noopener">Watch a session<small>Opens Instagram</small></a></div>
-    </div>
-  </div>
-</section>
+
 
 <section class="visit">
   <div class="wrap split">
@@ -515,7 +856,7 @@
       <div class="info">
         <div class="row">
           <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg></div>
-          <div><dt>Address</dt><dd><a href="https://maps.google.com/?q=19000+W+158th+St+Olathe+KS+66062" target="_blank" rel="noopener">19000 W 158th St, Olathe, KS 66062</a><br><span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--volt);border:1px dashed rgba(50,187,241,.5);border-radius:6px;padding:4px 9px;display:inline-block;margin-top:8px">Suite number &mdash; Ted to confirm</span></dd></div>
+          <div><dt>Address</dt><dd><a href="https://maps.google.com/?q=19000+W+158th+St+Olathe+KS+66062" target="_blank" rel="noopener">19000 W 158th St, Olathe, KS 66062</a><br><span class="fillin" style="margin-top:9px">Suite number &mdash; Ted to confirm</span></dd></div>
         </div>
         <div class="row">
           <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L20 13l1 4v3a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1z"/></svg></div>
@@ -538,6 +879,55 @@
   </div>
 </section>
 
+<section class="refs" id="references">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">References</div>
+      <h2>Everything above, checkable.</h2>
+      <p>Every claim on this page about how speed works, and every model behind the tools, comes from peer-reviewed research or from the certifying bodies themselves. Findings are paraphrased in one line. Follow the DOI to the original.</p>
+    </div>
+    <ol class="reflist">
+      <li id="ref-1">
+        <span class="f">Validated a field method that derives horizontal force, velocity and power output in sprint running from split times and body mass, with under 5% bias against force-plate measurement. This is the model behind the Sprint Profile tool.</span>
+        <a class="evref" href="https://doi.org/10.1111/sms.12490" target="_blank" rel="noopener">Samozino P, Rabita G, Dorel S, et al. 2016, Scand J Med Sci Sports &middot; PMID 25996964 &nearr;</a>
+      </li>
+      <li id="ref-2">
+        <span class="f">In elite rugby athletes, the largest short-distance sprint differences appeared at 2 and 5 m, and were linked to the ability to generate high horizontal force and power.</span>
+        <a class="evref" href="https://doi.org/10.1123/ijspp.2014-0151" target="_blank" rel="noopener">Cross MR, Brughelli M, Brown SR, et al. 2015, Int J Sports Physiol Perform &middot; PMID 25310279 &nearr;</a>
+      </li>
+      <li id="ref-3">
+        <span class="f">Eight weeks of resisted sled training significantly improved 5 m and 20 m sprint performance, and athletes starting with higher horizontal force gained the most.</span>
+        <a class="evref" href="https://doi.org/10.1080/17461391.2020.1793004" target="_blank" rel="noopener">Escobar &Aacute;lvarez JA, Jim&eacute;nez-Reyes P, da Concei&ccedil;&atilde;o FA, Fuentes Garc&iacute;a JP. 2021, Eur J Sport Sci &middot; PMID 32627683 &nearr;</a>
+      </li>
+      <li id="ref-4">
+        <span class="f">Meta-analysis of 26 randomized trials covering 705 female adolescent team-sport athletes aged 10 to 19: both strength and plyometric training produced large improvements in linear sprint and change-of-direction speed.</span>
+        <a class="evref" href="https://doi.org/10.52082/jssm.2025.406" target="_blank" rel="noopener">Luo H, Zhu X, Nasharuddin NA, et al. 2025, J Sports Sci Med &middot; PMID 40469857 &nearr;</a>
+      </li>
+      <li id="ref-5">
+        <span class="f">Acceleration and maximum-velocity sprinting respond differently to added load: extra mass lengthened ground contact time and shortened flight time, confirming the two phases are mechanically distinct.</span>
+        <a class="evref" href="https://doi.org/10.1519/JSC.0000000000000354" target="_blank" rel="noopener">Cross MR, Brughelli ME, Cronin JB. 2014, J Strength Cond Res &middot; PMID 24378661 &nearr;</a>
+      </li>
+      <li id="ref-6">
+        <span class="f">Argues for profiling each athlete's individual speed characteristics up front and individualizing training to that profile, rather than prescribing from group averages.</span>
+        <a class="evref" href="https://doi.org/10.1007/s40279-021-01523-9" target="_blank" rel="noopener">Sandford GN, Laursen PB, Buchheit M. 2021, Sports Med &middot; PMID 34398445 &nearr;</a>
+      </li>
+      <li id="ref-7">
+        <span class="f">After a competitive soccer match, players' maximal velocity capability was impaired more than their horizontal force production during initial acceleration.</span>
+        <a class="evref" href="https://doi.org/10.1123/ijspp.2015-0567" target="_blank" rel="noopener">Nagahara R, Morin JB, Koido M. 2016, Int J Sports Physiol Perform &middot; PMID 26791405 &nearr;</a>
+      </li>
+    </ol>
+    <div class="refnote">
+      <p><b>Peer-reviewed sources retrieved from PubMed.</b> Findings are paraphrased; follow each DOI to the original study. Nothing here is medical advice, and none of these studies were conducted on KC's Sports Academy athletes.</p>
+      <p><b>Certification methodology</b> as published by the awarding bodies:
+        <a href="https://nspa.org/certification/speedagility/" target="_blank" rel="noopener">NSPA Certified Speed &amp; Agility Coach</a>,
+        <a href="https://blog.nasm.org/ces/a-guide-to-nasms-corrective-exercise-continuum" target="_blank" rel="noopener">NASM Corrective Exercise Continuum</a>,
+        <a href="https://www.nasm.org/certified-personal-trainer/the-opt-model" target="_blank" rel="noopener">NASM OPT Model</a>,
+        <a href="https://blog.nasm.org/fitness/building-athletic-speed-agility-and-quickness-with-the-nasm-pes" target="_blank" rel="noopener">NASM PES speed, agility and quickness</a>.
+      </p>
+    </div>
+  </div>
+</section>
+
 <section class="final">
   <div class="wrap">
     <div class="eyebrow">Olathe &middot; Overland Park &middot; Leawood &middot; Lenexa &middot; Gardner</div>
@@ -554,7 +944,7 @@
 <footer>
   <div class="wrap">
     <div class="top">
-      <span class="plate"><img src="assets/kcsa-logo.jpg" alt="KC's Sports Academy" /></span>
+      <img class="fbadge" src="assets/kcsa-badge.png" alt="KC's Sports Academy — Youth Sports Performance" />
       <div class="lks">
         <a href="tel:+18166791642">(816) 679-1642</a>
         <a href="mailto:tjohnson@kcssportsacademy.com">Email Ted</a>
@@ -703,6 +1093,133 @@
       show(4);
       $('#doneline').textContent = 'That did not send. Please call or text ' + PHONE + '.';
     });
+  });
+
+  /* ----------------------------------------------------------------
+     FREE TOOLS
+     Sprint profile uses the Samozino/Morin mono-exponential model:
+       x(t) = Vmax * (t + tau*e^(-t/tau) - tau)
+       v(t) = Vmax * (1 - e^(-t/tau))
+     Two (distance, time) pairs from one run give two equations, so
+     tau is found by bisection and Vmax falls out of it. Drag is not
+     modelled here, so F0 is the net horizontal figure, not the full
+     external force the published method reports.
+     ---------------------------------------------------------------- */
+  var num = function(id){ var e = $(id); var v = e ? parseFloat(e.value) : NaN; return isFinite(v) ? v : NaN; };
+  var sel = function(id){ var e = $(id); return e ? parseFloat(e.value) : 1; };
+  function out(id, html, isErr){
+    var e = $(id);
+    e.className = 'toolout on';
+    e.innerHTML = isErr ? '<div class="err">' + html + '</div>' : html;
+  }
+  function kv(label, val, unit){
+    return '<div class="kv"><span>' + label + '</span><b>' + val +
+           (unit ? '<em>' + unit + '</em>' : '') + '</b></div>';
+  }
+  var MS_TO_MPH = 2.2369362920544;
+
+  /* position predicted by the model at time t */
+  function modelX(vmax, tau, t){ return vmax * (t + tau * Math.exp(-t / tau) - tau); }
+  /* Vmax implied by a single (d,t) pair for a given tau */
+  function vmaxFor(d, t, tau){
+    var k = t + tau * Math.exp(-t / tau) - tau;
+    return k > 1e-9 ? d / k : NaN;
+  }
+
+  function solveProfile(d1, t1, d2, t2){
+    var f = function(tau){ return vmaxFor(d1, t1, tau) - vmaxFor(d2, t2, tau); };
+    var lo = 0.05, hi = 5.0, flo = f(lo), fhi = f(hi);
+    if (!isFinite(flo) || !isFinite(fhi) || flo * fhi > 0) return null;
+    for (var i = 0; i < 200; i++){
+      var mid = (lo + hi) / 2, fm = f(mid);
+      if (!isFinite(fm)) return null;
+      if (flo * fm <= 0) { hi = mid; fhi = fm; } else { lo = mid; flo = fm; }
+    }
+    var tau = (lo + hi) / 2;
+    var vmax = vmaxFor(d2, t2, tau);
+    if (!isFinite(vmax) || vmax <= 0 || tau <= 0) return null;
+    return { tau: tau, vmax: vmax };
+  }
+
+  var CALC = {
+    profile: function(){
+      var u = sel('#sp_u'), mu = sel('#sp_mu');
+      var d1 = num('#sp_d1') * u, t1 = num('#sp_t1');
+      var d2 = num('#sp_d2') * u, t2 = num('#sp_t2');
+      var m  = num('#sp_m') * mu;
+      if (![d1,t1,d2,t2,m].every(isFinite) || d1<=0 || d2<=0 || t1<=0 || t2<=0 || m<=0)
+        return out('#sp_out', 'Fill in both splits and a bodyweight.', true);
+      if (d2 <= d1 || t2 <= t1)
+        return out('#sp_out', 'The long split has to be further out and later than the short one.', true);
+      var r = solveProfile(d1, t1, d2, t2);
+      if (!r) return out('#sp_out', 'Those two splits do not describe one sprint. Check they came from the same run.', true);
+      var a0 = r.vmax / r.tau;            // initial acceleration, m/s^2
+      var f0 = m * a0;                    // net horizontal force at t=0, N
+      var pmax = f0 * r.vmax / 4;         // peak power from a linear F-V relationship
+      out('#sp_out',
+        kv('Top speed', r.vmax.toFixed(2), 'm/s') +
+        kv('Top speed', (r.vmax * MS_TO_MPH).toFixed(1), 'mph') +
+        kv('Initial acceleration', a0.toFixed(2), 'm/s&sup2;') +
+        kv('Relative force', a0.toFixed(2), 'N/kg') +
+        kv('Horizontal force', Math.round(f0), 'N') +
+        kv('Peak power', Math.round(pmax), 'W') +
+        kv('Tau (&tau;)', r.tau.toFixed(2), 's') +
+        '<div class="note">A smaller &tau; means a harder launch. A bigger V<sub>max</sub> means a higher ceiling. ' +
+        'Two athletes can run the same 40 and get there completely differently, which is the whole reason to profile ' +
+        'rather than just time.<a class="cite" href="#ref-6">6</a></div>');
+    },
+
+    accel: function(){
+      var u = sel('#ac_u'), d = num('#ac_d') * u, t = num('#ac_t');
+      if (![d,t].every(isFinite) || d<=0 || t<=0)
+        return out('#ac_out', 'Enter a distance and a time.', true);
+      var a = 2 * d / (t * t);      // from rest, uniform acceleration: d = 1/2 a t^2
+      var vAvg = d / t;             // average speed over the run: exactly true, no model needed
+      out('#ac_out',
+        kv('Average acceleration', a.toFixed(2), 'm/s&sup2;') +
+        kv('In g', (a / 9.80665).toFixed(2), 'g') +
+        kv('Average speed', vAvg.toFixed(2), 'm/s') +
+        kv('Average speed', (vAvg * MS_TO_MPH).toFixed(1), 'mph') +
+        '<div class="note">Average speed here is exact. The acceleration figure assumes it stays constant, ' +
+        'which in a real sprint it does not, so treat it as a like-for-like number against the same athlete ' +
+        'over the same distance rather than a true peak. For actual velocity at a given moment, use the ' +
+        'Sprint Profile above, which models the curve properly.</div>');
+    },
+
+    fly: function(){
+      var u = sel('#fl_u'), d = num('#fl_d') * u, t = num('#fl_t');
+      if (![d,t].every(isFinite) || d<=0 || t<=0)
+        return out('#fl_out', 'Enter a zone length and a zone time.', true);
+      var v = d / t;
+      out('#fl_out',
+        kv('Top speed', v.toFixed(2), 'm/s') +
+        kv('Top speed', (v * MS_TO_MPH).toFixed(1), 'mph') +
+        kv('Per 40 yards at this speed', (36.576 / v).toFixed(2), 's') +
+        '<div class="note">This is the cleanest top-speed number you can get with a stopwatch, because the ' +
+        'run-up removes acceleration from the measurement. The last figure is not a 40 time, it is how long ' +
+        '40 yards would take if the athlete held this speed the whole way.</div>');
+    },
+
+    stride: function(){
+      var u = sel('#st_u'), d = num('#st_d') * u, t = num('#st_t'), n = num('#st_n');
+      if (![d,t,n].every(isFinite) || d<=0 || t<=0 || n<=0)
+        return out('#st_out', 'Enter distance, time and the number of foot contacts.', true);
+      var v = d / t, sl = d / n, sf = n / t;
+      out('#st_out',
+        kv('Average speed', v.toFixed(2), 'm/s') +
+        kv('Stride length', sl.toFixed(2), 'm') +
+        kv('Stride frequency', sf.toFixed(2), 'Hz') +
+        kv('Check: length &times; frequency', (sl * sf).toFixed(2), 'm/s') +
+        '<div class="note">Those two multiply back to the speed, every time. Going faster means lengthening ' +
+        'the stride, quickening it, or not losing one while gaining the other, which is where the coaching is.</div>');
+    }
+  };
+
+  document.addEventListener('click', function(e){
+    var b = e.target.closest('[data-calc]');
+    if (!b) return;
+    var fn = CALC[b.getAttribute('data-calc')];
+    if (fn) fn();
   });
 
   /* pyramid: hovering a tier definition lights the matching tier */
