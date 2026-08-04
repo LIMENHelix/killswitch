@@ -161,10 +161,14 @@ Write the full sequence: 3 emails (day 1, 3, 10) and 3 texts (day 1, 3, 10), plu
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-8',
-        max_tokens: 2400,
+        model: 'claude-sonnet-5',
+        // Sonnet 5 runs ADAPTIVE THINKING when `thinking` is omitted (Opus 4.8 did
+        // not), and max_tokens caps thinking + output together. At the old 2400
+        // this JSON (3 emails + 3 texts) could truncate mid-object. Raised, and
+        // effort kept low: this is copywriting from a filled-in brief, not analysis.
+        max_tokens: 8000,
         system: SYSTEM,
-        output_config: { format: { type: 'json_schema', schema: SCHEMA } },
+        output_config: { format: { type: 'json_schema', schema: SCHEMA }, effort: 'low' },
         messages: [{ role: 'user', content: prompt }],
       }),
     });
