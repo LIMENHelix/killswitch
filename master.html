@@ -285,8 +285,14 @@ async function loadSites(){
   $('sTb').querySelectorAll('[data-edit]').forEach(b=>{
     b.onclick=async()=>{
       const slug=b.getAttribute('data-edit');
-      const full=await api('site-list');
-      openEditor((full.d.sites||[]).find(x=>x.slug===slug)||{slug});
+      // site-get, NOT site-list. The list is a summary (six fields); loading the
+      // editor from it left phone, address, hours, services and about blank, and
+      // saving then wrote those blanks over the customer's real site.
+      b.disabled=true;
+      const full=await api('site-get',{slug});
+      b.disabled=false;
+      if(!full.ok||!full.d.site){ alert('Could not load that website. Nothing has been changed.'); return; }
+      openEditor(full.d.site);
     };
   });
 }

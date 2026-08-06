@@ -8,7 +8,18 @@
 import { getAccounts, upsertAccount } from '../lib/store.js';
 import { onboardCustomer } from '../lib/onboard.js';
 import { panelToken } from '../lib/panel-auth.js';
-import { getSites, upsertSite, slugify } from '../lib/sites.js';
+import { getSites, getSite, upsertSite, slugify } from '../lib/sites.js';
+
+// Everything the website editor is allowed to write. A save applies ONLY the
+// keys it was actually sent, so a partial save is a partial update. This used to
+// pass all of them unconditionally, and site-list returns a summary rather than
+// the full record, so opening an existing customer and saving wrote blanks over
+// their phone, address, hours, services and about text. Use site-get to load.
+const SITE_FIELDS = [
+  'email', 'business', 'trade', 'tagline', 'phone', 'email_public',
+  'street', 'city', 'state', 'zip', 'about', 'accent', 'bookingUrl', 'payUrl',
+];
+const SITE_ARRAYS = ['hours', 'services', 'posts', 'modules'];
 
 const PRICE_LABEL = {
   price_1ToXlLPmxnF3rtBM5NRurfkt: 'Get Found on Google',
@@ -117,20 +128,26 @@ export default async function handler(req, res) {
       res.status(200).json({ ok: true, sites });
       return;
     }
+    // The FULL record, for loading into the editor. Without this the editor can
+    // only ever be used to create, because everything it did not receive it
+    // silently blanked on the next save.
+    if (action === 'site-get') {
+      const s = await getSite(body.slug);
+      if (!s) { res.status(404).json({ error: 'not_found' }); return; }
+      res.status(200).json({ ok: true, site: s });
+      return;
+    }
+
     if (action === 'site-save') {
       const p = body.site || {};
       if (!p.business && !p.slug) { res.status(400).json({ error: 'business_required' }); return; }
-      const saved = await upsertSite({
-        slug: slugify(p.slug || p.business), email: p.email, business: p.business, trade: p.trade,
-        tagline: p.tagline, phone: p.phone, email_public: p.email_public,
-        street: p.street, city: p.city, state: p.state, zip: p.zip,
-        about: p.about, accent: p.accent, bookingUrl: p.bookingUrl, payUrl: p.payUrl,
-        hours: Array.isArray(p.hours) ? p.hours : undefined,
-        services: Array.isArray(p.services) ? p.services : undefined,
-        posts: Array.isArray(p.posts) ? p.posts : undefined,
-        modules: Array.isArray(p.modules) ? p.modules : undefined,
-        published: p.published === undefined ? undefined : !!p.published,
-      });
+
+      const patch = { slug: slugify(p.slug || p.business) };
+      for (const f of SITE_FIELDS) if (Object.prototype.hasOwnProperty.call(p, f)) patch[f] = p[f];
+      for (const f of SITE_ARRAYS) if (Array.isArray(p[f])) patch[f] = p[f];
+      if (p.published !== undefined) patch.published = !!p.published;
+
+      const saved = await upsertSite(patch);
       res.status(200).json({ ok: true, site: saved, url: '/s/' + saved.slug });
       return;
     }
