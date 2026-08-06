@@ -12,6 +12,7 @@ import { MONTHLY, PRICE_TO_PHASE } from '../lib/prices.js';
 import { stripeGet, stripePost, stripeDelete } from '../lib/stripe.js';
 import { notifyOperator, labelPhases } from '../lib/notify.js';
 import { syncModules } from '../lib/sites.js';
+import { ensureLinked, liveSubs } from '../lib/entitle.js';
 
 const LIVE_STATUSES = ['active', 'trialing', 'past_due'];
 
@@ -26,10 +27,23 @@ export default async function handler(req, res) {
   const token = String(body.t || '');
   if (!verifyPanel(email, token)) { res.status(401).json({ error: 'unauthorized' }); return; }
 
-  const account = await getAccount(email);
-  if (!account) { res.status(404).json({ error: 'not_found' }); return; }
+  const found = await getAccount(email);
+  if (!found) { res.status(404).json({ error: 'not_found' }); return; }
 
   const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitchwebsites.com';
+
+  // Repair a payment that never got recorded. A customer who paid on Stripe and
+  // then closed the tab never hit success_url, so link() below never ran and this
+  // account still looks free while their card is being charged. Reading their
+  // panel now finds it and attaches it. Costs nothing on an account already linked.
+  const account = await ensureLinked(found, host);
+
+  // If that repaired the link, the site never got told what they bought either.
+  // Catch it up here, once, on the first panel load after the lost payment.
+  if (account.stripeCustomerId && account.stripeCustomerId !== found.stripeCustomerId) {
+    try { await syncModules(email, Object.keys(itemsByPhase(await liveSubs(account.stripeCustomerId)))); }
+    catch (err) { console.error('[switch] repair site sync', err); }
+  }
   const action = body.action || 'state';
 
   try {
@@ -43,12 +57,8 @@ export default async function handler(req, res) {
   }
 }
 
-async function liveSubs(customerId) {
-  if (!customerId) return [];
-  const r = await stripeGet('/subscriptions?customer=' + encodeURIComponent(customerId) + '&status=all&limit=100');
-  const data = (r && Array.isArray(r.data)) ? r.data : [];
-  return data.filter((s) => LIVE_STATUSES.includes(s.status));
-}
+// liveSubs now lives in lib/entitle.js so the panel, the support desk and the
+// master board all decide "is this customer paying for X" the same way.
 
 function itemsByPhase(subs) {
   const map = {};
@@ -143,9 +153,16 @@ async function applyChanges(account, on, host, email) {
   // so flipping a switch here changes what renders at /s/<slug>. No rebuild, no
   // deploy, no manual fulfilment. Wrapped because a site record may not exist yet
   // (a customer can have billing before we have built their page).
+  //
+  // PENDING CHECKOUT IS NOT PAID. `url` is set only when we had to send them to
+  // Stripe, meaning those additions have not been paid for yet. This used to sync
+  // them anyway, so booking and the AI assistant went live the instant someone
+  // clicked Save, and abandoning the checkout left them switched on free forever.
+  // They turn on when link() confirms the payment, not before.
   try {
-    const liveNow = new Set([...desired].filter((p) => !turnedOff.includes(p)));
-    await syncModules(email, [...liveNow]);
+    const pending = url ? new Set(toAdd) : new Set();
+    const liveNow = [...desired].filter((p) => !turnedOff.includes(p) && !pending.has(p));
+    await syncModules(email, liveNow);
   } catch (err) { console.error('[switch] site sync', err); }
 
   // Tell the operator. Awaited so it actually runs before the serverless function
@@ -182,6 +199,15 @@ async function link(account, sessionId, host) {
   if (isNew) {
     await upsertAccount({ email: account.email, stripeCustomerId: customer });
   }
+  // Payment is confirmed, so NOW the modules they bought may render on their
+  // site. applyChanges deliberately did not sync them, because at that point they
+  // had only reached the checkout page.
+  try {
+    const subs = await liveSubs(customer);
+    const live = Object.keys(itemsByPhase(subs));
+    await syncModules(account.email, live);
+  } catch (err) { console.error('[switch] link site sync', err); }
+
   // This is the moment money actually starts: checkout came back paid.
   if (isNew && sess.payment_status === 'paid') {
     const who = account.name || account.site || account.email;

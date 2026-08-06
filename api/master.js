@@ -5,7 +5,7 @@
 //
 // MRR/switch data is read live from Stripe on each load, so it is always
 // accurate with no sync to maintain. Free accounts (no Stripe) show plan P0.
-import { getAccounts } from '../lib/store.js';
+import { getAccounts, upsertAccount } from '../lib/store.js';
 import { onboardCustomer } from '../lib/onboard.js';
 import { panelToken } from '../lib/panel-auth.js';
 import { getSites, upsertSite, slugify } from '../lib/sites.js';
@@ -44,16 +44,21 @@ const MAX_PAGES = 25; // 2,500 subscriptions
 
 async function stripeByCustomer() {
   const out = {};
+  const byEmail = {}; // lowercased email -> stripe customer id, for self-healing
   let startingAfter = null, pages = 0, truncated = false;
 
   for (;;) {
-    const q = '/subscriptions?status=active&limit=100' + (startingAfter ? '&starting_after=' + startingAfter : '');
+    // expand the customer so we get their email in the SAME call. That is what
+    // lets us repair an account whose payment was never linked, at no extra cost.
+    const q = '/subscriptions?status=active&limit=100&expand[]=data.customer' + (startingAfter ? '&starting_after=' + startingAfter : '');
     const subs = await stripeGet(q);
     if (!subs || !Array.isArray(subs.data)) break;
 
     for (const s of subs.data) {
       const cust = typeof s.customer === 'string' ? s.customer : (s.customer && s.customer.id);
       if (!cust) continue;
+      const cEmail = (s.customer && typeof s.customer === 'object' && s.customer.email) ? String(s.customer.email).trim().toLowerCase() : '';
+      if (cEmail && !byEmail[cEmail]) byEmail[cEmail] = cust;
       const rec = (out[cust] = out[cust] || { mrr: 0, switches: [], renewsAt: null, endsAt: null });
       const items = (s.items && s.items.data) || [];
       for (const it of items) {
@@ -77,6 +82,7 @@ async function stripeByCustomer() {
   }
 
   Object.defineProperty(out, '__truncated', { value: truncated, enumerable: false });
+  Object.defineProperty(out, '__byEmail', { value: byEmail, enumerable: false });
   return out;
 }
 
@@ -133,6 +139,26 @@ export default async function handler(req, res) {
     const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitchwebsites.com';
     const map = await getAccounts();
     const byCust = await stripeByCustomer();
+
+    // SELF-HEAL. A customer who paid and then closed the tab never came back to
+    // success_url, so api/switch.js link() never ran and their account still says
+    // free while Stripe charges them. Stripe just told us which emails hold an
+    // active subscription, so any account that matches one and is not linked gets
+    // linked now, before this page renders a number that would be wrong.
+    const repaired = [];
+    for (const k of Object.keys(map)) {
+      const a = map[k];
+      if (a.stripeCustomerId) continue;
+      const cust = byCust.__byEmail[String(a.email || '').trim().toLowerCase()];
+      if (!cust) continue;
+      a.stripeCustomerId = cust;
+      repaired.push(upsertAccount({ email: a.email, stripeCustomerId: cust }));
+    }
+    if (repaired.length) {
+      await Promise.all(repaired);
+      console.log('[master] linked', repaired.length, 'account(s) whose payment was never recorded');
+    }
+
     const accounts = Object.keys(map).map((k) => {
       const a = map[k];
       const s = (a.stripeCustomerId && byCust[a.stripeCustomerId]) || null;

@@ -201,7 +201,7 @@
 
   <section class="s">
     <div class="s-lbl">Ask for a change</div>
-    <div class="edits-lock" id="editsLock" hidden><b>Site changes are part of the Care Plan.</b> Turn on the <b>Care Plan</b> in your modules above, then request changes anytime, hours, text, photos, new pages, and we make them. <a id="editsTurnOn">Turn it on &rarr;</a></div>
+    <div class="edits-lock" id="editsLock" hidden><b>Your website is yours and it stays free.</b> Having us make changes to it, hours, text, photos, new pages, is what the <b>Care Plan</b> covers ($99/mo), and small edits are included in <b>Hosting &amp; Maintenance</b> ($29/mo). Switch either one on above and ask for anything, anytime. <a id="editsTurnOn">Turn on Care Plan &rarr;</a></div>
     <div class="aibox">
       <div class="aibox-head">
         <div class="t"><svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" aria-hidden="true"><path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/><path d="M50 22 V52"/></svg>Change my site</div>
@@ -226,7 +226,8 @@
 
 <script>
 (function(){
-  var WEB3FORMS_KEY = 'fd068540-d6c4-44e3-9f5b-3d46da7c44ed';
+  // Change requests no longer go straight to Web3Forms from the browser, so the
+  // key is gone from this page. They go through /api/support, signed in.
   var CALENDLY = 'https://calendly.com/chrishubbel72/30min';
 
   // ---- billing date: 1st of next month ----
@@ -321,10 +322,17 @@
     if(on){ document.body.classList.add('zap'); setTimeout(function(){ document.body.classList.remove('zap'); }, 220); }
   }
 
-  // ---- gate the "Ask for a change" box behind the Care Plan switch (P11) ----
+  // ---- gate the "Ask for a change" box behind a plan that buys hand edits ----
+  // The free site is a generic template they own outright. A person editing it is
+  // labour, and that is what Care Plan (P11) and Hosting & Maintenance (P4) sell.
+  // Must match CHANGE_PHASES in lib/entitle.js, which enforces the same rule
+  // server-side. This is only the UI half; the API refuses either way.
+  var CHANGE_PHASES = ['P11','P4'];
   function editsActive(){
-    var m = MODULES.find(function(x){ return x.id==='P11'; });
-    return !!(m && m.state==='active');
+    return CHANGE_PHASES.some(function(id){
+      var m = MODULES.find(function(x){ return x.id===id; });
+      return !!(m && (m.state==='active' || m.state==='ending'));
+    });
   }
   function gateEdits(){
     var box = document.querySelector('.aibox');
@@ -507,9 +515,17 @@
     busy = true;
     var t = bubble('typing…', 'bot typing');
     try{
-      var res = await fetch('/api/support', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages: history }) });
+      var res = await fetch('/api/support', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'ask', e:acctEmail, t:acctToken, messages: history }) });
       var data = await res.json().catch(function(){ return {}; });
       t.remove();
+      // The server enforces the same rule the lock above shows. If it says no,
+      // say so plainly instead of pretending a request was taken.
+      if(res.status===403 && data.error==='not_entitled'){
+        bubble("Changes to your site are covered by the Care Plan, or small edits by Hosting & Maintenance. Switch either one on above and I'll take your request straight away.", 'bot');
+        gateEdits();
+        busy = false; return;
+      }
       var reply = (res.ok && data.reply) ? data.reply : "Got it, I've noted that. Tap “Send this request to my builder” below when you're ready and a real person will take it from here.";
       bubble(reply, 'bot'); history.push({ role:'assistant', content:reply });
     }catch(e){
@@ -526,15 +542,18 @@
     if(!reqs.length){ dnote.style.color='var(--red)'; dnote.textContent='Type your change above first.'; return; }
     dnote.style.color=''; dnote.textContent='Sending to your builder…'; deliver.disabled=true;
     try{
-      var body = {
-        access_key: WEB3FORMS_KEY,
-        subject: 'Killswitch Websites · site change request',
-        from_name: 'Customer panel',
-        site: document.getElementById('siteName').textContent,
-        message: 'Change request(s) from the customer panel:\n\n- ' + reqs.join('\n- ')
-      };
-      var r = await fetch('https://api.web3forms.com/submit', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-      if(r.ok){ dnote.style.color='var(--ok)'; dnote.textContent='Sent. Your builder will make the change and email you when it’s live.'; }
+      // Goes through our own API now, not straight to Web3Forms. The old path
+      // sent the request WITHOUT the customer's email, so a work order arrived
+      // with no way to tell who it was from. This one is signed in.
+      var r = await fetch('/api/support', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'submit', e:acctEmail, t:acctToken, requests: reqs }) });
+      var d = await r.json().catch(function(){ return {}; });
+      if(r.status===403 && d.error==='not_entitled'){
+        dnote.style.color='var(--amber)';
+        dnote.textContent='Switch on the Care Plan (or Hosting & Maintenance) above and this sends straight through.';
+        gateEdits(); deliver.disabled=false; return;
+      }
+      if(r.ok && d.ok){ dnote.style.color='var(--ok)'; dnote.textContent='Sent. Your builder will make the change and email you when it’s live.'; }
       else throw new Error();
     }catch(e){ dnote.style.color='var(--red)'; dnote.textContent='Could not send. Email us and we’ll take care of it.'; deliver.disabled=false; }
   });
