@@ -8,6 +8,7 @@
 import { getAccounts, upsertAccount } from '../lib/store.js';
 import { onboardCustomer } from '../lib/onboard.js';
 import { panelToken } from '../lib/panel-auth.js';
+import { identify, isOwner } from '../lib/roles.js';
 import { getSites, getSite, upsertSite, slugify } from '../lib/sites.js';
 
 // Everything the website editor is allowed to write. A save applies ONLY the
@@ -104,8 +105,10 @@ export default async function handler(req, res) {
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
   if (!body || typeof body !== 'object') body = {};
 
-  const authed = [process.env.ADMIN_KEY, process.env.SWITCH_TOKEN].filter(Boolean).includes(body.token);
-  if (!authed) { res.status(401).json({ error: 'unauthorized' }); return; }
+  // OWNER ONLY, stated in one place. This screen carries every customer's email,
+  // their revenue, and a working private portal link that flips their billing, so
+  // a rep key must never open it even if one is added to the env by mistake.
+  if (!isOwner(identify(body.token))) { res.status(401).json({ error: 'unauthorized' }); return; }
 
   const action = body.action || 'list';
 

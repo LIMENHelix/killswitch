@@ -113,6 +113,40 @@
   .rbt td.bad{color:var(--red)}
   .rb .warn{background:var(--metal);border-left:3px solid var(--amber);border-radius:0 8px 8px 0;padding:11px 14px;margin:12px 0 0}
   .msg{font-size:.85rem;color:var(--mute);min-height:18px;margin-top:8px}
+
+  /* owner-only controls, hidden for a rep sign-in */
+  .ownerOnly[hidden]{display:none!important}
+  .whoami{font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.1em;
+    text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--metal);
+    color:var(--mute2);border:1px solid var(--line)}
+  .whoami.rep{color:var(--blue);border-color:var(--blue)}
+  td.owner-c{color:var(--mute2);font-size:.8rem}
+  td.owner-c.me{color:var(--go)}
+
+  /* call script */
+  .scriptbtn{background:var(--metal);color:var(--amber);border:1px solid var(--line);
+    border-radius:7px;padding:5px 10px;font:inherit;font-size:.76rem;cursor:pointer;white-space:nowrap}
+  .scriptbtn:hover{border-color:var(--amber)}
+  .scriptbtn.cold{color:var(--mute2)}
+  .modal{position:fixed;inset:0;background:rgba(4,4,6,.78);display:none;z-index:50;
+    align-items:flex-start;justify-content:center;padding:5vh 16px;overflow-y:auto}
+  .modal.open{display:flex}
+  .sheet{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    max-width:720px;width:100%;padding:22px 26px 26px}
+  .sheet h2{font-family:"Archivo",sans-serif;font-size:1.15rem;margin-bottom:2px}
+  .sheet .who{color:var(--mute2);font-size:.83rem;margin-bottom:16px}
+  .sheet .warn{background:var(--metal);border-left:3px solid var(--red);border-radius:0 8px 8px 0;
+    padding:11px 14px;margin-bottom:16px;color:var(--mute);font-size:.86rem}
+  .sheet .warn.ok{border-left-color:var(--go)}
+  .step{border-top:1px solid var(--line);padding:13px 0}
+  .step:first-of-type{border-top:none}
+  .step .n{font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--amber);margin-bottom:6px}
+  .step p{color:var(--ink);font-size:.95rem;line-height:1.6}
+  .step p.say{border-left:2px solid var(--line);padding-left:13px}
+  .sheet .foot{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px;
+    border-top:1px solid var(--line);padding-top:16px}
+  .sheet .foot .n{color:var(--mute2);font-size:.8rem}
 </style>
 </head>
 <body>
@@ -127,8 +161,11 @@
 
   <div id="app">
     <div class="top">
-      <div><h1>Outreach autopilot</h1><div class="sub">Mail runs on your approval, then work the calls. Board updates live as postcards go out.</div></div>
-      <button class="btn ghost sm" id="signout">Sign out</button>
+      <div><h1 id="pageTitle">Outreach autopilot</h1><div class="sub" id="pageSub">Mail runs on your approval, then work the calls. Board updates live as postcards go out.</div></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="whoami" id="whoami" hidden></span>
+        <button class="btn ghost sm" id="signout">Sign out</button>
+      </div>
     </div>
 
     <details class="runbook">
@@ -139,9 +176,16 @@
         <table class="rbt">
           <tr><td><a href="/" target="_blank">killswitchwebsites.com</a></td><td>The public site. The form on the front page is how new customers ask for a free website.</td></tr>
           <tr><td><a href="/admin" target="_blank">/admin</a></td><td>This page. The postcard machine and the lead board.</td></tr>
-          <tr><td><a href="/master" target="_blank">/master</a></td><td>Customer accounts, live monthly revenue, and where you onboard someone after you build their site.</td></tr>
+          <tr><td><a href="/master" target="_blank">/master</a></td><td>Customer accounts, live monthly revenue, and where you onboard someone after you build their site. <b>Owner sign-in only.</b></td></tr>
           <tr><td><a href="/panel" target="_blank">/panel</a></td><td>The customer's own screen. They reach it by a private link we email them. There is no password.</td></tr>
         </table>
+
+        <h3>Two kinds of sign-in</h3>
+        <table class="rbt">
+          <tr><td>Owner</td><td>Everything: postage, the autopilot, /master, customer billing, onboarding.</td></tr>
+          <tr><td>Rep</td><td>This call list only. Open a script, dial, log the outcome, take a note. A rep cannot spend postage, arm the mailer, or open /master or a customer's panel. Each rep has their <b>own</b> key, so whoever moves a lead is stamped on it in the Owner column, and taking one person's key away does not touch anyone else's.</td></tr>
+        </table>
+        <p class="warn">What the customer buys is the <b>work</b>, not the website. The site is a generic template, free forever, theirs to keep. Having us change it by hand is the <b>Care Plan</b> ($99/mo), and small edits come with <b>Hosting &amp; Maintenance</b> ($29/mo). A free customer asking for changes gets shown that offer, not a work order. Never promise free edits on a call.</p>
 
         <h3>How you find out something happened</h3>
         <table class="rbt">
@@ -160,7 +204,7 @@
           <li>Check email for the two subjects above.</li>
           <li><b>Free site request:</b> build their site, then go to <a href="/master" target="_blank">/master</a> &rarr; Onboard a customer &rarr; enter their email. That emails them a $0 receipt and their private panel link.</li>
           <li><b>Change request:</b> make the change, then reply to them yourself.</li>
-          <li>Work the call list on this page. Every business with a demo already built has a live link in the call script.</li>
+          <li>Work the call list below. Every row has a <b>Script</b> button: it opens the five-step call, that shop's own hook, and the follow-up text ready to copy. Rows that say <b>Script + demo</b> already have a site built, so that call is a delivery. Rows that say only <b>Script</b> do not, and the script says so at the top rather than letting you promise a site that does not exist. Filter the list by <b>Has a demo built</b> to work the deliveries first.</li>
           <li><b>Once a week</b>, open <a href="/master" target="_blank">/master</a> to see the whole picture: who is paying, monthly revenue, and the Renews / Ends column. A date in red means that customer is winding down and will stop at the end of their cycle.</li>
         </ol>
 
@@ -194,7 +238,7 @@
     <section class="board">
       <div class="board-head">
         <div class="live"><span class="dot"></span> <span id="liveLabel">Live · auto-refreshing</span></div>
-        <div class="spend">Spend to date<b id="spend">$0</b></div>
+        <div class="spend ownerOnly" id="spendWrap">Spend to date<b id="spend">$0</b></div>
       </div>
       <div class="prog-top">
         <span class="pct" id="pct">0%</span>
@@ -206,7 +250,7 @@
     </section>
 
     <!-- AUTOPILOT CONTROL -->
-    <section class="autopanel">
+    <section class="autopanel ownerOnly" id="autopanel">
       <div class="ap-head">
         <div class="ap-title">Mailing autopilot <span class="ap-state off" id="apState">OFF</span></div>
         <label class="switch"><input type="checkbox" id="apEnabled"><span class="slider"></span></label>
@@ -228,21 +272,40 @@
       <select id="fState"><option value="">All states</option></select>
       <select id="fStatus"><option value="">All mail states</option></select>
       <select id="fStage"><option value="">All stages</option></select>
+      <select id="fOwner"><option value="">Anyone's</option><option value="__me">Mine</option><option value="__none">Unclaimed</option></select>
+      <select id="fDemo"><option value="">Demo or not</option><option value="1">Has a demo built</option><option value="0">No demo yet</option></select>
     </div>
-    <div class="toolbar">
+    <div class="toolbar ownerOnly" id="mailbar">
       <button class="btn ghost sm" id="selAll">Select all shown &amp; mailable</button>
       <button class="btn ghost sm" id="selNone">Clear</button>
       <span class="n" id="selCount">0 selected</span>
       <button class="btn sm" id="mailBtn" disabled>📮 Approve &amp; mail selected</button>
-      <span class="n" id="count"></span>
     </div>
+    <div class="toolbar"><span class="n" id="count"></span></div>
     <div class="msg" id="msg"></div>
     <div class="wrapt" id="wrapt"><table><thead><tr>
-      <th style="cursor:default"><input type="checkbox" id="chkAll"></th>
+      <th class="ownerOnly" id="thChk" style="cursor:default"><input type="checkbox" id="chkAll"></th>
       <th data-k="trade">Trade</th><th data-k="name">Business</th><th data-k="phone">Phone</th>
-      <th data-k="address">Address</th><th data-k="status">Mail</th>
-      <th style="cursor:default">Stage</th><th style="cursor:default">Notes</th>
+      <th style="cursor:default">Call</th>
+      <th data-k="address">Address</th><th class="ownerOnly" data-k="status">Mail</th>
+      <th style="cursor:default">Stage</th><th data-k="owner">Owner</th><th style="cursor:default">Notes</th>
     </tr></thead><tbody id="tb"></tbody></table></div>
+  </div>
+
+  <!-- CALL SCRIPT -->
+  <div class="modal" id="scriptModal">
+    <div class="sheet">
+      <h2 id="scTitle"></h2>
+      <div class="who" id="scWho"></div>
+      <div class="warn" id="scWarn"></div>
+      <div id="scSteps"></div>
+      <div class="foot">
+        <button class="btn sm" id="scCopyText">Copy the follow-up text</button>
+        <button class="btn ghost sm" id="scCalled">Mark called</button>
+        <button class="btn ghost sm" id="scClose">Close</button>
+        <span class="n" id="scNote"></span>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -250,9 +313,58 @@
 const $=id=>document.getElementById(id);
 let KEY=localStorage.getItem('ks-admin-key')||'';
 let LEADS=[], sortK='trade', sortDir=1;
+let ROLE='owner', ME='operator';
 const sel=new Set();
 const STAGES=[['','— stage'],['called','Called'],['responded','Responded'],['won','Won'],['dead','Dead']];
 const COST=0.94;
+
+/* ---------------------------------------------------------------------------
+   THE CALL SCRIPT.
+   The runbook told the caller "every business with a demo already built has a
+   live link in the call script", and there was no call script on this page and
+   no demo link, so a rep arrived with a phone number and nothing to say. The
+   scripts lived in _outreach/delivery-call-scripts.md, which .vercelignore keeps
+   off the deployed site entirely.
+
+   The shape below is the one from that file. The per-shop hooks and owner names
+   are the verified ones from _outreach/kc-verified-strike-list.csv. Anything not
+   in this map still gets the shape, but is clearly marked as a COLD call rather
+   than a delivery, because the whole close depends on the site already existing.
+   Add a shop here when you build its demo.
+--------------------------------------------------------------------------- */
+const DEMO_BASE='/demos/';
+const CALLS={
+  'auto tech services center':{who:'Kendall',demo:'auto-tech-shawnee',
+    hook:"you've got the best reputation in Shawnee, 70-plus reviews, and when somebody Googles 'auto repair Shawnee' they can't find you, just a generic NAPA page",
+    skeptic:"Don't take my word for it. Let me text it, you look at your own shop's site, then argue with me."},
+  'autobots garage':{who:'Steve',demo:'autobots-overland-park',
+    hook:"you've got a 4.9, that's near-perfect, almost nobody has that, and your whole website is a Facebook page. All that reputation and nowhere to send it",
+    skeptic:"Fair. Let me text it, it's your shop, your 4.9, your services. Look, then decide."},
+  "dave's trusted auto":{who:'Dave',demo:'daves-trusted-auto-grandview',
+    hook:"you've got seventy-plus reviews at 4.6, that's a serious reputation, and there's no website to put it on, so when somebody new Googles you all that trust just isn't there to see",
+    skeptic:"The name's literally Dave's Trusted. Let me text it and earn the word. Look first, then tell me no."},
+  "charlie's brake & muffler":{who:'Charlie',demo:'charlies-brake-muffler-lenexa',
+    hook:"you've been the brake-and-muffler shop in Lenexa for fifteen-plus years, great reviews, and there's no website at all, so somebody searching 'brakes near me' in Lenexa never lands on you",
+    skeptic:"Fifteen years and no site to show for it. Let me text it, you look at your own shop, then argue."},
+  'lee auto repair':{who:'Lee',demo:'lee-auto-repair-kansas-city',
+    hook:"you've had a following on 31st Street for decades, sixty-plus reviews, and there's no website, so the younger customers who only search online never even find you",
+    skeptic:"You've earned the reputation the hard way. Let me text you the site so it finally shows up online."},
+  "amilcar's auto repair":{who:'Amilcar',demo:'amilcars-auto-repair-independence',
+    hook:"you've been running honest work on US-24 for a long time, good reviews, and there's no website, so anybody who searches instead of asking a neighbour never finds you",
+    skeptic:"No pressure at all. Let me text it, you look at your own shop's site, and if it's not better than nothing, delete it."},
+  "b.n.s. (bored n' stroked) auto repair":{who:'Jace',
+    hook:"you own a domain but it's sitting on a placeholder template with fake content on it, which makes a real business look fake to anyone who checks"},
+  'nieman auto & tire repair':{who:'Geoffrey',
+    hook:"you're an established tire-and-auto shop with warm reviews and no website at all"},
+  'mobile mechanic kc':{
+    hook:"you're competing with a dozen identically-named KC mobile mechanics and there's no site to tell you apart"},
+  'dudes automotive':{
+    hook:"seventy years of lineage being built on Facebook and TikTok with no site to anchor it"},
+};
+function callInfo(l){
+  const k=String(l.name||'').toLowerCase().trim();
+  return CALLS[k]||null;
+}
 
 async function api(action,extra){
   const r=await fetch('/api/admin',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -269,15 +381,34 @@ function inQueue(r){return hasAddr(r)&&!isMailed(r)&&!isBad(r)}
 function mailState(r){return isMailed(r)?'mailed':isBad(r)?'bad_address':hasAddr(r)?'queued':'noaddr'}
 
 function showLogin(m){ $('app').style.display='none'; $('login').style.display='block'; $('loginErr').textContent=m||''; }
+
+// A rep sign-in gets the call list and nothing that spends money or touches a
+// customer. The server enforces this too (lib/roles.js); hiding the controls
+// just stops anyone being invited to click something that will 403.
+function applyRole(){
+  const rep = ROLE==='rep';
+  document.querySelectorAll('.ownerOnly').forEach(el=>{ el.hidden = rep; });
+  const w=$('whoami'); w.hidden=false;
+  w.textContent = rep ? ('Rep · '+ME) : 'Owner';
+  w.className = 'whoami'+(rep?' rep':'');
+  if(rep){
+    $('pageTitle').textContent='Call list';
+    $('pageSub').textContent='Work the list, open the script, log what happened. Postage and customer billing are not on this sign-in, on purpose.';
+  }
+}
+
 async function boot(){
   if(!KEY){ showLogin(); return; }
   const res=await api('list');
-  if(res.status===401){ showLogin('Wrong admin key.'); return; }
+  if(res.status===401){ showLogin('That key was not recognised.'); return; }
   if(res.status===503){ showLogin(res.d.message||'Store not configured yet.'); return; }
   if(!res.ok){ showLogin('Error: '+(res.d.error||res.status)); return; }
   LEADS=res.d.leads||[];
+  ROLE=res.d.role||'owner'; ME=res.d.name||'';
   $('login').style.display='none'; $('app').style.display='block';
-  fillFilters(); render(); loadCfg();
+  applyRole();
+  fillFilters(); render();
+  if(ROLE==='owner') loadCfg();
 }
 
 // ---- autopilot config ----
@@ -326,13 +457,27 @@ function fillFilters(){
     .forEach(([v,l])=>$('fStatus').insertAdjacentHTML('beforeend',`<option value="${v}">${l}</option>`));
   STAGES.slice(1).forEach(([v,l])=>$('fStage').insertAdjacentHTML('beforeend',`<option value="${v}">${l}</option>`));
 }
+function ownerMatch(r){
+  const v=$('fOwner').value;
+  if(!v) return true;
+  if(v==='__me') return (r.owner||'')===ME;
+  if(v==='__none') return !r.owner;
+  return true;
+}
+function demoMatch(r){
+  const v=$('fDemo').value;
+  if(!v) return true;
+  const has=!!(callInfo(r)&&callInfo(r).demo);
+  return v==='1' ? has : !has;
+}
 function filtered(){
   const q=$('q').value.toLowerCase();
   return LEADS.filter(r=>(!q||(r.name||'').toLowerCase().includes(q))
     &&(!$('fTrade').value||r.trade===$('fTrade').value)
     &&(!$('fState').value||r.state===$('fState').value)
     &&(!$('fStatus').value||mailState(r)===$('fStatus').value)
-    &&(!$('fStage').value||(r.stage||'')===$('fStage').value))
+    &&(!$('fStage').value||(r.stage||'')===$('fStage').value)
+    &&ownerMatch(r)&&demoMatch(r))
     .sort((a,b)=>String(a[sortK==='address'?'city':sortK]||'').localeCompare(String(b[sortK==='address'?'city':sortK]||''))*sortDir);
 }
 
@@ -361,17 +506,22 @@ function render(){
   const list=filtered();
   $('count').textContent=list.length.toLocaleString()+' shown';
   const wt=$('wrapt'), sc=wt.scrollTop;
+  const rep=ROLE==='rep';
   $('tb').innerHTML=list.map(r=>{
     const ms=mailState(r), stg=r.stage||'';
     const canSel=inQueue(r);
     const tel=r.phone?`<a href="tel:${esc(r.phone)}">${esc(r.phone)}</a>`:'';
     const opts=STAGES.map(([v,l])=>`<option value="${v}" ${stg===v?'selected':''}>${l}</option>`).join('');
+    const ci=callInfo(r);
+    const own=r.owner||'';
     return `<tr>
-      <td><input type="checkbox" class="rc" data-id="${esc(r.id)}" ${sel.has(r.id)?'checked':''} ${canSel?'':'disabled'}></td>
+      ${rep?'':`<td><input type="checkbox" class="rc" data-id="${esc(r.id)}" ${sel.has(r.id)?'checked':''} ${canSel?'':'disabled'}></td>`}
       <td>${esc(r.trade)}</td><td class="name">${esc(r.name)}</td><td>${tel}</td>
+      <td><button class="scriptbtn${ci&&ci.demo?'':' cold'}" data-script="${esc(r.id)}">${ci&&ci.demo?'Script + demo':'Script'}</button></td>
       <td>${esc(addr(r))}</td>
-      <td><span class="pill ${ms}">${ms==='bad_address'?'bad addr':ms==='noaddr'?'no addr':ms}</span></td>
+      ${rep?'':`<td><span class="pill ${ms}">${ms==='bad_address'?'bad addr':ms==='noaddr'?'no addr':ms}</span></td>`}
       <td><select class="stage s-${stg} " data-stage="${esc(r.id)}">${opts}</select></td>
+      <td class="owner-c${own&&own===ME?' me':''}">${esc(own||'—')}</td>
       <td class="notes-c"><input class="note" data-note="${esc(r.id)}" value="${esc(r.notes||'')}" placeholder="notes..."></td>
     </tr>`;
   }).join('');
@@ -384,12 +534,17 @@ function updSel(){ $('selCount').textContent=sel.size+' selected'; $('mailBtn').
 $('loginBtn').onclick=async()=>{ KEY=$('key').value.trim(); localStorage.setItem('ks-admin-key',KEY); boot(); };
 $('key').onkeydown=e=>{ if(e.key==='Enter') $('loginBtn').click(); };
 $('signout').onclick=()=>{ localStorage.removeItem('ks-admin-key'); KEY=''; showLogin(); };
-['q','fTrade','fState','fStatus','fStage'].forEach(id=>$(id).oninput=render);
+['q','fTrade','fState','fStatus','fStage','fOwner','fDemo'].forEach(id=>$(id).oninput=render);
 document.querySelectorAll('th[data-k]').forEach(th=>th.onclick=()=>{const k=th.dataset.k;sortDir=(k===sortK)?-sortDir:1;sortK=k;render();});
 $('tb').addEventListener('change',async e=>{
   if(e.target.classList.contains('rc')){ const id=e.target.dataset.id; e.target.checked?sel.add(id):sel.delete(id); updSel(); return; }
   if(e.target.dataset.stage){ const id=e.target.dataset.stage; const r=LEADS.find(x=>x.id===id);
-    if(r){ r.stage=e.target.value; await api('update',{id,stage:r.stage}); render(); } }
+    if(r){ r.stage=e.target.value;
+      const res=await api('update',{id,stage:r.stage});
+      // The server stamps whoever first moved a lead as its owner. Take that
+      // back so the Owner column is the server's answer, not a local guess.
+      if(res.ok&&res.d.meta&&res.d.meta.owner) r.owner=res.d.meta.owner;
+      render(); } }
 });
 $('tb').addEventListener('blur',async e=>{
   if(e.target.dataset.note){ const id=e.target.dataset.note; const r=LEADS.find(x=>x.id===id);
@@ -435,6 +590,77 @@ $('apRun').onclick=async()=>{
   else $('msg').textContent='Error: '+(r.d.error||r.status);
 };
 
+/* ---- the call script ---- */
+let scLead=null, scText='';
+function stepHtml(n,label,body,say){
+  return `<div class="step"><div class="n">${n} · ${esc(label)}</div><p class="${say?'say':''}">${body}</p></div>`;
+}
+function openScript(id){
+  const r=LEADS.find(x=>x.id===id); if(!r) return;
+  scLead=r;
+  const ci=callInfo(r);
+  const contact=(ci&&ci.who)||'the owner';
+  const where=[r.city,r.state].filter(Boolean).join(' ');
+  const trade=(r.trade||'shop').toLowerCase();
+  const demoUrl=(ci&&ci.demo)?(location.origin+DEMO_BASE+ci.demo):'';
+
+  $('scTitle').textContent=r.name||'This shop';
+  $('scWho').textContent=[trade,where,r.phone].filter(Boolean).join(' · ');
+
+  // The close depends on the site ALREADY EXISTING. If it does not, saying step
+  // three is a lie, so say that here rather than let someone read it off a card.
+  const w=$('scWarn');
+  if(demoUrl){
+    w.className='warn ok';
+    w.innerHTML='A site is already built for this shop, so this is a <b>delivery, not a pitch</b>. Open it on your phone before you dial and check it loads: <a href="'+esc(demoUrl)+'" target="_blank" rel="noopener">'+esc(demoUrl)+'</a>';
+  } else {
+    w.className='warn';
+    w.innerHTML='<b>No site has been built for this shop yet.</b> Step 3 below is not true for them, so do not say it. Either get the demo built first, or treat this as a cold call and offer to build one.';
+  }
+
+  const hook=(ci&&ci.hook)||('you\'re a '+trade+(where?(' in '+where):'')+' and there\'s no real website for people to find');
+  const deliver=demoUrl
+    ? 'So I already built you a real website. It\'s live, it\'s yours, free, you own it, no contract.'
+    : 'So here\'s my offer: I\'ll build you a real website, free, yours to keep, no contract.';
+
+  $('scSteps').innerHTML=[
+    stepHtml(1,'Disarm',`"Hi, is this ${esc(contact)}? My name's ${esc(ME==='operator'?'Chris':ME)}, I run a shop called Killswitch Websites. I'll be straight with you, this is a sales call, you can hang up and I won't take it personally. Thirty seconds?"`,true),
+    stepHtml(2,'Their hook, the one true thing',`"Here's why I called <i>you</i>: ${esc(hook)}."`,true),
+    stepHtml(3,'Deliver',`"${esc(deliver)}"`,true),
+    stepHtml(4,'The catch, before they ask',`"The catch, before you ask: the add-ons are nineteen to twenty-nine bucks a month each, optional, off unless you flip them on. If you never do, you keep a free site and I lose the bet."`,true),
+    stepHtml(5,'Zero-risk close',`"Can I text you the link right now?"`,true),
+    ci&&ci.skeptic?stepHtml('IF','they push back',`"${esc(ci.skeptic)}"`,true):'',
+    stepHtml('AFTER','yes, text it',demoUrl
+      ? 'Send it while you are still on the phone. Use the copy button below, then set the stage.'
+      : 'Take their number and get the site built before you promise a link.',false),
+  ].join('');
+
+  scText=demoUrl
+    ? `${r.name} - here's the site I built you, yours free: ${demoUrl}\nEverything on it is editable and it's yours to keep. The only things that ever cost anything are Google and online booking, $19/mo each, and they're off unless you say so. - Killswitch Websites`
+    : '';
+  $('scCopyText').disabled=!scText;
+  $('scNote').textContent='';
+  $('scriptModal').classList.add('open');
+}
+function closeScript(){ $('scriptModal').classList.remove('open'); scLead=null; }
+$('tb').addEventListener('click',e=>{ const id=e.target.dataset&&e.target.dataset.script; if(id) openScript(id); });
+$('scClose').onclick=closeScript;
+$('scriptModal').addEventListener('click',e=>{ if(e.target===$('scriptModal')) closeScript(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeScript(); });
+$('scCopyText').onclick=async()=>{
+  if(!scText) return;
+  try{ await navigator.clipboard.writeText(scText); $('scNote').textContent='Copied. Paste it into a text message.'; }
+  catch(err){ $('scNote').textContent='Could not copy automatically. Select the link above and send it.'; }
+};
+$('scCalled').onclick=async()=>{
+  if(!scLead) return;
+  scLead.stage='called';
+  const res=await api('update',{id:scLead.id,stage:'called'});
+  if(res.ok&&res.d.meta&&res.d.meta.owner) scLead.owner=res.d.meta.owner;
+  $('scNote').textContent='Marked called'+(scLead.owner?(', owned by '+scLead.owner):'')+'.';
+  render();
+};
+
 // live auto-refresh (skip if typing a note or holding a dropdown open)
 async function refresh(){
   if(!KEY||$('app').style.display==='none') return;
@@ -443,7 +669,7 @@ async function refresh(){
   const res=await api('list');
   if(res.ok){ LEADS=res.d.leads||[]; render();
     const t=new Date(); $('liveLabel').textContent='Live · updated '+t.toLocaleTimeString(); }
-  loadCfg();
+  if(ROLE==='owner') loadCfg();
 }
 setInterval(refresh,20000);
 

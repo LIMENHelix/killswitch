@@ -7,13 +7,14 @@
 // Env: ADMIN_KEY or SWITCH_TOKEN (auth), KS_PANEL_SECRET (link signing),
 //      RESEND_API_KEY + optional KS_FROM_EMAIL (the receipt email).
 import { onboardCustomer } from '../lib/onboard.js';
+import { identify, isOwner } from '../lib/roles.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
 
+  // Owner only: this mints a customer account and emails them a portal link.
   const token = (req.query && req.query.token) || '';
-  const authed = [process.env.ADMIN_KEY, process.env.SWITCH_TOKEN].filter(Boolean).includes(token);
-  if (!authed) { res.status(401).json({ error: 'unauthorized' }); return; }
+  if (!isOwner(identify(token))) { res.status(401).json({ error: 'unauthorized' }); return; }
 
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }

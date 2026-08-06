@@ -1,37 +1,66 @@
-// Killswitch Websites admin API. Gated by ADMIN_KEY (falls back to SWITCH_TOKEN).
+// Killswitch Websites admin API. TWO roles, see lib/roles.js.
+//
+//   owner (ADMIN_KEY / SWITCH_TOKEN) -- everything
+//   rep   (REP_KEYS "name:key,...")  -- read the board, record what happened
+//
+// A rep can work the call list and log the outcome. A rep CANNOT spend postage,
+// arm the autopilot, reseed the list, or reach /master, /api/signup or the
+// customer portal links. Before this there was one key for all of it, so the
+// credential a commissioned caller needs was also the credential that spends
+// money and opens every customer's billing.
+//
 // Actions (POST {action, token, ...}):
-//   list   -> all leads
-//   seed   -> {leads:[...]} bulk load (one-time, from _outreach/seed_kv.py)
-//   update -> {id, status?, notes?} update one lead
-//   mail   -> {ids:[...]} send a postcard to each via Lob (server-side, manual approval)
-// Nothing mails unless you POST action:mail with explicit ids. Human-in-the-loop.
+//   list    -> all leads, merged with per-lead stage/notes/owner  (both roles)
+//   config  -> autopilot settings, read only                      (both roles)
+//   update  -> {id, stage?, notes?} record a call outcome         (both roles)
+//   setconfig / run-autopilot / mail / seed                       (owner only)
+//
+// Nothing mails unless the OWNER posts action:mail with explicit ids.
 
-import { configured, getLeads, saveLeads, getConfig, saveConfig } from '../lib/store.js';
+import { configured, getLeads, saveLeads, getConfig, saveConfig, getLeadMeta, setLeadMeta } from '../lib/store.js';
 import { lobSend, runAutopilot, spentToDate, COST } from '../lib/mailer.js';
+import { identify, isOwner, anyKeyConfigured } from '../lib/roles.js';
+
+const OWNER_ONLY = new Set(['setconfig', 'run-autopilot', 'mail', 'seed']);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).json({ error: 'method' }); return; }
-  const KEYS = [process.env.ADMIN_KEY, process.env.SWITCH_TOKEN].filter(Boolean);
-  if (!KEYS.length) { res.status(503).json({ error: 'no_auth_configured' }); return; }
+  if (!anyKeyConfigured()) { res.status(503).json({ error: 'no_auth_configured' }); return; }
 
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
   body = body || {};
-  const provided = body.token || req.headers['x-admin-key'];
-  if (!KEYS.includes(provided)) { res.status(401).json({ error: 'unauthorized' }); return; }
+
+  const who = identify(body.token || req.headers['x-admin-key']);
+  if (!who) { res.status(401).json({ error: 'unauthorized' }); return; }
   if (!configured()) { res.status(503).json({ error: 'no_store', message: 'Add an Upstash KV store to this Vercel project.' }); return; }
 
   const action = body.action;
+  if (OWNER_ONLY.has(action) && !isOwner(who)) {
+    res.status(403).json({
+      error: 'forbidden',
+      message: 'That is an owner action. Your sign-in can work the call list and log outcomes, but not spend postage or change the mailing settings.',
+    });
+    return;
+  }
+
   try {
     if (action === 'list') {
-      res.status(200).json({ ok: true, leads: await getLeads() }); return;
+      const [leads, meta] = await Promise.all([getLeads(), getLeadMeta()]);
+      // Per-lead notes live in their own hash now. Fall back to whatever is still
+      // on the lead itself so nothing written before this change disappears.
+      const merged = leads.map((l) => {
+        const m = meta[l.id];
+        return m ? { ...l, ...m } : l;
+      });
+      res.status(200).json({ ok: true, leads: merged, role: who.role, name: who.name }); return;
     }
     // Deliberately does NOT read the lead list. /admin polls this every minute and
     // the leads blob is ~600 KB, so reading it here would double Upstash egress for
     // a number the page can already derive from the leads it just fetched. The
     // authoritative spend check lives in setconfig, which runs only on a click.
     if (action === 'config') {
-      res.status(200).json({ ok: true, config: await getConfig() }); return;
+      res.status(200).json({ ok: true, config: await getConfig(), role: who.role }); return;
     }
     if (action === 'setconfig') {
       const cur = await getConfig();
@@ -66,15 +95,29 @@ export default async function handler(req, res) {
       res.status(200).json({ ok: true, count: leads.length }); return;
     }
     if (action === 'update') {
-      const leads = await getLeads();
-      const l = leads.find((x) => x.id === body.id);
-      if (l) {
-        if (body.status !== undefined) l.status = body.status;
-        if (body.stage !== undefined) l.stage = body.stage;
-        if (body.notes !== undefined) l.notes = body.notes;
-        await saveLeads(leads);
+      // Writes one hash field, not the whole 600 KB lead list, so two people
+      // working different leads cannot overwrite each other any more.
+      const patch = {};
+      if (body.stage !== undefined) patch.stage = body.stage;
+      if (body.notes !== undefined) patch.notes = body.notes;
+      // Whoever moves a lead owns it. This is what makes commission a number
+      // instead of an argument. First toucher keeps it unless the owner reassigns.
+      if (body.stage !== undefined) {
+        const existing = (await getLeadMeta())[body.id];
+        if (!existing || !existing.owner) patch.owner = who.name;
       }
-      res.status(200).json({ ok: true, lead: l || null }); return;
+      if (isOwner(who) && body.owner !== undefined) patch.owner = body.owner;
+
+      const saved = await setLeadMeta(body.id, patch);
+
+      // Mail state still belongs to the lead record itself, and only the owner
+      // can change it.
+      if (isOwner(who) && body.status !== undefined) {
+        const leads = await getLeads();
+        const l = leads.find((x) => x.id === body.id);
+        if (l) { l.status = body.status; await saveLeads(leads); }
+      }
+      res.status(200).json({ ok: true, meta: saved }); return;
     }
     if (action === 'mail') {
       const ids = new Set(body.ids || []);

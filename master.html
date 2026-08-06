@@ -206,9 +206,11 @@ function showLogin(m){ $('app').style.display='none'; $('login').style.display='
 /* ---------------- customer website editor ---------------- */
 // Which modules exist, and whether each one actually changes the page. Anything
 // marked bo (back-office) is billed but renders nothing, and says so.
+// P10 is deliberately absent: it has no price in lib/prices.js, so api/switch.js
+// filters it out and ticking it here would silently do nothing.
 var MODS=[['P1','Search listing',0],['P2','Updates & posts',0],['P3','Online booking',0],
   ['P7','Pay online',0],['P8','Analytics',0],['P9','24/7 AI assistant',0],
-  ['P4','Hosting',1],['P5','CRM',1],['P6','Automation',1],['P10','AI sales agent',1],['P11','Care plan',1]];
+  ['P4','Hosting',1],['P5','CRM',1],['P6','Automation',1],['P11','Care plan',1]];
 var REPS={hours:['d','h'],services:['name','desc'],posts:['title','body']};
 var REPPH={hours:['Mon to Fri','8am to 6pm'],services:['Brakes','Pads, rotors, inspection'],posts:['Winter offer','Free battery test']};
 var sites=[], editing=null;

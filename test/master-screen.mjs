@@ -1,0 +1,97 @@
+// Verifies the OTHER half of the editor fix in a real browser: clicking Edit must
+// fill the form from the full record, not from the six-field summary.
+import http from 'node:http';
+import fs from 'node:fs';
+import { spawn } from 'node:child_process';
+import path from 'node:path';
+
+const FULL = {
+  slug: 'test-shop', business: 'Test Shop', email: 'shop@example.com', trade: 'auto repair',
+  phone: '816-555-0101', street: '123 Main St', city: 'Lenexa', state: 'KS', zip: '66215',
+  about: 'Family run since 1998.', tagline: 'Brakes done right', accent: '#12703C',
+  bookingUrl: '', payUrl: '', email_public: '',
+  hours: [{ d: 'Mon to Fri', h: '8am to 6pm' }],
+  services: [{ name: 'Brakes', desc: 'Pads and rotors' }],
+  posts: [], modules: ['P0', 'P3'], published: true,
+};
+const SUMMARY = { slug: FULL.slug, business: FULL.business, email: FULL.email, trade: FULL.trade, published: true, modules: FULL.modules };
+let sawSiteGet = false, saved = null;
+
+const server = http.createServer((req, res) => {
+  if (req.url.startsWith('/api/master')) {
+    let b = ''; req.on('data', (c) => { b += c; });
+    req.on('end', () => {
+      const body = JSON.parse(b || '{}');
+      res.setHeader('content-type', 'application/json');
+      if (body.action === 'site-list') return res.end(JSON.stringify({ ok: true, sites: [SUMMARY] }));
+      if (body.action === 'site-get') { sawSiteGet = true; return res.end(JSON.stringify({ ok: true, site: FULL })); }
+      if (body.action === 'site-save') { saved = body.site; return res.end(JSON.stringify({ ok: true, site: { ...FULL, ...body.site } })); }
+      return res.end(JSON.stringify({ ok: true, accounts: [], totals: { customers: 0, paying: 0, mrr: 0 }, stripe: true }));
+    });
+    return;
+  }
+  res.setHeader('content-type', 'text/html');
+  res.end(fs.readFileSync('C:/Users/Chris/killswitch/master.html'));
+});
+await new Promise((r) => server.listen(0, r));
+const PORT = server.address().port;
+
+const CHROME = ['C:/Program Files/Google/Chrome/Application/chrome.exe',
+  'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'].find((p) => fs.existsSync(p));
+if (!CHROME) { console.log('Chrome not found'); process.exit(2); }
+const chrome = spawn(CHROME, ['--headless=new', '--remote-debugging-port=0', '--no-first-run',
+  '--no-default-browser-check', '--disable-gpu', '--user-data-dir=' + path.join(process.env.TEMP, 'ks-cdp-m' + PORT), 'about:blank'],
+  { stdio: ['ignore', 'ignore', 'pipe'] });
+const wsUrl = await new Promise((resolve, reject) => {
+  let buf = ''; const t = setTimeout(() => reject(new Error('no debug port')), 20000);
+  chrome.stderr.on('data', (d) => { buf += d; const m = buf.match(/ws:\/\/[^\s]+/); if (m) { clearTimeout(t); resolve(m[0]); } });
+});
+const ws = new WebSocket(wsUrl);
+await new Promise((r) => ws.addEventListener('open', r));
+let id = 0; const waiting = new Map(); const errors = []; let sessionId = null;
+ws.addEventListener('message', (ev) => {
+  const m = JSON.parse(ev.data);
+  if (m.id && waiting.has(m.id)) { waiting.get(m.id)(m); waiting.delete(m.id); }
+  if (m.method === 'Runtime.exceptionThrown') errors.push(m.params.exceptionDetails.text);
+});
+const send = (method, params = {}, sid = sessionId) => new Promise((res) => {
+  const n = ++id; waiting.set(n, res); ws.send(JSON.stringify({ id: n, method, params, ...(sid ? { sessionId: sid } : {}) }));
+});
+const { result: t } = await send('Target.createTarget', { url: 'about:blank' }, null);
+({ result: { sessionId } } = await send('Target.attachToTarget', { targetId: t.targetId, flatten: true }, null));
+await send('Runtime.enable'); await send('Page.enable');
+const evaluate = async (e) => (await send('Runtime.evaluate', { expression: e, returnByValue: true })).result.result.value;
+
+await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/master` });
+await new Promise((r) => setTimeout(r, 1000));
+await evaluate(`localStorage.setItem('ks-admin-key','k'); location.reload();`);
+await new Promise((r) => setTimeout(r, 1600));
+
+let pass = 0, fail = 0;
+const check = (n, c, d) => { if (c) { console.log('  PASS  ' + n); pass++; } else { console.log('  FAIL  ' + n + (d ? '  <- ' + d : '')); fail++; } };
+
+console.log('\nMASTER website editor');
+check('no javascript errors', errors.length === 0, errors.join(' | '));
+check('the site list rendered', (await evaluate(`document.querySelectorAll('#sTb [data-edit]').length`)) === 1);
+
+await evaluate(`document.querySelector('#sTb [data-edit]').click()`);
+await new Promise((r) => setTimeout(r, 600));
+check('Edit calls site-get, not site-list', sawSiteGet);
+check('phone is filled from the full record', (await evaluate(`document.getElementById('f_phone').value`)) === '816-555-0101');
+check('address is filled', (await evaluate(`document.getElementById('f_city').value`)) === 'Lenexa');
+check('about text is filled', (await evaluate(`document.getElementById('f_about').value`)) === 'Family run since 1998.');
+check('hours repeater is populated', (await evaluate(`document.querySelectorAll('#r_hours .rep').length`)) === 1);
+check('services repeater is populated', (await evaluate(`document.querySelectorAll('#r_services .rep').length`)) === 1);
+
+// change one field and save, the way a rep would
+await evaluate(`document.getElementById('f_tagline').value='Brakes done right, fast'; document.getElementById('sSave').click();`);
+await new Promise((r) => setTimeout(r, 600));
+check('save carries the phone number back', saved && saved.phone === '816-555-0101', JSON.stringify(saved && saved.phone));
+check('save carries the address back', saved && saved.city === 'Lenexa' && saved.zip === '66215');
+check('save carries hours and services back', saved && saved.hours.length === 1 && saved.services.length === 1);
+check('the edit itself landed', saved && saved.tagline === 'Brakes done right, fast');
+check('P10 is gone from the module list', !(await evaluate(`document.getElementById('f_mods').textContent`)).includes('P10'));
+
+console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
+chrome.kill(); server.close();
+process.exit(fail ? 1 : 0);

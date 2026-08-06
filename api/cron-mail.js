@@ -2,6 +2,7 @@
 // vercel.json). It self-gates: does nothing unless autopilot is ON and under
 // the daily cap and budget. Also callable manually with the admin token.
 import { runAutopilot } from '../lib/mailer.js';
+import { identify, isOwner } from '../lib/roles.js';
 
 export const config = { maxDuration: 300 };
 
@@ -14,7 +15,8 @@ export default async function handler(req, res) {
   const auth = req.headers.authorization || '';
   const token = (req.query && req.query.token) || '';
   const okCron = !!secret && auth === `Bearer ${secret}`;
-  const okAdmin = [process.env.ADMIN_KEY, process.env.SWITCH_TOKEN].filter(Boolean).includes(token);
+  // Owner only on the manual path: this spends real postage.
+  const okAdmin = isOwner(identify(token));
   if (!okCron && !okAdmin) { res.status(401).json({ error: 'unauthorized' }); return; }
 
   try {

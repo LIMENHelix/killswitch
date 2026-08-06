@@ -1,6 +1,10 @@
 _archive
 _playbook
 _outreach
+# Regression tests. `vercel --prod` uploads the whole working tree, so without
+# this line they would be served as public files. Run them locally:
+#   node test/api.mjs && node test/admin-screen.mjs && node test/master-screen.mjs
+test/
 # Operator automation control surface - internal Claude Code config, never deployed.
 .claude/
 # The six speculative auto-shop demos below are now DEPLOYED on purpose:
