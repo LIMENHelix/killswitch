@@ -147,11 +147,13 @@
         <table class="rbt">
           <tr><td class="ok">Email</td><td><b>Someone wants a free website.</b> Subject starts with &#128276; FREE SITE request. Their business name, phone and email are in it.</td></tr>
           <tr><td class="ok">Email</td><td><b>An existing customer wants a change to their site.</b> Subject is &ldquo;Killswitch Websites &middot; site change request&rdquo;.</td></tr>
-          <tr><td class="bad">Nothing</td><td><b>A customer switched a paid module ON.</b> No email is sent. You only see it in Stripe, or by opening /master.</td></tr>
-          <tr><td class="bad">Nothing</td><td><b>A customer switched a paid module OFF.</b> Same. No email. Check Stripe or /master.</td></tr>
-          <tr><td class="bad">Nothing</td><td><b>Autopilot hit its budget ceiling.</b> No email, and it switches itself off. You find out by opening this page and seeing OFF.</td></tr>
+          <tr><td class="ok">Email</td><td><b>A customer switched a paid module ON.</b> Subject &ldquo;Switch change&rdquo;. It says whether billing has already started, or whether they only reached the Stripe checkout and have yet to pay.</td></tr>
+          <tr><td class="ok">Email</td><td><b>A customer paid for the first time.</b> Subject starts with PAID. This is the moment they become a paying customer.</td></tr>
+          <tr><td class="ok">Email</td><td><b>A customer switched a paid module OFF.</b> Subject &ldquo;Switch OFF&rdquo;. It keeps working until the end of the cycle they already paid for, then stops.</td></tr>
+          <tr><td class="ok">Email</td><td><b>Autopilot hit its budget ceiling and stopped itself.</b> The email states what you have spent, what the ceiling was, and the exact minimum needed to start it again.</td></tr>
+          <tr><td class="ok">Email</td><td><b>A booking came in</b> through a customer&rsquo;s website. The shop owner is emailed too.</td></tr>
         </table>
-        <p class="warn">Because of the three rows above, <b>open /master once a week</b> even if no email arrives. That is currently the only way to catch someone starting or stopping a paid module.</p>
+        <p class="warn">Every money event now emails you, so there is no weekly check to remember. Two things are still worth knowing: the emails are <b>notifications, not a record</b>, so /master remains the place to see who is actually paying and what renews when; and if an email ever fails to send, the switch still works &mdash; notifications can never block a customer.</p>
 
         <h3>What to do each day</h3>
         <ol>
@@ -159,6 +161,7 @@
           <li><b>Free site request:</b> build their site, then go to <a href="/master" target="_blank">/master</a> &rarr; Onboard a customer &rarr; enter their email. That emails them a $0 receipt and their private panel link.</li>
           <li><b>Change request:</b> make the change, then reply to them yourself.</li>
           <li>Work the call list on this page. Every business with a demo already built has a live link in the call script.</li>
+          <li><b>Once a week</b>, open <a href="/master" target="_blank">/master</a> to see the whole picture: who is paying, monthly revenue, and the Renews / Ends column. A date in red means that customer is winding down and will stop at the end of their cycle.</li>
         </ol>
 
         <h3>The postcard machine, in plain terms</h3>
