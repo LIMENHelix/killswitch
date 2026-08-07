@@ -1,0 +1,119 @@
+{
+  "_README": [
+    "Tool definitions for the Killswitch voice agent, in the schema xAI documents",
+    "for session.update tools[]. In the Voice Agent Builder, add these under Tools.",
+    "",
+    "ENDPOINT for every one of them (same URL, the action is in the body):",
+    "  POST https://killswitchwebsites.com/api/agent?token=YOUR_AGENT_TOKEN",
+    "",
+    "The token is in the URL on purpose so no custom header is needed. If the",
+    "console DOES offer a header field, use x-agent-token instead and drop the",
+    "query string.",
+    "",
+    "START WITH whoami ALONE. Attach it, make one call, and confirm a 200 shows up",
+    "in the Vercel logs. Wiring seven tools before proving one works is how the last",
+    "three attempts were wasted."
+  ],
+
+  "whoami": {
+    "type": "function",
+    "name": "whoami",
+    "description": "Look up who is calling, by their phone number. Call this silently at the very start of every call, before saying anything beyond the greeting. Returns kind: customer, has_site_built, known_lead, or unknown, plus their business name and whether a website already exists for them.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "action": { "type": "string", "enum": ["whoami"], "description": "Always the string whoami" },
+        "phone": { "type": "string", "description": "The caller's phone number, any format" }
+      },
+      "required": ["action", "phone"]
+    }
+  },
+
+  "find_business": {
+    "type": "function",
+    "name": "find_business",
+    "description": "Find a business by name when the caller is on a different phone than we have on file. Use after whoami returns unknown and the caller tells you their business name.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "action": { "type": "string", "enum": ["find_business"] },
+        "name": { "type": "string", "description": "Business name as the caller said it" },
+        "city": { "type": "string", "description": "City, if they gave one, to break ties" }
+      },
+      "required": ["action", "name"]
+    }
+  },
+
+  "publish_site": {
+    "type": "function",
+    "name": "publish_site",
+    "description": "Put a website that is already built for this business live, so the caller can open it right now. Only call this after they say they want to see it. Returns the web address to read out to them.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "action": { "type": "string", "enum": ["publish_site"] },
+        "slug": { "type": "string", "description": "The slug returned by whoami or find_business" },
+        "phone": { "type": "string", "description": "The caller's number, so the record shows who asked" }
+      },
+      "required": ["action", "slug"]
+    }
+  },
+
+  "create_lead": {
+    "type": "function",
+    "name": "create_lead",
+    "description": "Save a new business that called in and wants a free website. Use when whoami returned unknown and find_business found nothing. A name and a phone number are enough. Never demand an email.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "action": { "type": "string", "enum": ["create_lead"] },
+        "name": { "type": "string", "description": "Business name" },
+        "trade": { "type": "string", "description": "What they do, for example auto repair, bakery, plumber" },
+        "phone": { "type": "string" },
+        "city": { "type": "string" },
+        "state": { "type": "string" },
+        "notes": { "type": "string", "description": "Anything useful they said" }
+      },
+      "required": ["action", "name"]
+    }
+  },
+
+  "log_call": {
+    "type": "function",
+    "name": "log_call",
+    "description": "Write down what happened on this call so a human can pick it up. Call this at the end of every call where you learned something.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "action": { "type": "string", "enum": ["log_call"] },
+        "phone": { "type": "string", "description": "The caller's number" },
+        "leadId": { "type": "string", "description": "Use this instead of phone if whoami gave you one" },
+        "notes": { "type": "string", "description": "What they wanted and what you did" },
+        "stage": { "type": "string", "enum": ["called", "responded", "won", "dead"] }
+      },
+      "required": ["action", "notes"]
+    }
+  },
+
+  "book_call": {
+    "type": "function",
+    "name": "book_call",
+    "description": "Get the booking link for a custom or larger job that needs scoping. Do NOT use this for add-ons the customer can switch on themselves.",
+    "parameters": {
+      "type": "object",
+      "properties": { "action": { "type": "string", "enum": ["book_call"] } },
+      "required": ["action"]
+    }
+  },
+
+  "handoff": {
+    "type": "function",
+    "name": "handoff",
+    "description": "Get the human's phone number to transfer to. Only for an upset caller, a direct request for a person, or a question about money, contracts, refunds or cancellation. Never because a lookup failed.",
+    "parameters": {
+      "type": "object",
+      "properties": { "action": { "type": "string", "enum": ["handoff"] } },
+      "required": ["action"]
+    }
+  }
+}
