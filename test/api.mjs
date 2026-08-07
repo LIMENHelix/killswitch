@@ -328,5 +328,66 @@ check('and reports draft vs published counts', r.body.counts.all === 4 && r.body
 r = await asAdmin({ action: 'site-list', q: 'olathe' });
 check('search finds a shop by city', r.body.total === 1 && r.body.sites[0].slug === 'charlies-brake-muffler-olathe', JSON.stringify(r.body.sites.map((s) => s.slug)));
 
+// ---------------------------------------------------------------------------
+console.log('\n7. The voice agent on 913-933-1687');
+process.env.AGENT_TOKEN = 'agent_test_tok';
+process.env.KS_HUMAN_PHONE = '913-948-3747';
+const agent = (await import('file:///C:/Users/Chris/killswitch/api/agent.js')).default;
+const ag = (b) => call(agent, { token: 'agent_test_tok', ...b });
+
+KV.clear(); stripeSubs = []; stripeCustomers = [];
+KV.set('ks:leads', JSON.stringify([
+  { id: 'A', name: "Charlie's Brake & Muffler", trade: 'auto repair', phone: '(913) 859-9994', city: 'Lenexa', state: 'KS' },
+  { id: 'B', name: 'Paying Shop', trade: 'bakery', phone: '816-111-2222', city: 'KC', state: 'MO' },
+]));
+KV.set('ks:leadmeta', { A: JSON.stringify({ siteSlug: 'charlies-brake-muffler' }), B: JSON.stringify({ siteSlug: 'paying-shop' }) });
+putSite({ slug: 'charlies-brake-muffler', business: "Charlie's Brake & Muffler", city: 'Lenexa', trade: 'auto repair', leadId: 'A', published: false, claimed: false, modules: ['P0'] });
+putSite({ slug: 'paying-shop', business: 'Paying Shop', city: 'KC', email: EMAIL, leadId: 'B', published: true, claimed: true, modules: ['P0'] });
+KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, name: 'Pat', stripeCustomerId: 'cus_paid' } }));
+stripeSubs = [{ id: 's1', status: 'active', cancel_at_period_end: false, current_period_end: 9999999999,
+  items: { data: [{ id: 'i1', price: { id: P11, recurring: { interval: 'month' }, unit_amount: 9900 }, current_period_end: 9999999999 }] } }];
+
+r = await call(agent, { action: 'whoami', phone: '913-859-9994' });
+check('a stolen agent token is useless', r.code === 401, 'got ' + r.code);
+
+r = await ag({ action: 'whoami', phone: '+1 (913) 859-9994' });
+check('it knows a postcard caller before it speaks', r.body.kind === 'has_site_built' && r.body.business.includes('Charlie'), JSON.stringify({ k: r.body.kind, b: r.body.business }));
+check('and that their site is not live yet', r.body.site && r.body.site.published === false);
+check('phone formats do not matter', r.body.leadId === 'A');
+
+r = await ag({ action: 'whoami', phone: '816-111-2222' });
+check('it knows a paying customer', r.body.kind === 'customer' && r.body.customer.name === 'Pat', JSON.stringify(r.body.kind));
+check('and that their plan covers hand edits', r.body.customer.canRequestChanges === true, JSON.stringify(r.body.customer));
+
+r = await ag({ action: 'whoami', phone: '555-000-9999' });
+check('a stranger is a stranger', r.body.kind === 'unknown');
+
+r = await ag({ action: 'find_business', name: 'charlie', city: 'lenexa' });
+check('it finds them by name when they call from a cell', r.body.count === 1 && r.body.matches[0].slug === 'charlies-brake-muffler', JSON.stringify(r.body));
+
+r = await ag({ action: 'publish_site', slug: 'charlies-brake-muffler', phone: '913-859-9994' });
+check('it delivers the site on the call', r.code === 200 && r.body.url.endsWith('/s/charlies-brake-muffler'), JSON.stringify(r.body));
+check('the site is now live', (await getSite('charlies-brake-muffler')).published === true);
+check('but STILL not indexable', (await getSite('charlies-brake-muffler')).claimed === false);
+check('the lead records what happened', JSON.parse((KV.get('ks:leadmeta')).A).stage === 'responded');
+
+r = await ag({ action: 'publish_site', slug: 'no-such-shop' });
+check('it cannot invent a site', r.code === 404);
+
+r = await ag({ action: 'create_lead', name: 'Brand New Cafe', trade: 'cafe/coffee', phone: '816-777-8888', city: 'KC', notes: 'saw the postcard' });
+check('a cold caller becomes a lead', r.code === 200 && !!r.body.id, JSON.stringify(r.body));
+check('and lands on the call board', JSON.parse(KV.get('ks:leads')).some((l) => l.name === 'Brand New Cafe'));
+r = await ag({ action: 'create_lead', name: 'Dupe', phone: '816-777-8888' });
+check('calling twice does not duplicate them', r.body.duplicate === true, JSON.stringify(r.body));
+
+r = await ag({ action: 'handoff' });
+check('it can hand off to a human', r.body.phone === '913-948-3747' && r.body.sip.includes('9139483747'), JSON.stringify(r.body));
+
+r = await ag({ action: 'log_call', phone: '913-859-9994', notes: 'wants photos added', stage: 'won' });
+check('it writes the outcome to the board', r.body.meta.stage === 'won' && r.body.meta.notes === 'wants photos added', JSON.stringify(r.body.meta));
+
+r = await ag({ action: 'switch_on_billing', slug: 'paying-shop' });
+check('there is no tool that can touch billing', r.code === 400, 'got ' + r.code);
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
