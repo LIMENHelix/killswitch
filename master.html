@@ -62,6 +62,21 @@
   .grid2 .f input{min-width:0;width:100%}
   #sEd textarea{background:var(--metal);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:inherit;font-size:.9rem;width:100%;resize:vertical}
   #sEd textarea:focus,#sEd input:focus{outline:none;border-color:var(--go)}
+  /* bulk drafting + site filters */
+  .bulk{background:var(--metal);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:14px}
+  .bulk-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .bulk-p{color:var(--mute2);font-size:.83rem;margin:6px 0 11px;max-width:74ch}
+  .bulk-row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+  .bulk-n{color:var(--mute2);font-size:.8rem;font-family:"IBM Plex Mono",monospace}
+  .track{height:9px;background:#0c0c0e;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin-top:11px}
+  .fill{height:100%;width:0;background:linear-gradient(90deg,#158a4c,#1BA45A,#2fce77);border-radius:999px;transition:width .4s}
+  .bar{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+  .bar .f,.bar select{background:var(--metal);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 11px;font:inherit;font-size:.85rem}
+  .bar .f{min-width:230px}
+  .st{font-size:.64rem;font-weight:700;padding:3px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+  .st.draft{background:rgba(150,150,160,.15);color:var(--mute2)}
+  .st.live{background:rgba(255,196,46,.14);color:var(--amber)}
+  .st.claimed{background:rgba(27,164,90,.16);color:var(--go)}
   .rl{font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mute2);margin-bottom:7px}
   .reps{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:18px}
   .rep{display:flex;gap:6px;margin-bottom:6px}
@@ -106,6 +121,7 @@
         <label class="f">Email<input id="oEmail" type="email" placeholder="owner@shop.com" /></label>
         <label class="f">Site<input id="oSite" type="text" placeholder="theirshop.com" /></label>
         <label class="f">Name<input id="oName" type="text" placeholder="First name" /></label>
+        <label class="f">Their site slug<input id="oSlug" type="text" placeholder="daves-trusted-auto" list="slugList" /><datalist id="slugList"></datalist></label>
         <button class="btn sm" id="oBtn">Create &amp; send receipt</button>
       </div>
       <div class="onres" id="oRes"></div>
@@ -120,9 +136,38 @@
         <button class="btn ghost sm" id="sNew">+ New website</button>
       </div>
 
+      <!-- Bulk drafting. A draft is a hard 404 until someone publishes it, which
+           is what makes it safe to build one for a business that has agreed to
+           nothing. Published-but-unclaimed is reachable by its link and noindex.
+           Claimed, which happens when you onboard them, is the only indexable state. -->
+      <div class="bulk" id="bulkBox">
+        <div class="bulk-h">
+          <b>Build a draft site for every lead</b>
+          <span class="bulk-n" id="bulkCounts"></span>
+        </div>
+        <p class="bulk-p">Drafts are invisible: the URL returns 404 until you or a rep publishes it, which is how the delivery call and the postcard work. Nothing here is shown to a business or to Google until then.</p>
+        <div class="bulk-row">
+          <button class="btn sm" id="bulkGo">Generate drafts</button>
+          <button class="btn ghost sm" id="bulkStop" disabled>Stop</button>
+          <button class="btn ghost sm" id="sMigrate">Migrate old store</button>
+          <span class="bulk-n" id="bulkMsg"></span>
+        </div>
+        <div class="track" id="bulkTrack" hidden><div class="fill" id="bulkFill"></div></div>
+      </div>
+
+      <div class="bar" style="margin-top:14px">
+        <input class="f" id="sQ" placeholder="Search business, slug or city...">
+        <select id="sState"><option value="">Draft and live</option><option value="1">Live only</option><option value="0">Drafts only</option></select>
+        <select id="sSrc"><option value="">Any source</option><option value="draft-bulk">Generated from a lead</option><option value="hand">Made by hand</option></select>
+        <span class="bulk-n" id="sCount"></span>
+      </div>
+
       <div class="wrapt" style="margin-top:12px"><table><thead><tr>
-        <th>Business</th><th>Slug</th><th>Owner email</th><th>Modules on</th><th>Live</th><th></th>
+        <th>Business</th><th>Slug</th><th>Owner email</th><th>Modules on</th><th>State</th><th></th>
       </tr></thead><tbody id="sTb"></tbody></table></div>
+      <div class="bulk-row" style="margin-top:10px">
+        <button class="btn ghost sm" id="sMore" hidden>Show more</button>
+      </div>
 
       <div id="sEd" style="display:none;margin-top:18px;border-top:1px solid var(--line);padding-top:16px">
         <h2 id="sEdT" style="margin-bottom:12px">New website</h2>
@@ -267,23 +312,78 @@ function openEditor(site){
   $('sEd').style.display='block';
   $('sEd').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
+/* ---- bulk drafting, driven from here so no single request has to finish it ---- */
+let bulkRunning=false, bulkMade=0;
+$('bulkGo').onclick=async()=>{
+  if(bulkRunning) return;
+  if(!confirm('Build a draft website for every lead that does not have one yet?\n\nDrafts are INVISIBLE: the URL returns 404 until someone publishes it. Nothing is shown to any business and nothing can be indexed.')) return;
+  bulkRunning=true; bulkMade=0;
+  $('bulkGo').disabled=true; $('bulkStop').disabled=false; $('bulkTrack').hidden=false;
+  let total=0;
+  while(bulkRunning){
+    const r=await api('site-bulk-draft',{limit:200});
+    if(!r.ok){ $('bulkMsg').textContent='Stopped: '+(r.d.error||r.status); break; }
+    bulkMade+=r.d.created;
+    if(!total) total=bulkMade+r.d.remaining;
+    const pct=total?Math.round(bulkMade/total*100):100;
+    $('bulkFill').style.width=pct+'%';
+    $('bulkMsg').textContent=bulkMade+' built, '+r.d.remaining+' to go'+(r.d.skippedNoId?(' ('+r.d.skippedNoId+' leads have no id and were skipped)'):'');
+    if(r.d.created===0||r.d.remaining===0){ $('bulkMsg').textContent=bulkMade+' drafts built. They are all 404 until published.'; break; }
+  }
+  bulkRunning=false; $('bulkGo').disabled=false; $('bulkStop').disabled=true;
+  sitePage=0; loadSites();
+};
+$('bulkStop').onclick=()=>{ bulkRunning=false; $('bulkMsg').textContent='Stopping after this batch...'; };
+$('sMigrate').onclick=async()=>{
+  const r=await api('site-migrate');
+  $('bulkMsg').textContent = r.ok
+    ? (r.d.alreadySplit ? 'Nothing to migrate, already split into one key per site.' : r.d.migrated+' site(s) moved out of the old single-blob store.')
+    : ('Error: '+(r.d.error||r.status));
+  sitePage=0; loadSites();
+};
+let sTimer=null;
+['sQ','sState','sSrc'].forEach(id=>$(id).oninput=()=>{ clearTimeout(sTimer); sTimer=setTimeout(()=>{ sitePage=0; loadSites(); },220); });
+$('sMore').onclick=()=>{ sitePage++; loadSites(true); };
+
 $('sNew').onclick=()=>openEditor(null);
 $('sCancel').onclick=()=>{ $('sEd').style.display='none'; editing=null; };
 $('f_business').addEventListener('blur',()=>{ if(!$('f_slug').value.trim()) $('f_slug').value=slugify($('f_business').value); });
 
-async function loadSites(){
-  const r=await api('site-list');
+let sitePage=0, siteTotal=0;
+const PAGE=100;
+
+function siteQuery(){
+  const q={ q:$('sQ').value.trim(), limit:PAGE, offset:sitePage*PAGE };
+  if($('sState').value==='1') q.published=true;
+  if($('sState').value==='0') q.published=false;
+  if($('sSrc').value) q.source=$('sSrc').value;
+  return q;
+}
+async function loadSites(append){
+  const r=await api('site-list', siteQuery());
   if(!r.ok){ return; }
-  sites=(r.d.sites)||[];
+  sites = append ? sites.concat(r.d.sites||[]) : (r.d.sites||[]);
+  siteTotal = r.d.total||0;
+  const c=r.d.counts||{all:0,published:0,drafts:0};
+  $('bulkCounts').textContent = c.all+' built · '+c.published+' live · '+c.drafts+' still drafts';
+  $('sCount').textContent = sites.length+' of '+siteTotal+' shown';
+  $('sMore').hidden = sites.length >= siteTotal;
+  // so onboarding can pick a slug without typing it from memory
+  const dl=$('slugList'); if(dl) dl.innerHTML=sites.slice(0,300).map(s=>`<option value="${esc(s.slug)}">${esc(s.business||'')}</option>`).join('');
+  // Three states, and the badge has to say which: a draft is a 404, a live one
+  // is reachable but noindex, a claimed one is a customer and may be indexed.
+  const badge=(s)=> s.claimed ? '<span class="st claimed">Customer</span>'
+    : s.published ? '<span class="st live">Live · noindex</span>'
+    : '<span class="st draft">Draft · 404</span>';
   $('sTb').innerHTML = sites.length ? sites.map(s=>`<tr>
-    <td class="email">${esc(s.business||'(unnamed)')}</td>
+    <td class="email">${esc(s.business||'(unnamed)')}${s.city?'<div class="sub">'+esc(s.city)+'</div>':''}</td>
     <td class="mono" style="color:var(--mute2)">${esc(s.slug)}</td>
     <td style="color:var(--mute2)">${esc(s.email||'—')}</td>
     <td><div class="chips">${(s.modules||[]).filter(m=>m!=='P0').map(m=>`<span class="chip">${esc(m)}</span>`).join('')||'<span class="chip free">Base site</span>'}</div></td>
-    <td class="live">${s.published?'<span class="yes">Live</span>':'<span class="no">Draft</span>'}</td>
+    <td>${badge(s)}</td>
     <td><button class="btn ghost sm" data-edit="${esc(s.slug)}">Edit</button>
         ${s.published?`<a class="btn ghost sm" href="/s/${esc(s.slug)}" target="_blank" rel="noopener">View</a>`:''}</td>
-  </tr>`).join('') : '<tr><td colspan="6" style="color:var(--mute2);text-align:center;padding:22px">No websites yet. Create the first one.</td></tr>';
+  </tr>`).join('') : '<tr><td colspan="6" style="color:var(--mute2);text-align:center;padding:22px">No websites match. Generate drafts above, or create one by hand.</td></tr>';
   $('sTb').querySelectorAll('[data-edit]').forEach(b=>{
     b.onclick=async()=>{
       const slug=b.getAttribute('data-edit');
@@ -367,13 +467,17 @@ function paint(d){
 $('oBtn').onclick=async()=>{
   const email=$('oEmail').value.trim(); if(!email){ $('oRes').style.color='var(--red)'; $('oRes').textContent='Enter an email.'; return; }
   $('oBtn').disabled=true; $('oRes').style.color='var(--mute)'; $('oRes').textContent='Creating...';
-  const r=await api('onboard',{email,site:$('oSite').value.trim(),name:$('oName').value.trim()});
+  // Passing the slug is what turns their draft into a real customer site: it gets
+  // their email, goes live, and becomes indexable. Without it the account is made
+  // but no website is attached to it.
+  const r=await api('onboard',{email,site:$('oSite').value.trim(),name:$('oName').value.trim(),slug:$('oSlug').value.trim()});
   $('oBtn').disabled=false;
   if(r.ok){
     $('oRes').style.color='var(--go)';
     $('oRes').innerHTML='Done. '+(r.d.emailed?'Receipt emailed. ':'(Email did not send, send this link) ')
+      +(r.d.claimedSlug?('Site <b>/s/'+esc(r.d.claimedSlug)+'</b> is now theirs and may be indexed. '):'<b>No site attached</b> (leave a slug next time to link one). ')
       +'Portal: <a href="'+esc(r.d.portalUrl)+'" target="_blank" rel="noopener">'+esc(r.d.portalUrl)+'</a>';
-    $('oEmail').value=$('oSite').value=$('oName').value='';
+    $('oEmail').value=$('oSite').value=$('oName').value=$('oSlug').value='';
     boot();
   } else { $('oRes').style.color='var(--red)'; $('oRes').textContent='Error: '+(r.d.error||r.status); }
 };

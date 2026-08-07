@@ -11,6 +11,8 @@ const LEADS = [
   { id: 'L1', name: 'Auto Tech Services Center', trade: 'auto repair', phone: '913-268-7887', street: '11441 Shawnee Mission Pkwy', city: 'Shawnee', state: 'KS', zip: '66203', stage: 'called', owner: 'dana' },
   { id: 'L2', name: 'Autobots Garage', trade: 'auto repair', phone: '913-722-5151', street: '5000 Mackey St', city: 'Overland Park', state: 'KS', zip: '66203' },
   { id: 'L3', name: 'Some Random Salon', trade: 'hair salon', phone: '816-555-0000', street: '9 X St', city: 'Kansas City', state: 'MO', zip: '64109', status: 'mailed' },
+  // a bulk-generated draft, waiting to be published on the call
+  { id: 'L4', name: 'Downtown Dental', trade: 'dentist', phone: '816-555-1212', street: '5 Elm St', city: 'Kansas City', state: 'MO', zip: '64111', siteSlug: 'downtown-dental', sitePublished: false },
 ];
 
 let ROLE = 'owner';
@@ -24,6 +26,11 @@ const server = http.createServer((req, res) => {
       if (body.action === 'list') return res.end(JSON.stringify({ ok: true, leads: LEADS, role: ROLE, name: ROLE === 'rep' ? 'dana' : 'operator' }));
       if (body.action === 'config') return res.end(JSON.stringify({ ok: true, config: { enabled: false, dailyCap: 0, budgetCeiling: 0 } }));
       if (body.action === 'update') return res.end(JSON.stringify({ ok: true, meta: { stage: body.stage, owner: 'dana' } }));
+      if (body.action === 'site-publish') {
+        const l = LEADS.find((x) => x.id === body.id);
+        if (l) l.sitePublished = true;
+        return res.end(JSON.stringify({ ok: true, slug: l.siteSlug, url: '/s/' + l.siteSlug }));
+      }
       res.end(JSON.stringify({ ok: false, error: 'nope' }));
     });
     return;
@@ -92,7 +99,7 @@ console.log('\nOWNER view');
 await load('owner');
 check('no javascript errors', consoleErrors.length === 0, consoleErrors.join(' | '));
 check('app is showing', await evaluate(`getComputedStyle(document.getElementById('app')).display !== 'none'`));
-check('all 3 leads rendered', await evaluate(`document.querySelectorAll('#tb tr').length`) === 3);
+check('all 4 leads rendered', await evaluate(`document.querySelectorAll('#tb tr').length`) === 4);
 check('autopilot panel is visible', await evaluate(`!document.getElementById('autopanel').hidden`));
 check('mail bar is visible', await evaluate(`!document.getElementById('mailbar').hidden`));
 check('badge says Owner', (await evaluate(`document.getElementById('whoami').textContent`)) === 'Owner');
@@ -130,6 +137,32 @@ const warn = await evaluate(`document.getElementById('scWarn').textContent`);
 check('no demo means it WARNS instead of lying', warn.includes('No site has been built'), warn.slice(0, 80));
 check('and it does not offer a text with no link', await evaluate(`document.getElementById('scCopyText').disabled === true`));
 check('step 3 stops promising a built site', !(await evaluate(`document.getElementById('scSteps').textContent`)).includes('already built you a real website'));
+
+console.log('\nDRAFT WAITING, PUBLISHED ON THE CALL');
+await evaluate(`document.getElementById('scClose').click()`);
+const row = (n) => `[...document.querySelectorAll('#tb tr')].find(r=>r.textContent.includes('${n}'))`;
+check('a lead with a draft says so on the button',
+  (await evaluate(`${row('Downtown Dental')}.querySelector('.scriptbtn').textContent`)) === 'Script + site ready');
+
+await evaluate(`${row('Downtown Dental')}.querySelector('.scriptbtn').click()`);
+await new Promise((r) => setTimeout(r, 250));
+check('the script says the site is built and waiting',
+  (await evaluate(`document.getElementById('scWarn').textContent`)).includes('built and waiting'));
+check('it will NOT let you send a link to a 404 yet',
+  await evaluate(`document.getElementById('scCopyText').disabled === true`));
+check('the Publish button is offered', await evaluate(`document.getElementById('scPublish').hidden === false`));
+check('step 3 already promises a built site',
+  (await evaluate(`document.getElementById('scSteps').textContent`)).includes('already built you a real website'));
+
+await evaluate(`document.getElementById('scPublish').click()`);
+await new Promise((r) => setTimeout(r, 700));
+check('publishing flips the warning to live',
+  (await evaluate(`document.getElementById('scWarn').textContent`)).includes('live right now'));
+check('and only NOW can the link be sent',
+  await evaluate(`document.getElementById('scCopyText').disabled === false`));
+check('the Publish button goes away once it is live', await evaluate(`document.getElementById('scPublish').hidden === true`));
+check('the row label catches up',
+  (await evaluate(`${row('Downtown Dental')}.querySelector('.scriptbtn').textContent`)) === 'Script + live site');
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 chrome.kill(); server.close();

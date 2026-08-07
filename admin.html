@@ -208,6 +208,15 @@
           <li><b>Once a week</b>, open <a href="/master" target="_blank">/master</a> to see the whole picture: who is paying, monthly revenue, and the Renews / Ends column. A date in red means that customer is winding down and will stop at the end of their cycle.</li>
         </ol>
 
+        <h3>Their website already exists before you call</h3>
+        <p>A draft site is built for every lead in the list. It is <b>invisible</b>: the address returns "not found" to anyone who tries it, including the business, including Google. That is what makes it safe to have built one for a shop that has never heard of us.</p>
+        <table class="rbt">
+          <tr><td>Draft &middot; 404</td><td>Built and waiting. Nobody can see it. This is where every generated site starts.</td></tr>
+          <tr><td>Live &middot; noindex</td><td>You hit <b>Publish their site</b> on the call, so the link works and you can text it. Search engines are still kept out, because they have not signed up for anything yet.</td></tr>
+          <tr><td>Customer</td><td>They said yes and got onboarded in /master. Now it is their site properly, and it can show up on Google.</td></tr>
+        </table>
+        <p class="warn"><b>Do not send a link before you publish.</b> The script will not let you copy the follow-up text until you have, because a link that 404s in front of a shop owner is worse than never calling. Publish, then copy, then send, while you are still on the phone.</p>
+
         <h3>The postcard machine, in plain terms</h3>
         <table class="rbt">
           <tr><td>Postcards / day</td><td>How many go out automatically each day. Set 0 to pause without switching anything off.</td></tr>
@@ -300,6 +309,7 @@
       <div class="warn" id="scWarn"></div>
       <div id="scSteps"></div>
       <div class="foot">
+        <button class="btn sm" id="scPublish" hidden>Publish their site</button>
         <button class="btn sm" id="scCopyText">Copy the follow-up text</button>
         <button class="btn ghost sm" id="scCalled">Mark called</button>
         <button class="btn ghost sm" id="scClose">Close</button>
@@ -517,7 +527,7 @@ function render(){
     return `<tr>
       ${rep?'':`<td><input type="checkbox" class="rc" data-id="${esc(r.id)}" ${sel.has(r.id)?'checked':''} ${canSel?'':'disabled'}></td>`}
       <td>${esc(r.trade)}</td><td class="name">${esc(r.name)}</td><td>${tel}</td>
-      <td><button class="scriptbtn${ci&&ci.demo?'':' cold'}" data-script="${esc(r.id)}">${ci&&ci.demo?'Script + demo':'Script'}</button></td>
+      <td><button class="scriptbtn${(r.siteSlug||(ci&&ci.demo))?'':' cold'}" data-script="${esc(r.id)}">${r.siteSlug?(r.sitePublished?'Script + live site':'Script + site ready'):(ci&&ci.demo?'Script + demo':'Script')}</button></td>
       <td>${esc(addr(r))}</td>
       ${rep?'':`<td><span class="pill ${ms}">${ms==='bad_address'?'bad addr':ms==='noaddr'?'no addr':ms}</span></td>`}
       <td><select class="stage s-${stg} " data-stage="${esc(r.id)}">${opts}</select></td>
@@ -602,7 +612,11 @@ function openScript(id){
   const contact=(ci&&ci.who)||'the owner';
   const where=[r.city,r.state].filter(Boolean).join(' ');
   const trade=(r.trade||'shop').toLowerCase();
-  const demoUrl=(ci&&ci.demo)?(location.origin+DEMO_BASE+ci.demo):'';
+  // Three ways a site can exist for this shop: a bulk-generated draft waiting to
+  // be published, an already published one, or one of the six hand-built demos.
+  const siteUrl = r.siteSlug ? (location.origin+'/s/'+r.siteSlug)
+    : ((ci&&ci.demo) ? (location.origin+DEMO_BASE+ci.demo) : '');
+  const needsPublish = !!(r.siteSlug && !r.sitePublished);
 
   $('scTitle').textContent=r.name||'This shop';
   $('scWho').textContent=[trade,where,r.phone].filter(Boolean).join(' · ');
@@ -610,17 +624,22 @@ function openScript(id){
   // The close depends on the site ALREADY EXISTING. If it does not, saying step
   // three is a lie, so say that here rather than let someone read it off a card.
   const w=$('scWarn');
-  if(demoUrl){
+  if(needsPublish){
     w.className='warn ok';
-    w.innerHTML='A site is already built for this shop, so this is a <b>delivery, not a pitch</b>. Open it on your phone before you dial and check it loads: <a href="'+esc(demoUrl)+'" target="_blank" rel="noopener">'+esc(demoUrl)+'</a>';
+    w.innerHTML='A site is <b>built and waiting</b> for this shop. It is not visible to anyone yet, so do not send the link until they say yes. When they do, hit <b>Publish their site</b> below and the link goes live instantly: <b>'+esc(siteUrl)+'</b>';
+  } else if(siteUrl){
+    w.className='warn ok';
+    w.innerHTML='Their site is <b>live right now</b>, so this is a <b>delivery, not a pitch</b>. Open it on your phone before you dial and check it loads: <a href="'+esc(siteUrl)+'" target="_blank" rel="noopener">'+esc(siteUrl)+'</a>';
   } else {
     w.className='warn';
-    w.innerHTML='<b>No site has been built for this shop yet.</b> Step 3 below is not true for them, so do not say it. Either get the demo built first, or treat this as a cold call and offer to build one.';
+    w.innerHTML='<b>No site has been built for this shop yet.</b> Step 3 below is not true for them, so do not say it. Treat this as a cold call and offer to build one.';
   }
+  $('scPublish').hidden=!needsPublish;
+  $('scPublish').disabled=false;
 
   const hook=(ci&&ci.hook)||('you\'re a '+trade+(where?(' in '+where):'')+' and there\'s no real website for people to find');
-  const deliver=demoUrl
-    ? 'So I already built you a real website. It\'s live, it\'s yours, free, you own it, no contract.'
+  const deliver=siteUrl
+    ? 'So I already built you a real website. It\'s yours, free, you own it, no contract.'
     : 'So here\'s my offer: I\'ll build you a real website, free, yours to keep, no contract.';
 
   $('scSteps').innerHTML=[
@@ -630,15 +649,17 @@ function openScript(id){
     stepHtml(4,'The catch, before they ask',`"The catch, before you ask: the add-ons are nineteen to twenty-nine bucks a month each, optional, off unless you flip them on. If you never do, you keep a free site and I lose the bet."`,true),
     stepHtml(5,'Zero-risk close',`"Can I text you the link right now?"`,true),
     ci&&ci.skeptic?stepHtml('IF','they push back',`"${esc(ci.skeptic)}"`,true):'',
-    stepHtml('AFTER','yes, text it',demoUrl
-      ? 'Send it while you are still on the phone. Use the copy button below, then set the stage.'
-      : 'Take their number and get the site built before you promise a link.',false),
+    stepHtml('AFTER','yes, text it', needsPublish
+      ? 'Hit <b>Publish their site</b> below FIRST, then copy the text and send it while you are still on the phone.'
+      : (siteUrl ? 'Send it while you are still on the phone. Use the copy button below, then set the stage.'
+                 : 'Take their number and get the site built before you promise a link.'),false),
   ].join('');
 
-  scText=demoUrl
-    ? `${r.name} - here's the site I built you, yours free: ${demoUrl}\nEverything on it is editable and it's yours to keep. The only things that ever cost anything are Google and online booking, $19/mo each, and they're off unless you say so. - Killswitch Websites`
+  scText=siteUrl
+    ? `${r.name} - here's the site I built you, yours free: ${siteUrl}\nEverything on it is editable and it's yours to keep. The only things that ever cost anything are Google and online booking, $19/mo each, and they're off unless you say so. - Killswitch Websites`
     : '';
-  $('scCopyText').disabled=!scText;
+  // Never hand out a link to a page that is still a 404.
+  $('scCopyText').disabled=!scText||needsPublish;
   $('scNote').textContent='';
   $('scriptModal').classList.add('open');
 }
@@ -651,6 +672,17 @@ $('scCopyText').onclick=async()=>{
   if(!scText) return;
   try{ await navigator.clipboard.writeText(scText); $('scNote').textContent='Copied. Paste it into a text message.'; }
   catch(err){ $('scNote').textContent='Could not copy automatically. Select the link above and send it.'; }
+};
+$('scPublish').onclick=async()=>{
+  if(!scLead) return;
+  $('scPublish').disabled=true; $('scNote').textContent='Publishing...';
+  const res=await api('site-publish',{id:scLead.id});
+  if(!res.ok){ $('scNote').textContent='Could not publish: '+(res.d.message||res.d.error||res.status); $('scPublish').disabled=false; return; }
+  scLead.sitePublished=true; scLead.siteSlug=res.d.slug;
+  $('scNote').textContent='Live at '+location.origin+res.d.url+'. Now copy the text.';
+  openScript(scLead.id);   // repaint: the warning and the copy button both change
+  $('scNote').textContent='Live now. Copy the text and send it.';
+  render();
 };
 $('scCalled').onclick=async()=>{
   if(!scLead) return;

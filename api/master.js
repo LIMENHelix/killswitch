@@ -5,11 +5,15 @@
 //
 // MRR/switch data is read live from Stripe on each load, so it is always
 // accurate with no sync to maintain. Free accounts (no Stripe) show plan P0.
-import { getAccounts, upsertAccount } from '../lib/store.js';
+import { getAccounts, upsertAccount, getLeads, setLeadMetaMany } from '../lib/store.js';
+import { draftFromLead } from '../lib/draft-site.js';
+
+// Bulk draft generation writes hundreds of records per call.
+export const config = { maxDuration: 60 };
 import { onboardCustomer } from '../lib/onboard.js';
 import { panelToken } from '../lib/panel-auth.js';
 import { identify, isOwner } from '../lib/roles.js';
-import { getSites, getSite, upsertSite, slugify } from '../lib/sites.js';
+import { listSites, getSite, upsertSite, bulkUpsert, migrateAll, slugify } from '../lib/sites.js';
 
 // Everything the website editor is allowed to write. A save applies ONLY the
 // keys it was actually sent, so a partial save is a partial update. This used to
@@ -117,18 +121,90 @@ export default async function handler(req, res) {
       const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitchwebsites.com';
       const out = await onboardCustomer({ email: body.email, site: body.site, name: body.name, host, source: 'master-onboard' });
       if (out.error) { res.status(400).json({ error: out.error }); return; }
-      res.status(200).json({ ok: true, email: out.email, portalUrl: out.portalUrl, emailed: out.emailed, tokenReady: out.tokenReady });
+
+      // Handing over the free site is the moment they become a customer, so the
+      // site gets their email, goes live, and becomes CLAIMED, which is the only
+      // state search engines are allowed to index. Everything before this is a
+      // page about a business that agreed to nothing.
+      let claimed = null;
+      if (body.slug) {
+        try { claimed = await upsertSite({ slug: body.slug, email: out.email, published: true, claimed: true }); }
+        catch (e) { console.error('[master] claim site', e); }
+      }
+      res.status(200).json({
+        ok: true, email: out.email, portalUrl: out.portalUrl, emailed: out.emailed,
+        tokenReady: out.tokenReady, claimedSlug: claimed ? claimed.slug : null,
+      });
       return;
     }
 
     // ---- one-template site records ----
+    // Summaries only, filtered and paged on the server. Once there are thousands
+    // of drafts, shipping the whole set to the browser on every load is the same
+    // mistake in a new place.
     if (action === 'site-list') {
-      const m = await getSites();
-      const sites = Object.values(m).map((s) => ({
-        slug: s.slug, business: s.business, email: s.email || '', trade: s.trade || '',
-        published: !!s.published, modules: s.modules || ['P0'],
-      })).sort((a, b) => a.business.localeCompare(b.business));
-      res.status(200).json({ ok: true, sites });
+      const all = await listSites();
+      const counts = {
+        all: all.length,
+        published: all.filter((s) => s.published).length,
+        drafts: all.filter((s) => !s.published).length,
+      };
+      const q = String(body.q || '').toLowerCase().trim();
+      let sites = all;
+      if (q) sites = sites.filter((s) => (s.business || '').toLowerCase().includes(q)
+        || (s.slug || '').includes(q) || (s.city || '').toLowerCase().includes(q));
+      if (body.published !== undefined) sites = sites.filter((s) => !!s.published === !!body.published);
+      if (body.source === 'draft-bulk') sites = sites.filter((s) => s.source === 'draft-bulk');
+      if (body.source === 'hand') sites = sites.filter((s) => s.source !== 'draft-bulk');
+
+      const total = sites.length;
+      const offset = Math.max(0, Number(body.offset) || 0);
+      const limit = Math.min(Math.max(1, Number(body.limit) || 100), 500);
+      sites = sites.sort((a, b) => String(a.business || '').localeCompare(String(b.business || '')))
+        .slice(offset, offset + limit);
+      res.status(200).json({ ok: true, sites, total, counts, offset, limit });
+      return;
+    }
+
+    // One-time move off the single ks:sites blob. Safe to run again; the old blob
+    // is left in place as a backup rather than deleted.
+    if (action === 'site-migrate') {
+      res.status(200).json({ ok: true, ...(await migrateAll()) });
+      return;
+    }
+
+    // Generate DRAFT sites from leads, in batches the browser drives to completion.
+    // Drafts are unpublished, which api/site.js serves as a 404, so nothing here
+    // is visible to the business, to Google, or to a URL guess until published.
+    if (action === 'site-bulk-draft') {
+      const limit = Math.min(Math.max(1, Number(body.limit) || 100), 400);
+      const [leads, idx] = await Promise.all([getLeads(), listSites()]);
+      const taken = new Set(idx.map((s) => s.slug));
+      const already = new Set(idx.map((s) => s.leadId).filter(Boolean));
+
+      let noId = 0;
+      const pool = leads.filter((l) => {
+        if (!l.name) return false;
+        if (!l.id) { noId++; return false; }
+        if (already.has(l.id)) return false;
+        if (body.trade && l.trade !== body.trade) return false;
+        if (body.state && l.state !== body.state) return false;
+        return true;
+      });
+
+      const batch = pool.slice(0, limit);
+      const recs = batch.map((l) => draftFromLead(l, taken)).filter(Boolean);
+      if (recs.length) {
+        await bulkUpsert(recs);
+        // Stamp the slug back onto the lead so the postcard and the call script
+        // can print the URL of the site that is already waiting for them.
+        await setLeadMetaMany(recs.map((r) => [r.leadId, { siteSlug: r.slug }]));
+      }
+      res.status(200).json({
+        ok: true, created: recs.length,
+        remaining: Math.max(0, pool.length - batch.length),
+        skippedNoId: noId, totalLeads: leads.length,
+      });
       return;
     }
     // The FULL record, for loading into the editor. Without this the editor can
@@ -149,6 +225,7 @@ export default async function handler(req, res) {
       for (const f of SITE_FIELDS) if (Object.prototype.hasOwnProperty.call(p, f)) patch[f] = p[f];
       for (const f of SITE_ARRAYS) if (Array.isArray(p[f])) patch[f] = p[f];
       if (p.published !== undefined) patch.published = !!p.published;
+      if (p.claimed !== undefined) patch.claimed = !!p.claimed;
 
       const saved = await upsertSite(patch);
       res.status(200).json({ ok: true, site: saved, url: '/s/' + saved.slug });

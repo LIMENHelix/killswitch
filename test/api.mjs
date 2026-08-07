@@ -19,17 +19,23 @@ globalThis.fetch = async (url, opts = {}) => {
 
   if (u.startsWith('https://kv.test')) {
     const args = JSON.parse(opts.body);
-    const [cmd, key, f, v] = args;
-    if (cmd === 'GET') return json({ result: KV.has(key) ? KV.get(key) : null });
-    if (cmd === 'SET') { KV.set(key, v === undefined ? f : v); return json({ result: 'OK' }); }
-    if (cmd === 'HSET') { const h = KV.get(key) || {}; h[f] = v; KV.set(key, h); return json({ result: 1 }); }
-    if (cmd === 'HGET') { const h = KV.get(key) || {}; return json({ result: h[f] == null ? null : h[f] }); }
-    if (cmd === 'HGETALL') {
-      const h = KV.get(key) || {};
-      const flat = []; for (const [k, val] of Object.entries(h)) flat.push(k, val);
-      return json({ result: flat });
-    }
-    throw new Error('unexpected kv cmd ' + cmd);
+    const run = (a) => {
+      const [cmd, key, f, v] = a;
+      if (cmd === 'GET') return KV.has(key) ? KV.get(key) : null;
+      if (cmd === 'SET') { KV.set(key, v === undefined ? f : v); return 'OK'; }
+      if (cmd === 'HSET') { const h = KV.get(key) || {}; h[f] = v; KV.set(key, h); return 1; }
+      if (cmd === 'HGET') { const h = KV.get(key) || {}; return h[f] == null ? null : h[f]; }
+      if (cmd === 'HDEL') { const h = KV.get(key) || {}; delete h[f]; KV.set(key, h); return 1; }
+      if (cmd === 'HGETALL') {
+        const h = KV.get(key) || {};
+        const flat = []; for (const [k, val] of Object.entries(h)) flat.push(k, val);
+        return flat;
+      }
+      throw new Error('unexpected kv cmd ' + cmd);
+    };
+    // /pipeline takes an array of command arrays and returns one result each
+    if (u.endsWith('/pipeline')) return json(args.map((a) => ({ result: run(a) })));
+    return json({ result: run(args) });
   }
 
   if (u.startsWith('https://api.stripe.com/v1')) {
@@ -54,8 +60,13 @@ globalThis.fetch = async (url, opts = {}) => {
   if (u.startsWith('https://api.anthropic.com')) {
     return json({ content: [{ type: 'text', text: 'Got it, I will pass that to your builder.' }] });
   }
+  if (u.startsWith('https://api.lob.com')) {
+    lobCards.push(String(opts.body || ''));
+    return json({ id: 'psc_' + lobCards.length });
+  }
   throw new Error('unexpected fetch ' + u);
 };
+const lobCards = [];
 
 const { panelToken } = await import('file:///C:/Users/Chris/killswitch/lib/panel-auth.js');
 const support = (await import('file:///C:/Users/Chris/killswitch/api/support.js')).default;
@@ -74,14 +85,25 @@ const TOK = panelToken(EMAIL);
 const P3 = 'price_1ToXlsPmxnF3rtBM9Dc9mDul';  // Online Booking
 const P11 = 'price_1TnMiMPmxnF3rtBMgqTJpLh6'; // Care Plan
 
+// Sites are one key each now (ks:site:<slug>) with a summary index, so the test
+// writes them the same way the code does.
+function putSite(rec) {
+  KV.set('ks:site:' + rec.slug, JSON.stringify(rec));
+  const idx = KV.get('ks:siteidx') || {};
+  idx[rec.slug] = JSON.stringify({
+    business: rec.business, email: rec.email || '', trade: rec.trade || '', city: rec.city || '',
+    published: !!rec.published, claimed: !!rec.claimed, modules: rec.modules || ['P0'],
+    source: rec.source || '', leadId: rec.leadId || '',
+  });
+  KV.set('ks:siteidx', idx);
+  if (rec.email) { const em = KV.get('ks:siteemail') || {}; em[rec.email.toLowerCase()] = rec.slug; KV.set('ks:siteemail', em); }
+}
 function seed() {
   KV.clear(); stripeSubs = []; stripeCustomers = []; created = [];
   KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, name: 'Test Shop', plan: ['P0'] } }));
-  KV.set('ks:sites', JSON.stringify({
-    'test-shop': { slug: 'test-shop', business: 'Test Shop', email: EMAIL, phone: '816-555-0101', modules: ['P0'], published: true },
-  }));
+  putSite({ slug: 'test-shop', business: 'Test Shop', email: EMAIL, phone: '816-555-0101', modules: ['P0'], published: true, claimed: true });
 }
-const site = () => JSON.parse(KV.get('ks:sites'))['test-shop'];
+const site = () => JSON.parse(KV.get('ks:site:test-shop'));
 const acct = () => JSON.parse(KV.get('ks:accounts'))[EMAIL];
 
 let pass = 0, fail = 0;
@@ -150,14 +172,14 @@ const master = (await import('file:///C:/Users/Chris/killswitch/api/master.js'))
 const asAdmin = (body) => call(master, { token: 'testadminkey', ...body });
 
 KV.clear();
-KV.set('ks:sites', JSON.stringify({ 'test-shop': {
+putSite({
   slug: 'test-shop', business: 'Test Shop', email: EMAIL, trade: 'auto repair',
   phone: '816-555-0101', street: '123 Main St', city: 'Lenexa', state: 'KS', zip: '66215',
   about: 'Family run since 1998.', tagline: 'Brakes done right',
   hours: [{ d: 'Mon to Fri', h: '8am to 6pm' }],
   services: [{ name: 'Brakes', desc: 'Pads and rotors' }],
-  modules: ['P0', 'P3'], published: true,
-} }));
+  modules: ['P0', 'P3'], published: true, claimed: true,
+});
 
 r = await asAdmin({ action: 'site-list' });
 const summary = r.body.sites[0];
@@ -227,6 +249,84 @@ const l1 = r.body.leads.find((x) => x.id === 'L1'), l2 = r.body.leads.find((x) =
 check('two people on different leads both survive', l1.stage === 'responded' && l2.notes === 'left a voicemail',
   JSON.stringify({ l1: l1.stage, l2: l2.notes }));
 check('lead identity is intact after all that', l1.name === 'Auto Tech Services Center' && l2.phone === '913-722-5151');
+
+// ---------------------------------------------------------------------------
+console.log('\n6. Sites for everyone: draft, deliver, claim');
+process.env.LOB_API_KEY = 'test_stub';
+process.env.KS_FROM_NAME = 'Killswitch'; process.env.KS_FROM_LINE1 = '1 Main St';
+process.env.KS_FROM_CITY = 'KC'; process.env.KS_FROM_STATE = 'MO'; process.env.KS_FROM_ZIP = '64111';
+const siteApi = (await import('file:///C:/Users/Chris/killswitch/api/site.js')).default;
+const { renderSite } = await import('file:///C:/Users/Chris/killswitch/lib/site-template.js');
+const { getSite } = await import('file:///C:/Users/Chris/killswitch/lib/sites.js');
+
+KV.clear(); lobCards.length = 0;
+// a legacy blob site, to prove the migration path
+KV.set('ks:sites', JSON.stringify({ 'old-shop': { slug: 'old-shop', business: 'Old Shop', email: 'old@x.com', published: true } }));
+KV.set('ks:leads', JSON.stringify([
+  { id: 'A', name: "Charlie's Brake & Muffler", trade: 'auto repair', phone: '913-859-9994', street: '12912 Santa Fe Trail Dr', city: 'Lenexa', state: 'KS', zip: '66215' },
+  { id: 'B', name: 'Downtown Dental', trade: 'dentist', phone: '816-555-1212', street: '5 Elm St', city: 'Kansas City', state: 'MO', zip: '64111' },
+  { id: 'C', name: "Charlie's Brake & Muffler", trade: 'auto repair', phone: '913-000-0000', street: '9 Other Rd', city: 'Olathe', state: 'KS', zip: '66061' },
+  { name: 'No Id Shop', trade: 'bakery', street: '1 X', state: 'KS', zip: '66215' },
+]));
+
+r = await asAdmin({ action: 'site-migrate' });
+check('the old blob migrates to per-slug keys', r.body.migrated === 1 && !!KV.get('ks:site:old-shop'), JSON.stringify(r.body));
+check('an already-live site stays indexable after migrating', JSON.parse(KV.get('ks:site:old-shop')).claimed === true);
+
+r = await asAdmin({ action: 'site-bulk-draft', limit: 2 });
+check('drafts generate in batches', r.body.created === 2 && r.body.remaining === 1, JSON.stringify(r.body));
+check('a lead with no id is skipped, and counted', r.body.skippedNoId === 1, JSON.stringify(r.body.skippedNoId));
+r = await asAdmin({ action: 'site-bulk-draft', limit: 100 });
+check('the rest generate, none repeated', r.body.created === 1 && r.body.remaining === 0, JSON.stringify(r.body));
+r = await asAdmin({ action: 'site-bulk-draft', limit: 100 });
+check('running it again creates nothing', r.body.created === 0, JSON.stringify(r.body));
+
+const charlie = await getSite('charlies-brake-muffler');
+check('same name in another city gets its own slug', !!(await getSite('charlies-brake-muffler-olathe')));
+check('draft holds only facts we have', charlie.phone === '913-859-9994' && charlie.city === 'Lenexa' && charlie.about === '' && charlie.hours.length === 0);
+check('trade services are filled in', charlie.services.length === 6 && charlie.services[0].name === 'Brakes');
+const dental = await getSite('downtown-dental');
+check('a medical practice gets NO invented service menu', dental.services.length === 0, JSON.stringify(dental.services));
+
+// invisible until published
+const mkq = (slug) => { const res = mkres(); res.setHeader = () => {}; res.send = (h) => { res.body = h; return res; }; return [{ method: 'GET', query: { slug }, headers: {} }, res]; };
+let [rq, rs] = mkq('charlies-brake-muffler'); await siteApi(rq, rs);
+check('an unpublished draft is a hard 404', rs.code === 404, 'got ' + rs.code);
+
+// the rep publishes it on the call
+r = await call(admin, { action: 'site-publish', token: 'r_dana_key', id: 'A' });
+check('a rep can publish on the call', r.code === 200 && r.body.url === '/s/charlies-brake-muffler', JSON.stringify(r.body));
+[rq, rs] = mkq('charlies-brake-muffler'); await siteApi(rq, rs);
+check('now the link works', rs.code === 200 && rs.body.includes("Charlie's Brake"), 'got ' + rs.code);
+check('but it is NOT indexable yet', rs.body.includes('name="robots" content="noindex'));
+r = await call(admin, { action: 'site-save', token: 'r_dana_key' });
+check('a rep still cannot edit site content', r.code === 400 || r.code === 403, 'got ' + r.code);
+
+// the postcard carries the address of a site that exists
+KV.set('ks:leadmeta', KV.get('ks:leadmeta') || {});
+const { lobSend } = await import('file:///C:/Users/Chris/killswitch/lib/mailer.js');
+const meta = (KV.get('ks:leadmeta') || {});
+const slugB = JSON.parse(meta.B).siteSlug;
+await lobSend({ id: 'B', name: 'Downtown Dental', trade: 'dentist', street: '5 Elm St', city: 'Kansas City', state: 'MO', zip: '64111', siteSlug: slugB });
+const card = decodeURIComponent(lobCards[0].replace(/\+/g, ' '));
+check('the postcard prints their own URL', card.includes('killswitchwebsites.com/s/downtown-dental'), card.slice(0, 60));
+check('the card says already built, not claim yours', card.includes('already built') && !card.includes('Claim your'));
+check('mailing published the site so the URL resolves', (await getSite('downtown-dental')).published === true);
+check('mailing did NOT make it indexable', (await getSite('downtown-dental')).claimed === false);
+
+// they say yes: onboarding claims it
+r = await asAdmin({ action: 'onboard', email: 'charlie@brakes.com', name: 'Charlie', slug: 'charlies-brake-muffler' });
+check('onboarding claims the site', r.code === 200 && r.body.claimedSlug === 'charlies-brake-muffler', JSON.stringify(r.body));
+const claimedSite = await getSite('charlies-brake-muffler');
+check('claimed site is indexable at last', !renderSite(claimedSite, {}).includes('noindex'));
+check('and it carries the customer email', claimedSite.email === 'charlie@brakes.com');
+
+// the list stays cheap
+r = await asAdmin({ action: 'site-list', limit: 2 });
+check('site-list pages instead of shipping everything', r.body.sites.length === 2 && r.body.total === 4, JSON.stringify({ n: r.body.sites.length, total: r.body.total }));
+check('and reports draft vs published counts', r.body.counts.all === 4 && r.body.counts.published === 3, JSON.stringify(r.body.counts));
+r = await asAdmin({ action: 'site-list', q: 'olathe' });
+check('search finds a shop by city', r.body.total === 1 && r.body.sites[0].slug === 'charlies-brake-muffler-olathe', JSON.stringify(r.body.sites.map((s) => s.slug)));
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

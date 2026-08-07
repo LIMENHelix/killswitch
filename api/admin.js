@@ -20,6 +20,7 @@
 import { configured, getLeads, saveLeads, getConfig, saveConfig, getLeadMeta, setLeadMeta } from '../lib/store.js';
 import { lobSend, runAutopilot, spentToDate, COST } from '../lib/mailer.js';
 import { identify, isOwner, anyKeyConfigured } from '../lib/roles.js';
+import { getSite, upsertSite } from '../lib/sites.js';
 
 const OWNER_ONLY = new Set(['setconfig', 'run-autopilot', 'mail', 'seed']);
 
@@ -119,17 +120,37 @@ export default async function handler(req, res) {
       }
       res.status(200).json({ ok: true, meta: saved }); return;
     }
+    // THE DELIVERY MOMENT, and the one write a rep is trusted with.
+    // The shop said "yes, text me the link", so their draft goes live. It is
+    // published but NOT claimed, so the link works and search engines still stay
+    // out until they actually become a customer (owner-only, via onboarding).
+    // A rep cannot edit content, cannot unpublish, and cannot make it indexable.
+    if (action === 'site-publish') {
+      const meta = await getLeadMeta();
+      const slug = body.slug || (meta[body.id] && meta[body.id].siteSlug);
+      if (!slug) { res.status(404).json({ error: 'no_site', message: 'No website has been drafted for this lead yet.' }); return; }
+      const site = await getSite(slug);
+      if (!site) { res.status(404).json({ error: 'no_site' }); return; }
+      if (!site.published) await upsertSite({ slug, published: true });
+      if (body.id) await setLeadMeta(body.id, { siteSlug: slug, sitePublished: true, publishedBy: who.name });
+      res.status(200).json({ ok: true, slug, url: '/s/' + slug, alreadyLive: !!site.published });
+      return;
+    }
+
     if (action === 'mail') {
       const ids = new Set(body.ids || []);
       const cap = Math.min(ids.size, 250); // safety ceiling per call
       const leads = await getLeads();
+      // Read the per-lead notes separately rather than merging them into `leads`:
+      // this array gets written back below, and meta belongs in its own hash.
+      const meta = await getLeadMeta();
       let sent = 0, bad = 0; const failed = [];
       let done = 0;
       for (const l of leads) {
         if (done >= cap) break;
         if (!ids.has(l.id) || l.status === 'mailed' || l.status === 'bad_address' || l.lob_id) continue;
         done++;
-        const r = await lobSend(l);
+        const r = await lobSend({ ...l, ...(meta[l.id] || {}) });
         if (r.id) { l.status = 'mailed'; l.lob_id = r.id; sent++; }
         else if (r.code === 'failed_deliverability_strictness') { l.status = 'bad_address'; bad++; }
         else { failed.push({ name: l.name, error: r.error }); }

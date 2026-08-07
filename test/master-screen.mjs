@@ -15,7 +15,7 @@ const FULL = {
   posts: [], modules: ['P0', 'P3'], published: true,
 };
 const SUMMARY = { slug: FULL.slug, business: FULL.business, email: FULL.email, trade: FULL.trade, published: true, modules: FULL.modules };
-let sawSiteGet = false, saved = null;
+let sawSiteGet = false, saved = null, bulkCalls = 0;
 
 const server = http.createServer((req, res) => {
   if (req.url.startsWith('/api/master')) {
@@ -23,7 +23,17 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       const body = JSON.parse(b || '{}');
       res.setHeader('content-type', 'application/json');
-      if (body.action === 'site-list') return res.end(JSON.stringify({ ok: true, sites: [SUMMARY] }));
+      if (body.action === 'site-list') return res.end(JSON.stringify({
+        ok: true, sites: [SUMMARY], total: 1,
+        counts: { all: 3, published: 1, drafts: 2 }, offset: 0, limit: 100,
+      }));
+      if (body.action === 'site-bulk-draft') {
+        bulkCalls++;
+        return res.end(JSON.stringify(bulkCalls === 1
+          ? { ok: true, created: 200, remaining: 50, skippedNoId: 0 }
+          : { ok: true, created: 50, remaining: 0, skippedNoId: 2 }));
+      }
+      if (body.action === 'site-migrate') return res.end(JSON.stringify({ ok: true, migrated: 7 }));
       if (body.action === 'site-get') { sawSiteGet = true; return res.end(JSON.stringify({ ok: true, site: FULL })); }
       if (body.action === 'site-save') { saved = body.site; return res.end(JSON.stringify({ ok: true, site: { ...FULL, ...body.site } })); }
       return res.end(JSON.stringify({ ok: true, accounts: [], totals: { customers: 0, paying: 0, mrr: 0 }, stripe: true }));
@@ -91,6 +101,25 @@ check('save carries the address back', saved && saved.city === 'Lenexa' && saved
 check('save carries hours and services back', saved && saved.hours.length === 1 && saved.services.length === 1);
 check('the edit itself landed', saved && saved.tagline === 'Brakes done right, fast');
 check('P10 is gone from the module list', !(await evaluate(`document.getElementById('f_mods').textContent`)).includes('P10'));
+
+console.log('\nBULK DRAFTING');
+check('the draft/live counts are shown', (await evaluate(`document.getElementById('bulkCounts').textContent`)) === '3 built · 1 live · 2 still drafts');
+check('the state badge names all three states',
+  (await evaluate(`document.querySelector('#sTb .st').className`)).includes('claimed')
+  || (await evaluate(`document.querySelector('#sTb .st').textContent`)).length > 0);
+
+// auto-accept the confirm, then let the loop drive itself to completion
+await evaluate(`window.confirm = () => true; document.getElementById('bulkGo').click();`);
+await new Promise((r) => setTimeout(r, 1400));
+check('it batches until there is nothing left', bulkCalls >= 2, 'calls=' + bulkCalls);
+const msg = await evaluate(`document.getElementById('bulkMsg').textContent`);
+check('it reports what it built', msg.includes('250 drafts built'), msg);
+check('and says they are invisible until published', msg.includes('404'), msg);
+check('the button is usable again', await evaluate(`document.getElementById('bulkGo').disabled === false`));
+
+await evaluate(`document.getElementById('sMigrate').click()`);
+await new Promise((r) => setTimeout(r, 500));
+check('migrate reports what moved', (await evaluate(`document.getElementById('bulkMsg').textContent`)).includes('7 site'));
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 chrome.kill(); server.close();
