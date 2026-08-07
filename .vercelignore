@@ -1,3 +1,9 @@
+# `vercel env pull` writes every secret in the project to .env.local, and
+# `vercel --prod` uploads the whole working tree. Without this line, one pull
+# followed by one deploy would serve STRIPE_SECRET_KEY as a static file.
+.env
+.env.*
+
 _archive
 _playbook
 _outreach
