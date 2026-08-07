@@ -34,16 +34,33 @@ function digits(p) {
 const clean = (v, n = 200) => String(v == null ? '' : v).trim().slice(0, n);
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
-
   const expected = process.env.AGENT_TOKEN;
   if (!expected) { res.status(503).json({ error: 'no_auth_configured' }); return; }
 
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
   body = body || {};
-  const token = body.token || req.headers['x-agent-token'];
+
+  // THREE places the token may arrive, because no-code tool builders differ in
+  // what they let you set. A header is cleanest, but if the console only offers a
+  // URL and a body schema, ?token= works and so does a token field in the body.
+  // Getting this wrong is invisible from the caller's side: the tool 401s, the
+  // agent has nothing to work with, and it improvises or transfers.
+  const q = (req.query && req.query.token) || '';
+  const token = body.token || req.headers['x-agent-token'] || q;
   if (token !== expected) { res.status(401).json({ error: 'unauthorized' }); return; }
+
+  // GET /api/agent?token=...&action=ping  — paste in a browser to prove the URL
+  // and the token are right BEFORE wiring it into the agent.
+  if (req.method === 'GET') {
+    res.status(200).json({
+      ok: true, pong: true,
+      message: 'Token accepted. This URL is correct. Use POST with {"action":"whoami","phone":"..."} from the agent.',
+      actions: ['whoami', 'find_business', 'publish_site', 'create_lead', 'log_call', 'book_call', 'handoff'],
+    });
+    return;
+  }
+  if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
 
   const host = (req.headers && req.headers.host) ? 'https://' + req.headers.host : 'https://killswitchwebsites.com';
 
