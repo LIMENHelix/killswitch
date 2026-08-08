@@ -58,6 +58,13 @@ globalThis.fetch = async (url, opts = {}) => {
   }
 
   if (u.startsWith('https://api.anthropic.com')) {
+    const sent = JSON.parse(opts.body || '{}');
+    anthropicCalls.push(sent);
+    if (sent.model === 'claude-opus-5') {
+      if (siteWriterReply !== null) return json(siteWriterReply);
+      return json({ stop_reason: 'end_turn', content: [{ type: 'text', text:
+        '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>Test Shop</title>\n<meta name="description" content="x">\n<style>body{font:16px/1.5 Georgia,serif;background:#f6f1e7}</style>\n</head>\n<body><h1>Test Shop</h1><p><a href="tel:+18165550101">816-555-0101</a></p>' + 'x'.repeat(900) + '</body>\n</html>' }] });
+    }
     return json({ content: [{ type: 'text', text: 'Got it, I will pass that to your builder.' }] });
   }
   if (u.startsWith('https://api.lob.com')) {
@@ -67,6 +74,8 @@ globalThis.fetch = async (url, opts = {}) => {
   throw new Error('unexpected fetch ' + u);
 };
 const lobCards = [];
+const anthropicCalls = [];
+let siteWriterReply = null;
 
 const { panelToken } = await import('file:///C:/Users/Chris/killswitch/lib/panel-auth.js');
 const support = (await import('file:///C:/Users/Chris/killswitch/api/support.js')).default;
@@ -257,7 +266,7 @@ process.env.KS_FROM_NAME = 'Killswitch'; process.env.KS_FROM_LINE1 = '1 Main St'
 process.env.KS_FROM_CITY = 'KC'; process.env.KS_FROM_STATE = 'MO'; process.env.KS_FROM_ZIP = '64111';
 const siteApi = (await import('file:///C:/Users/Chris/killswitch/api/site.js')).default;
 const { renderSite } = await import('file:///C:/Users/Chris/killswitch/lib/site-template.js');
-const { getSite } = await import('file:///C:/Users/Chris/killswitch/lib/sites.js');
+const { getSite, upsertSite: upsertSiteFn } = await import('file:///C:/Users/Chris/killswitch/lib/sites.js');
 
 KV.clear(); lobCards.length = 0;
 // a legacy blob site, to prove the migration path
@@ -426,6 +435,46 @@ check('the email is theirs now, normalised', cb.email === 'charlie@brakes.com', 
 check('the site is live AND claimed, so it can be indexed', cb.published === true && cb.claimed === true);
 check('an account exists for them', !!JSON.parse(KV.get('ks:accounts'))['charlie@brakes.com']);
 check('the lead is marked won', JSON.parse((KV.get('ks:leadmeta')).A).stage === 'won', KV.get('ks:leadmeta').A);
+
+// ---------------------------------------------------------------------------
+console.log('\n9. A site per business, not a template with fields');
+process.env.ANTHROPIC_API_KEY = 'ant_stub';
+KV.clear(); anthropicCalls.length = 0; siteWriterReply = null;
+putSite({ slug: 'test-shop', business: 'Test Shop', trade: 'auto repair', phone: '816-555-0101',
+  city: 'Lenexa', state: 'KS', published: true, claimed: false, modules: ['P0'] });
+
+r = await asAdmin({ action: 'site-write', slug: 'test-shop' });
+check('it writes a page for this business', r.code === 200 && r.body.bytes > 800, JSON.stringify(r.body));
+const sentPrompt = anthropicCalls.find((c) => c.model === 'claude-opus-5');
+check('it uses claude-opus-5', !!sentPrompt);
+check('the brief carries only facts we hold',
+  sentPrompt.messages[0].content.includes('816-555-0101') && !/founded|since \d{4}|award/i.test(sentPrompt.messages[0].content));
+check('and forbids inventing the rest', sentPrompt.system.includes('does not go on the page'));
+
+[rq, rs] = mkq('test-shop'); await siteApi(rq, rs);
+check('/s/ serves the written page, not the template', rs.code === 200 && rs.body.includes('Georgia,serif'), rs.body.slice(0, 60));
+check('an unclaimed business is STILL noindex', rs.body.includes('name="robots" content="noindex'));
+
+// claiming flips indexability without regenerating anything
+await upsertSiteFn({ slug: 'test-shop', claimed: true });
+[rq, rs] = mkq('test-shop'); await siteApi(rq, rs);
+check('claiming makes the same stored page indexable', !rs.body.includes('noindex'));
+check('and it is still their written page', rs.body.includes('Georgia,serif'));
+
+// a bad generation must never reach a customer
+siteWriterReply = { stop_reason: 'end_turn', content: [{ type: 'text', text: '<!DOCTYPE html><html><head><title>x</title></head><body><img src="https://cdn.example.com/hero.jpg">' + 'y'.repeat(900) + '</body></html>' }] };
+r = await asAdmin({ action: 'site-write', slug: 'test-shop' });
+check('a page needing the network is rejected', r.code === 502 && /external resource/.test(r.body.message), JSON.stringify(r.body));
+siteWriterReply = { stop_reason: 'refusal', content: [] };
+r = await asAdmin({ action: 'site-write', slug: 'test-shop' });
+check('a refusal is handled, not treated as a page', r.code === 502 && /declined/.test(r.body.message), JSON.stringify(r.body));
+[rq, rs] = mkq('test-shop'); await siteApi(rq, rs);
+check('the good page survived both failures', rs.body.includes('Georgia,serif'));
+
+siteWriterReply = null;
+r = await asAdmin({ action: 'site-unwrite', slug: 'test-shop' });
+[rq, rs] = mkq('test-shop'); await siteApi(rq, rs);
+check('dropping it falls back to the shared template', rs.code === 200 && !rs.body.includes('Georgia,serif') && rs.body.includes('Test Shop'));
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

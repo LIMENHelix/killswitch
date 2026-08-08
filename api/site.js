@@ -6,6 +6,7 @@
 // every customer at once, and Vercel's function count does not grow with sales.
 import { getSite } from '../lib/sites.js';
 import { renderSite } from '../lib/site-template.js';
+import { enforceRobots } from '../lib/site-writer.js';
 
 export default async function handler(req, res) {
   const slug = String((req.query && req.query.slug) || '').trim();
@@ -30,13 +31,27 @@ export default async function handler(req, res) {
 
   const host = (req.headers && req.headers.host) ? 'https://' + req.headers.host : 'https://killswitchwebsites.com';
 
+  // A site written for THIS business wins. The shared template is the fallback,
+  // so a business whose own page has not been written yet still has one.
+  // enforceRobots re-applies the index rule on every serve rather than trusting
+  // what was stored, so claiming or unclaiming a site takes effect immediately.
   let html;
-  try {
-    html = renderSite(site, { base: host });
-  } catch (e) {
-    console.error('[site] render', slug, e);
-    res.status(500).send('temporarily unavailable');
-    return;
+  if (site.html) {
+    try {
+      html = enforceRobots(site.html, !!site.claimed);
+    } catch (e) {
+      console.error('[site] stored html', slug, e);
+      html = '';
+    }
+  }
+  if (!html) {
+    try {
+      html = renderSite(site, { base: host });
+    } catch (e) {
+      console.error('[site] render', slug, e);
+      res.status(500).send('temporarily unavailable');
+      return;
+    }
   }
 
   res.setHeader('content-type', 'text/html; charset=utf-8');

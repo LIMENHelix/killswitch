@@ -7,6 +7,7 @@
 // accurate with no sync to maintain. Free accounts (no Stripe) show plan P0.
 import { getAccounts, upsertAccount, getLeads, setLeadMetaMany } from '../lib/store.js';
 import { draftFromLead } from '../lib/draft-site.js';
+import { writeSite } from '../lib/site-writer.js';
 
 // Bulk draft generation writes hundreds of records per call.
 export const config = { maxDuration: 60 };
@@ -214,6 +215,28 @@ export default async function handler(req, res) {
       const s = await getSite(body.slug);
       if (!s) { res.status(404).json({ error: 'not_found' }); return; }
       res.status(200).json({ ok: true, site: s });
+      return;
+    }
+
+    // Write this business its own website, from a prompt about that business.
+    // The generated page replaces the template for this slug only; every other
+    // site is untouched, so upgrading one customer never moves anyone else.
+    if (action === 'site-write') {
+      const s = await getSite(body.slug);
+      if (!s) { res.status(404).json({ error: 'not_found' }); return; }
+      const out = await writeSite(s, { extra: body.extra });
+      if (!out.ok) { res.status(502).json({ error: 'write_failed', message: out.error }); return; }
+      const saved = await upsertSite({ slug: s.slug, html: out.html, htmlAt: new Date().toISOString() });
+      res.status(200).json({ ok: true, bytes: out.bytes, url: '/s/' + saved.slug, htmlAt: saved.htmlAt });
+      return;
+    }
+
+    // Drop a generated page and fall back to the shared template for this site.
+    if (action === 'site-unwrite') {
+      const s = await getSite(body.slug);
+      if (!s) { res.status(404).json({ error: 'not_found' }); return; }
+      await upsertSite({ slug: s.slug, html: '', htmlAt: '' });
+      res.status(200).json({ ok: true });
       return;
     }
 
