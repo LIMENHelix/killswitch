@@ -155,6 +155,26 @@
         <div class="track" id="bulkTrack" hidden><div class="fill" id="bulkFill"></div></div>
       </div>
 
+      <!-- Lead finder. Runs Google Places and shows what the classifier makes of
+           each result. Costs real money per search, so it is one click, one city,
+           and it reports the split rather than silently adding rows. -->
+      <div class="bulk" id="findBox">
+        <div class="bulk-h">
+          <b>Find leads</b>
+          <span class="bulk-n">placeholder sites count as targets</span>
+        </div>
+        <p class="bulk-p">Searches Google Places for one trade in one city and sorts what it finds: no website, social only, a directory listing, or a site they built themselves. Businesses with a real website of their own are dropped, and permanently closed ones never appear.</p>
+        <div class="bulk-row">
+          <select id="fdTrade"></select>
+          <input class="f" id="fdCity" placeholder="Overland Park, KS" style="min-width:200px">
+          <button class="btn sm" id="fdGo">Search</button>
+          <span class="bulk-n" id="fdMsg"></span>
+        </div>
+        <div class="wrapt" id="fdWrap" style="margin-top:12px;display:none"><table><thead><tr>
+          <th>Business</th><th>Their "website"</th><th>Reputation</th><th>Hours</th><th>Phone</th>
+        </tr></thead><tbody id="fdTb"></tbody></table></div>
+      </div>
+
       <div class="bar" style="margin-top:14px">
         <input class="f" id="sQ" placeholder="Search business, slug or city...">
         <select id="sState"><option value="">Draft and live</option><option value="1">Live only</option><option value="0">Drafts only</option></select>
@@ -344,6 +364,33 @@ $('sMigrate').onclick=async()=>{
 let sTimer=null;
 ['sQ','sState','sSrc'].forEach(id=>$(id).oninput=()=>{ clearTimeout(sTimer); sTimer=setTimeout(()=>{ sitePage=0; loadSites(); },220); });
 $('sMore').onclick=()=>{ sitePage++; loadSites(true); };
+
+/* ---- lead finder ---- */
+const FD_TRADES=['auto repair','electrician','nails/beauty','pet groomer','bakery','cafe/coffee','hvac','plumber','salon/barber','florist','painter','clinic/doctor','cleaning','roofer','landscaper','vet','dentist','gym/fitness','restaurant'];
+$('fdTrade').innerHTML=FD_TRADES.map(t=>`<option>${esc(t)}</option>`).join('');
+const FD_LABEL={none:'nothing at all',facebook_only:'social only',directory_only:'a directory listing',diy_builder:'built it themselves'};
+$('fdGo').onclick=async()=>{
+  const city=$('fdCity').value.trim();
+  if(!city){ $('fdMsg').textContent='Enter a city, like "Overland Park, KS".'; return; }
+  $('fdGo').disabled=true; $('fdMsg').textContent='Searching Google Places...';
+  // Same owner key the rest of this page uses; /api/find accepts it now.
+  const r=await fetch('/api/find',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({token:KEY,trade:$('fdTrade').value,city})});
+  const d=await r.json().catch(()=>({}));
+  $('fdGo').disabled=false;
+  if(!r.ok){ $('fdMsg').textContent='Error: '+(d.error||r.status); return; }
+  const parts=Object.keys(d.byStatus||{}).map(k=>`${d.byStatus[k]} ${FD_LABEL[k]||k}`);
+  $('fdMsg').textContent=`${d.count} worth building for (${parts.join(', ')}). Dropped ${d.skipped.hasSite} with a real site, ${d.skipped.closed} closed. ${d.withHours} have hours, ${d.withRating} have a strong rating.`;
+  $('fdWrap').style.display='block';
+  $('fdTb').innerHTML=(d.leads||[]).map(l=>`<tr>
+    <td class="email">${esc(l.name)}${l.category?'<div class="sub">'+esc(l.category)+'</div>':''}</td>
+    <td>${l.web_url?`<a href="${esc(l.web_url)}" target="_blank" rel="noopener">${esc(l.web_label)}</a>`:'<span style="color:var(--mute2)">nothing at all</span>'}</td>
+    <td class="mono">${l.rating?esc(l.rating)+' ('+esc(l.reviews_count)+')':'<span style="color:var(--mute2)">—</span>'}</td>
+    <td class="mono">${l.hours&&l.hours.length?esc(l.hours.length)+' days':'<span style="color:var(--mute2)">—</span>'}</td>
+    <td class="mono">${esc(l.phone||'—')}</td>
+  </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--mute2)">Nothing matched.</td></tr>';
+};
+$('fdCity').onkeydown=e=>{ if(e.key==='Enter') $('fdGo').click(); };
 
 $('sNew').onclick=()=>openEditor(null);
 $('sCancel').onclick=()=>{ $('sEd').style.display='none'; editing=null; };

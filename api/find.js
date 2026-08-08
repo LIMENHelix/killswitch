@@ -1,4 +1,5 @@
 import { classify } from '../lib/web-presence.js';
+import { identify, isOwner } from '../lib/roles.js';
 
 // Killswitch Websites lead finder — server-side Google Places (New) search.
 // GOOGLE_PLACES_API_KEY is a Sensitive Vercel var (can't be pulled locally), so
@@ -96,7 +97,11 @@ export default async function handler(req, res) {
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
   body = body || {};
-  if ((body.token || req.headers['x-switch-token']) !== token) { res.status(401).json({ error: 'unauthorized' }); return; }
+  // SWITCH_TOKEN (how _outreach/pull.py has always called this) OR an owner key,
+  // so the finder can be run from /master with the key already in the browser
+  // instead of requiring a token nobody can read out of Vercel.
+  const presented = body.token || req.headers['x-switch-token'];
+  if (presented !== token && !isOwner(identify(presented))) { res.status(401).json({ error: 'unauthorized' }); return; }
 
   const trade = String(body.trade || '').trim();
   const city = String(body.city || '').trim();
@@ -143,7 +148,14 @@ export default async function handler(req, res) {
     } while (pageToken);
     const byStatus = {};
     for (const l of leads) byStatus[l.web_status] = (byStatus[l.web_status] || 0) + 1;
-    res.status(200).json({ ok: true, query, count: leads.length, byStatus, skipped, leads });
+    const withHours = leads.filter((l) => l.hours && l.hours.length).length;
+    const withRating = leads.filter((l) => l.rating >= 4 && l.reviews_count >= 15).length;
+    // One line to the runtime log, so a run can be read back without the caller
+    // having to paste anything anywhere.
+    console.log('[find]', JSON.stringify({
+      query, kept: leads.length, byStatus, skipped, withHours, withRating,
+    }));
+    res.status(200).json({ ok: true, query, count: leads.length, byStatus, skipped, withHours, withRating, leads });
   } catch (e) {
     console.error('[find]', e);
     res.status(502).json({ error: String(e.message || e) });
