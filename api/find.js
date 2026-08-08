@@ -112,6 +112,7 @@ export default async function handler(req, res) {
   try {
     const leads = [], seen = new Set();
     const skipped = { closed: 0, hasSite: 0 };
+    const droppedHosts = {};
     let pageToken = null, pages = 0;
     do {
       const d = await search(query, key, pageToken);
@@ -121,7 +122,14 @@ export default async function handler(req, res) {
 
         // A placeholder is a BETTER lead than nothing, not a disqualification.
         const web = classify(p.websiteUri);
-        if (!web.isTarget) { skipped.hasSite++; continue; }
+        if (!web.isTarget) {
+          skipped.hasSite++;
+          // Tally WHAT we dropped, not just how many. Counts alone cannot tell
+          // "they genuinely own a domain" from "they are on a platform missing
+          // from lib/web-presence.js", and those call for opposite conclusions.
+          if (web.host) droppedHosts[web.host] = (droppedHosts[web.host] || 0) + 1;
+          continue;
+        }
 
         const name = ((p.displayName || {}).text || '').trim();
         if (!name || seen.has(name.toLowerCase())) continue;
@@ -152,10 +160,18 @@ export default async function handler(req, res) {
     const withRating = leads.filter((l) => l.rating >= 4 && l.reviews_count >= 15).length;
     // One line to the runtime log, so a run can be read back without the caller
     // having to paste anything anywhere.
+    // Repeat hosts are the tell: one shared domain across several businesses is a
+    // platform we should be classifying, not thirty separate independent sites.
+    const dropped = Object.entries(droppedHosts).sort((a, b) => b[1] - a[1]).slice(0, 15);
+    const shared = dropped.filter(([, n]) => n > 1);
     console.log('[find]', JSON.stringify({
       query, kept: leads.length, byStatus, skipped, withHours, withRating,
+      dropped, sharedHosts: shared.length,
     }));
-    res.status(200).json({ ok: true, query, count: leads.length, byStatus, skipped, withHours, withRating, leads });
+    res.status(200).json({
+      ok: true, query, count: leads.length, byStatus, skipped, withHours, withRating,
+      dropped, leads,
+    });
   } catch (e) {
     console.error('[find]', e);
     res.status(502).json({ error: String(e.message || e) });

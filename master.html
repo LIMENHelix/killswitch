@@ -173,6 +173,7 @@
         <div class="wrapt" id="fdWrap" style="margin-top:12px;display:none"><table><thead><tr>
           <th>Business</th><th>Their "website"</th><th>Reputation</th><th>Hours</th><th>Phone</th>
         </tr></thead><tbody id="fdTb"></tbody></table></div>
+        <p class="bulk-p" id="fdDropped" style="margin-top:10px"></p>
       </div>
 
       <div class="bar" style="margin-top:14px">
@@ -381,6 +382,13 @@ $('fdGo').onclick=async()=>{
   if(!r.ok){ $('fdMsg').textContent='Error: '+(d.error||r.status); return; }
   const parts=Object.keys(d.byStatus||{}).map(k=>`${d.byStatus[k]} ${FD_LABEL[k]||k}`);
   $('fdMsg').textContent=`${d.count} worth building for (${parts.join(', ')}). Dropped ${d.skipped.hasSite} with a real site, ${d.skipped.closed} closed. ${d.withHours} have hours, ${d.withRating} have a strong rating.`;
+  // What got dropped, by host. A domain appearing more than once is a platform
+  // we should probably be treating as a placeholder, not thirty separate sites.
+  const dp=d.dropped||[];
+  $('fdDropped').innerHTML = dp.length
+    ? '<b>Dropped as "their own site":</b> '+dp.map(([h,n])=>`${esc(h)}${n>1?` <b style="color:var(--amber)">&times;${n}</b>`:''}`).join(' · ')
+      + (dp.some(([,n])=>n>1) ? '<br><span style="color:var(--amber)">A host appearing more than once is probably a platform worth classifying. Tell Claude which ones.</span>' : '')
+    : '';
   $('fdWrap').style.display='block';
   $('fdTb').innerHTML=(d.leads||[]).map(l=>`<tr>
     <td class="email">${esc(l.name)}${l.category?'<div class="sub">'+esc(l.category)+'</div>':''}</td>
