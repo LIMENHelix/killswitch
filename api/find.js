@@ -1,4 +1,4 @@
-import { classify } from '../lib/web-presence.js';
+import { classify, segment } from '../lib/web-presence.js';
 import { identify, isOwner } from '../lib/roles.js';
 
 // Killswitch Websites lead finder — server-side Google Places (New) search.
@@ -111,8 +111,9 @@ export default async function handler(req, res) {
 
   try {
     const leads = [], seen = new Set();
-    const skipped = { closed: 0, hasSite: 0 };
+    const skipped = { closed: 0, hasSite: 0, chain: 0 };
     const droppedHosts = {};
+    const seenHost = new Set();
     let pageToken = null, pages = 0;
     do {
       const d = await search(query, key, pageToken);
@@ -135,6 +136,15 @@ export default async function handler(req, res) {
         if (!name || seen.has(name.toLowerCase())) continue;
         seen.add(name.toLowerCase());
 
+        // A chain is one business with many pins, not many leads. Burnett Auto
+        // came back five times and Firestone four; counting each location
+        // separately overstates both the pool and how much of it we discard.
+        const h = web.host;
+        if (h) {
+          if (seenHost.has(h)) { skipped.chain++; continue; }
+          seenHost.add(h);
+        }
+
         leads.push({
           trade, name,
           phone: p.nationalPhoneNumber || '',
@@ -145,6 +155,9 @@ export default async function handler(req, res) {
           category: (p.primaryTypeDisplayName || {}).text || '',
           rating: p.rating || 0,
           reviews_count: p.userRatingCount || 0,
+          // A label, not a ranking. Which of these actually converts is an open
+          // question the call board will answer; see lib/web-presence.js.
+          segment: segment(p.rating, p.userRatingCount),
           hours: parseHours(p.regularOpeningHours),
           // Google's words about them, never the owner's. Kept separate so it
           // lands in the review bucket rather than straight onto their site.

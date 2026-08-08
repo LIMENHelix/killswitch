@@ -171,7 +171,7 @@
           <span class="bulk-n" id="fdMsg"></span>
         </div>
         <div class="wrapt" id="fdWrap" style="margin-top:12px;display:none"><table><thead><tr>
-          <th>Business</th><th>Their "website"</th><th>Reputation</th><th>Hours</th><th>Phone</th>
+          <th>Business</th><th>Their "website"</th><th>Reputation</th><th>Looks like</th><th>Hours</th><th>Phone</th>
         </tr></thead><tbody id="fdTb"></tbody></table></div>
         <p class="bulk-p" id="fdDropped" style="margin-top:10px"></p>
       </div>
@@ -369,7 +369,10 @@ $('sMore').onclick=()=>{ sitePage++; loadSites(true); };
 /* ---- lead finder ---- */
 const FD_TRADES=['auto repair','electrician','nails/beauty','pet groomer','bakery','cafe/coffee','hvac','plumber','salon/barber','florist','painter','clinic/doctor','cleaning','roofer','landscaper','vet','dentist','gym/fitness','restaurant'];
 $('fdTrade').innerHTML=FD_TRADES.map(t=>`<option>${esc(t)}</option>`).join('');
-const FD_LABEL={none:'nothing at all',facebook_only:'social only',directory_only:'a directory listing',diy_builder:'built it themselves'};
+const FD_LABEL={none:'nothing at all',facebook_only:'social only',directory_only:'a directory listing',diy_builder:'built it themselves',booking_only:'a booking page only'};
+// Labels, deliberately not a ranking. Which segment actually converts is what
+// the call board is for; nobody has that data yet.
+const FD_SEG={unproven:'barely rated yet',new_or_small:'new or small',established_strong:'busy, well rated',established_mixed:'established, mixed',reputation_problem:'reputation problem'};
 $('fdGo').onclick=async()=>{
   const city=$('fdCity').value.trim();
   if(!city){ $('fdMsg').textContent='Enter a city, like "Overland Park, KS".'; return; }
@@ -381,7 +384,9 @@ $('fdGo').onclick=async()=>{
   $('fdGo').disabled=false;
   if(!r.ok){ $('fdMsg').textContent='Error: '+(d.error||r.status); return; }
   const parts=Object.keys(d.byStatus||{}).map(k=>`${d.byStatus[k]} ${FD_LABEL[k]||k}`);
-  $('fdMsg').textContent=`${d.count} worth building for (${parts.join(', ')}). Dropped ${d.skipped.hasSite} with a real site, ${d.skipped.closed} closed. ${d.withHours} have hours, ${d.withRating} have a strong rating.`;
+  $('fdMsg').textContent=`${d.count} worth building for (${parts.join(', ')}). Dropped ${d.skipped.hasSite} with a real site`
+    +(d.skipped.chain?`, ${d.skipped.chain} extra locations of a chain`:'')
+    +`, ${d.skipped.closed} closed. ${d.withHours} have hours.`;
   // What got dropped, by host. A domain appearing more than once is a platform
   // we should probably be treating as a placeholder, not thirty separate sites.
   const dp=d.dropped||[];
@@ -394,9 +399,10 @@ $('fdGo').onclick=async()=>{
     <td class="email">${esc(l.name)}${l.category?'<div class="sub">'+esc(l.category)+'</div>':''}</td>
     <td>${l.web_url?`<a href="${esc(l.web_url)}" target="_blank" rel="noopener">${esc(l.web_label)}</a>`:'<span style="color:var(--mute2)">nothing at all</span>'}</td>
     <td class="mono">${l.rating?esc(l.rating)+' ('+esc(l.reviews_count)+')':'<span style="color:var(--mute2)">—</span>'}</td>
+    <td style="color:var(--mute2);font-size:.8rem">${esc(FD_SEG[l.segment]||l.segment||'')}</td>
     <td class="mono">${l.hours&&l.hours.length?esc(l.hours.length)+' days':'<span style="color:var(--mute2)">—</span>'}</td>
     <td class="mono">${esc(l.phone||'—')}</td>
-  </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--mute2)">Nothing matched.</td></tr>';
+  </tr>`).join('')||'<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--mute2)">Nothing matched.</td></tr>';
 };
 $('fdCity').onkeydown=e=>{ if(e.key==='Enter') $('fdGo').click(); };
 

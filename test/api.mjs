@@ -478,7 +478,7 @@ check('dropping it falls back to the shared template', rs.code === 200 && !rs.bo
 
 // ---------------------------------------------------------------------------
 console.log('\n10. Placeholder sites are the target, not a disqualification');
-const { classify, hookLine } = await import('file:///C:/Users/Chris/killswitch/lib/web-presence.js');
+const { classify, hookLine, segment: segmentFn } = await import('file:///C:/Users/Chris/killswitch/lib/web-presence.js');
 const { draftFromLead } = await import('file:///C:/Users/Chris/killswitch/lib/draft-site.js');
 
 check('no website at all is still a target', classify('').status === 'none' && classify('').isTarget);
@@ -509,6 +509,21 @@ const d2 = draftFromLead({
   hours: [{ d: 'Mon to Fri', h: '7am to 3pm' }, { d: 'Sat', h: '8am to noon' }],
   google_summary: 'A neighborhood bakery known for sourdough.',
 }, new Set());
+// booking widgets listed AS the website, found in the wild in Overland Park
+check('a booking page is a placeholder, not a website',
+  classify('https://book.gocheckin.net/x').status === 'booking_only'
+  && classify('https://booking.galaxyaccess.us/y').status === 'booking_only');
+check('and it is a target', classify('https://book.gocheckin.net/x').isTarget);
+
+// segments LABEL, they do not rank
+check('9 ratings says nothing either way', segmentFn(3.3, 9) === 'unproven');
+check('few ratings but trading = the new/small group', segmentFn(4.4, 22) === 'new_or_small');
+check('623 at 4.7 = busy and well rated', segmentFn(4.7, 623) === 'established_strong');
+check('200 at 3.1 = a site will not fix it', segmentFn(3.1, 200) === 'reputation_problem');
+check('a low rating is never excluded, only labelled',
+  ['unproven', 'new_or_small', 'reputation_problem', 'established_mixed', 'established_strong']
+    .includes(segmentFn(2.0, 500)));
+
 check('their published hours go live', d2.hours.length === 2 && d2.hours[0].h === '7am to 3pm');
 check("Google's description does NOT", d2.about === '' && d2.proposed.about.includes('sourdough'));
 check('and it says whose words they are', d2.proposedNote.includes('not the owner'));
