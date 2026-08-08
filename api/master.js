@@ -217,6 +217,26 @@ export default async function handler(req, res) {
       return;
     }
 
+    // Approve or discard what the voice agent suggested but could not confirm.
+    // Approving merges it into the record; discarding drops it. Either way the
+    // proposal is cleared, so nothing sits in limbo pretending to be reviewed.
+    if (action === 'site-proposed-resolve') {
+      const s = await getSite(body.slug);
+      if (!s) { res.status(404).json({ error: 'not_found' }); return; }
+      const proposed = s.proposed || {};
+      if (!Object.keys(proposed).length) { res.status(200).json({ ok: true, applied: [], note: 'nothing pending' }); return; }
+
+      const patch = { proposed: {}, proposedNote: '' };
+      let applied = [];
+      if (body.approve) {
+        const fields = Array.isArray(body.fields) && body.fields.length ? body.fields : Object.keys(proposed);
+        for (const f of fields) if (proposed[f] !== undefined) { patch[f] = proposed[f]; applied.push(f); }
+      }
+      const saved = await upsertSite({ slug: s.slug, ...patch });
+      res.status(200).json({ ok: true, applied, site: saved });
+      return;
+    }
+
     if (action === 'site-save') {
       const p = body.site || {};
       if (!p.business && !p.slug) { res.status(400).json({ error: 'business_required' }); return; }

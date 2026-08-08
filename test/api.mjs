@@ -389,5 +389,43 @@ check('it writes the outcome to the board', r.body.meta.stage === 'won' && r.bod
 r = await ag({ action: 'switch_on_billing', slug: 'paying-shop' });
 check('there is no tool that can touch billing', r.code === 400, 'got ' + r.code);
 
+// ---------------------------------------------------------------------------
+console.log('\n8. The call becomes a customer');
+
+// what the OWNER says goes straight on. what SEARCH found does not.
+r = await ag({ action: 'update_site', slug: 'charlies-brake-muffler',
+  confirmed: { about: 'Brakes and exhaust since 2009.', hours: [{ d: 'Mon to Fri', h: '8am to 6pm' }] },
+  proposed: { services: ['Transmission rebuilds'], phone: '913-000-0000' },
+  proposedNote: 'from a web listing' });
+check('what the owner says lands on the site', r.code === 200 && r.body.updated.includes('about'), JSON.stringify(r.body));
+let cb = await getSite('charlies-brake-muffler');
+check('their words are live', cb.about === 'Brakes and exhaust since 2009.' && cb.hours.length === 1);
+check('what search found is NOT live', cb.phone !== '913-000-0000' && !cb.services.some((s) => s.name === 'Transmission rebuilds'),
+  JSON.stringify({ ph: cb.phone, svc: cb.services.map((s) => s.name) }));
+check('it waits for a human instead', Object.keys(cb.proposed).sort().join(',') === 'phone,services', JSON.stringify(cb.proposed));
+check('and says where it came from', cb.proposedNote === 'from a web listing');
+
+r = await asAdmin({ action: 'site-list', q: 'charlie' });
+check('/master flags that something is pending', r.body.sites.some((s) => s.hasProposed), JSON.stringify(r.body.sites.map((s) => s.hasProposed)));
+
+r = await asAdmin({ action: 'site-proposed-resolve', slug: 'charlies-brake-muffler', approve: true, fields: ['services'] });
+check('approving one field applies only that one', r.body.applied.join() === 'services', JSON.stringify(r.body.applied));
+cb = await getSite('charlies-brake-muffler');
+check('the approved field is now live', cb.services.length === 1 && cb.services[0].name === 'Transmission rebuilds', JSON.stringify(cb.services));
+check('the rejected one never landed', cb.phone !== '913-000-0000', 'phone=' + JSON.stringify(cb.phone));
+check('nothing is left pending', Object.keys(cb.proposed).length === 0);
+
+// the close
+r = await ag({ action: 'deliver_site', slug: 'charlies-brake-muffler', email: 'not-an-email', phone: '913-859-9994' });
+check('a misheard email is refused', r.code === 400 && r.body.error === 'bad_email', JSON.stringify(r.body));
+
+r = await ag({ action: 'deliver_site', slug: 'charlies-brake-muffler', email: 'Charlie@Brakes.com ', name: 'Charlie', phone: '913-859-9994' });
+check('saying yes on the phone delivers the site', r.code === 200 && r.body.url.endsWith('/s/charlies-brake-muffler'), JSON.stringify(r.body));
+cb = await getSite('charlies-brake-muffler');
+check('the email is theirs now, normalised', cb.email === 'charlie@brakes.com', cb.email);
+check('the site is live AND claimed, so it can be indexed', cb.published === true && cb.claimed === true);
+check('an account exists for them', !!JSON.parse(KV.get('ks:accounts'))['charlie@brakes.com']);
+check('the lead is marked won', JSON.parse((KV.get('ks:leadmeta')).A).stage === 'won', KV.get('ks:leadmeta').A);
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
