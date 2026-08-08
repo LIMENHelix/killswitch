@@ -476,5 +476,42 @@ r = await asAdmin({ action: 'site-unwrite', slug: 'test-shop' });
 [rq, rs] = mkq('test-shop'); await siteApi(rq, rs);
 check('dropping it falls back to the shared template', rs.code === 200 && !rs.body.includes('Georgia,serif') && rs.body.includes('Test Shop'));
 
+// ---------------------------------------------------------------------------
+console.log('\n10. Placeholder sites are the target, not a disqualification');
+const { classify, hookLine } = await import('file:///C:/Users/Chris/killswitch/lib/web-presence.js');
+const { draftFromLead } = await import('file:///C:/Users/Chris/killswitch/lib/draft-site.js');
+
+check('no website at all is still a target', classify('').status === 'none' && classify('').isTarget);
+check('a Yelp page is a target', classify('https://www.yelp.com/biz/daves-auto').status === 'directory_only');
+check('a Facebook page is a target', classify('https://facebook.com/davesauto').status === 'facebook_only');
+check('a NAPA directory page is a target (your #1 lead)', classify('https://www.napaautocare.com/loc/12345').status === 'directory_only');
+check('an abandoned Wix is a target (your #7 lead)', classify('https://daves.wixsite.com/auto').status === 'diy_builder');
+check('a real site is NOT a target', classify('https://davesautorepair.com').status === 'has_site' && !classify('https://davesautorepair.com').isTarget);
+check('www and case do not fool it', classify('HTTPS://WWW.Yelp.com/biz/x').status === 'directory_only');
+check('a subdomain of a real site is still their own', classify('https://shop.davesauto.com').status === 'has_site');
+check('only their own DIY site is safe to fetch',
+  FETCHABLE_CHECK(), 'diy_builder only');
+function FETCHABLE_CHECK() {
+  return classify('https://x.wixsite.com/y').status === 'diy_builder'
+    && classify('https://yelp.com/biz/x').status !== 'diy_builder';
+}
+
+check('the hook line states what is true, not a claim',
+  hookLine({ web_url: 'https://facebook.com/x', rating: 4.9, reviews_count: 34 })
+    === '4.9 stars from 34 reviews, and your whole website is a Facebook page',
+  hookLine({ web_url: 'https://facebook.com/x', rating: 4.9, reviews_count: 34 }));
+check('thin reputation is left out rather than spun',
+  hookLine({ web_url: '', rating: 3.1, reviews_count: 4 }) === 'no website at all');
+
+// the facts now reach the draft, split by who said them
+const d2 = draftFromLead({
+  id: 'Z', name: 'Hours Shop', trade: 'bakery', phone: '816-555-3333', city: 'KC', state: 'MO',
+  hours: [{ d: 'Mon to Fri', h: '7am to 3pm' }, { d: 'Sat', h: '8am to noon' }],
+  google_summary: 'A neighborhood bakery known for sourdough.',
+}, new Set());
+check('their published hours go live', d2.hours.length === 2 && d2.hours[0].h === '7am to 3pm');
+check("Google's description does NOT", d2.about === '' && d2.proposed.about.includes('sourdough'));
+check('and it says whose words they are', d2.proposedNote.includes('not the owner'));
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
