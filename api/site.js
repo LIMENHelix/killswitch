@@ -7,6 +7,7 @@
 import { getSite } from '../lib/sites.js';
 import { renderSite } from '../lib/site-template.js';
 import { enforceRobots } from '../lib/site-writer.js';
+import { recordShow } from '../lib/funnel.js';
 
 export default async function handler(req, res) {
   const slug = String((req.query && req.query.slug) || '').trim();
@@ -52,6 +53,13 @@ export default async function handler(req, res) {
       res.status(500).send('temporarily unavailable');
       return;
     }
+  }
+
+  // A SHOW, observed rather than clicked. They opened the site we built them,
+  // which is the appointments>shows transition actually happening. Fire and
+  // forget: a funnel write must never delay or break serving their page.
+  if (site.leadId) {
+    recordShow(site.leadId).catch((e) => console.error('[site] recordShow', e));
   }
 
   res.setHeader('content-type', 'text/html; charset=utf-8');

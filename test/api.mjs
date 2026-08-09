@@ -255,7 +255,9 @@ check('the owner can reassign it', r.body.meta.owner === 'mike', JSON.stringify(
 r = await call(admin, { action: 'update', token: 'r_dana_key', id: 'L2', notes: 'left a voicemail' });
 r = await call(admin, { action: 'list', token: 'testadminkey' });
 const l1 = r.body.leads.find((x) => x.id === 'L1'), l2 = r.body.leads.find((x) => x.id === 'L2');
-check('two people on different leads both survive', l1.stage === 'responded' && l2.notes === 'left a voicemail',
+// `responded` reads back as `appointment`: the funnel record is authoritative for
+// stage now, and a lead with only the old vocabulary is migrated on read.
+check('two people on different leads both survive', l1.stage === 'appointment' && l2.notes === 'left a voicemail',
   JSON.stringify({ l1: l1.stage, l2: l2.notes }));
 check('lead identity is intact after all that', l1.name === 'Auto Tech Services Center' && l2.phone === '913-722-5151');
 

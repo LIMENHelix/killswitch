@@ -21,6 +21,8 @@ import { configured, getLeads, saveLeads, getConfig, saveConfig, getLeadMeta, se
 import { lobSend, runAutopilot, spentToDate, COST } from '../lib/mailer.js';
 import { identify, isOwner, anyKeyConfigured } from '../lib/roles.js';
 import { getSite, upsertSite } from '../lib/sites.js';
+import { getFunnel, setStage, summarize, toPlays, migrateFrom, migrateStage, STAGES } from '../lib/funnel.js';
+import { wilsonLower, allocate } from '../lib/laser.js';
 
 const OWNER_ONLY = new Set(['setconfig', 'run-autopilot', 'mail', 'seed']);
 
@@ -46,13 +48,42 @@ export default async function handler(req, res) {
   }
 
   try {
+    // The funnel board: stage counts, per-transition conversion, and the plays
+    // laser.js ranks. Read-only, so a rep can see what is working.
+    if (action === 'funnel') {
+      const f = await getFunnel();
+      const sum = summarize(f);
+      const plays = toPlays(f);
+      const ranked = plays
+        .map((p) => ({ ...p, score: wilsonLower(p.wins, p.trials) }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 20);
+      // Volume the optimizer would hand each play next. Winners get fed, losers
+      // keep an exploration floor rather than being starved of data.
+      let weights = {};
+      try { weights = allocate(plays); } catch (e) { console.error('[admin] allocate', e); }
+      res.status(200).json({ ok: true, ...sum, ranked, weights, role: who.role });
+      return;
+    }
+
+    if (action === 'migrate-funnel') {
+      res.status(200).json({ ok: true, ...(await migrateFrom(await getLeadMeta())) });
+      return;
+    }
+
     if (action === 'list') {
       const [leads, meta] = await Promise.all([getLeads(), getLeadMeta()]);
       // Per-lead notes live in their own hash now. Fall back to whatever is still
       // on the lead itself so nothing written before this change disappears.
+      const funnel = await getFunnel();
       const merged = leads.map((l) => {
         const m = meta[l.id];
-        return m ? { ...l, ...m } : l;
+        const f = funnel[l.id];
+        const base = m ? { ...l, ...m } : l;
+        // The funnel record is authoritative for stage; the old flat value is
+        // migrated on read so nothing looks blank before migrate-funnel is run.
+        return { ...base, stage: f ? f.stage : migrateStage(base.stage), dealCents: f ? f.dealCents : 0,
+          touches: f ? f.touches.length : 0, apptAt: f ? f.apptAt : '' };
       });
       res.status(200).json({ ok: true, leads: merged, role: who.role, name: who.name }); return;
     }
@@ -96,6 +127,20 @@ export default async function handler(req, res) {
       res.status(200).json({ ok: true, count: leads.length }); return;
     }
     if (action === 'update') {
+      // A stage change is a funnel event, not just a label. Recording it through
+      // setStage writes the transition and channel the optimizer learns from;
+      // writing the word alone would leave laser.js with nothing to rank.
+      if (body.stage !== undefined && STAGES.includes(body.stage)) {
+        try {
+          await setStage(body.id, body.stage, {
+            channel: body.channel || 'call',
+            dealCents: Number.isFinite(body.dealCents) ? body.dealCents : undefined,
+            apptAt: body.apptAt,
+            note: body.notes,
+          });
+        } catch (e) { console.error('[admin] setStage', e); }
+      }
+
       // Writes one hash field, not the whole 600 KB lead list, so two people
       // working different leads cannot overwrite each other any more.
       const patch = {};
