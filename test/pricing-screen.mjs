@@ -2,7 +2,7 @@
 // This is the money page and its checkout logic is inline, so node --check sees
 // none of it. Two things are worth a browser here:
 //
-//   the retired modules are genuinely gone from the board, not just from source
+//   every module on the board is one that exists, and the copy stays narrow
 //   the email gate fires before a card is ever asked for
 //
 // Standalone with its own CDP driver, matching admin-screen.mjs and
@@ -86,15 +86,22 @@ const evaluate = async (expr) => {
 let pass = 0, fail = 0;
 const check = (n, c, d) => { if (c) { console.log('  PASS  ' + n); pass++; } else { console.log('  FAIL  ' + n + (d ? '  <- ' + d : '')); fail++; } };
 
-console.log('\nTHE BOARD only offers what exists');
+console.log('\nTHE BOARD only offers what exists, and describes it narrowly');
 check('no javascript errors', consoleErrors.length === 0, consoleErrors.join(' | '));
 const sold = await evaluate(`[...document.querySelectorAll('.path__cb')].map(c=>c.getAttribute('data-phase'))`);
 check('the rungs render', Array.isArray(sold) && sold.length > 0, JSON.stringify(sold));
-check('CRM is not purchasable here', !sold.includes('P5'), JSON.stringify(sold));
-check('Marketing Automation is not purchasable here', !sold.includes('P6'), JSON.stringify(sold));
-check('the real modules are all still there',
-  ['P1', 'P2', 'P3', 'P4', 'P7', 'P8', 'P9'].every((p) => sold.includes(p)), JSON.stringify(sold));
-check('no dead Stripe link is left pointing at a retired module',
+check('every module that exists is purchasable, CRM and automation included',
+  ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9'].every((p) => sold.includes(p)), JSON.stringify(sold));
+// CRM and automation are narrower than their names suggest, and the page has to
+// say so rather than let a buyer imagine a Salesforce.
+const copy = await evaluate(`document.querySelector('#path').textContent`);
+check('CRM is sold as the list it is', copy.includes('kept as a person, not an email'));
+check('and does not claim to import from anywhere else', !/import/i.test(copy));
+check('automation names its two messages', copy.includes('thank-you') && copy.includes('review request'));
+check('and rules out texts, which we do not send', copy.includes('We do not send automated texts'));
+// The old per-rung buy.stripe.com links bypassed every server check, so the
+// restored rungs deliberately do NOT carry them: the basket is the only door.
+check('the restored rungs carry no bypass Stripe link',
   !(await evaluate(`document.body.innerHTML.includes('1ck09') || document.body.innerHTML.includes('1ck0a') || document.body.innerHTML.includes('1ck0h')`)));
 
 console.log('\nTHE EMAIL GATE fires before any card is asked for');

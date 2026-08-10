@@ -22,6 +22,9 @@ globalThis.fetch = async (url, opts = {}) => {
     const run = (a) => {
       const [cmd, key, f, v] = a;
       if (cmd === 'GET') return KV.has(key) ? KV.get(key) : null;
+      // NX first: the generic SET below would otherwise swallow it and store the
+      // literal string "NX" as the value.
+      if (cmd === 'SET' && a[3] === 'NX') { if (KV.has(key)) return null; KV.set(key, f); return 'OK'; }
       if (cmd === 'SET') { KV.set(key, v === undefined ? f : v); return 'OK'; }
       if (cmd === 'HSET') { const h = KV.get(key) || {}; h[f] = v; KV.set(key, h); return 1; }
       if (cmd === 'HGET') { const h = KV.get(key) || {}; return h[f] == null ? null : h[f]; }
@@ -33,6 +36,32 @@ globalThis.fetch = async (url, opts = {}) => {
       }
       // Visitor counters (lib/stats.js). Upstash returns the new value.
       if (cmd === 'INCR') { const n = Number(KV.get(key) || 0) + 1; KV.set(key, String(n)); return n; }
+      if (cmd === 'DEL') { KV.delete(key); return 1; }
+      if (cmd === 'HKEYS') return Object.keys(KV.get(key) || {});
+      // The follow-up queue (lib/automation.js) is a sorted set: member -> score.
+      if (cmd === 'ZADD') {
+        const z = KV.get(key) || {};
+        // ['ZADD', key, 'NX', score, member] or ['ZADD', key, score, member]
+        const nx = a[2] === 'NX';
+        const score = Number(nx ? a[3] : a[2]);
+        const member = nx ? a[4] : a[3];
+        if (nx && z[member] !== undefined) return 0;
+        z[member] = score; KV.set(key, z); return 1;
+      }
+      if (cmd === 'ZREM') { const z = KV.get(key) || {}; delete z[f]; KV.set(key, z); return 1; }
+      if (cmd === 'ZRANGE') {
+        const z = KV.get(key) || {};
+        return Object.keys(z).sort((x, y) => z[x] - z[y]);
+      }
+      if (cmd === 'ZRANGEBYSCORE') {
+        const z = KV.get(key) || {};
+        const min = a[2] === '-inf' ? -Infinity : Number(a[2]);
+        const max = a[3] === '+inf' ? Infinity : Number(a[3]);
+        let out = Object.keys(z).filter((m) => z[m] >= min && z[m] <= max).sort((x, y) => z[x] - z[y]);
+        const li = a.indexOf('LIMIT');
+        if (li > -1) out = out.slice(Number(a[li + 1]), Number(a[li + 1]) + Number(a[li + 2]));
+        return out;
+      }
       // No TTL in this Map, so EXPIRE is accepted and ignored. That means the
       // 100 day cleanup on daily rows is NOT covered here; it is a Redis
       // behaviour, not ours, and faking a clock to test it would prove nothing.
@@ -565,73 +594,90 @@ check("Google's description does NOT", d2.about === '' && d2.proposed.about.incl
 check('and it says whose words they are', d2.proposedNote.includes('not the owner'));
 
 // ---------------------------------------------------------------------------
-// A module with nothing built behind it must not be sellable, and retiring one
-// must not quietly cancel it for whoever already bought it. Both halves matter:
-// the first is the liability, the second is the way a naive fix creates a new one.
-console.log('\n11. Retired modules: cannot be bought, are not confiscated');
+// The retirement GATE, tested on a stand-in rather than on a real product.
+//
+// P5 and P6 sat behind this gate briefly because they were sold with nothing
+// built. They were built instead, so RETIRED is empty and should stay that way.
+// The mechanism still has to work, because it is what stops the catalogue
+// drifting ahead of the code again, so it is exercised by putting a phase in the
+// set for the duration of these checks and taking it straight back out.
+console.log('\n11. The retirement gate still works, and confiscates nothing');
 
 const checkout = (await import('file:///C:/Users/Chris/killswitch/api/checkout.js')).default;
-const P5 = 'price_1ToXluPmxnF3rtBMEleF5u3D';  // CRM, retired
-const P6 = 'price_1ToXlvPmxnF3rtBM7aDkUq1Y';  // Marketing Automation, retired
+const { RETIRED, isSellable } = await import('file:///C:/Users/Chris/killswitch/lib/prices.js');
+const P5 = 'price_1ToXluPmxnF3rtBMEleF5u3D';  // CRM
+const P6 = 'price_1ToXlvPmxnF3rtBM7aDkUq1Y';  // Marketing Automation
 
-seed();
-r = await call(checkout, { phases: ['P5', 'P6'] });
-check('the public checkout refuses a retired module',
-  r.code === 400 && r.body.error === 'not_for_sale', 'got ' + r.code + ' ' + JSON.stringify(r.body));
-check('and no Stripe session was created for it', created.length === 0, created.length + ' created');
+check('nothing is retired right now, because everything on sale is built',
+  RETIRED.size === 0, [...RETIRED].join(','));
+check('and every priced module is therefore sellable',
+  ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P11'].every(isSellable));
 
-// The dangerous near-miss: silently dropping the unbuilt item and charging for
-// the rest would take money for a basket the customer never agreed to.
-seed();
-r = await call(checkout, { phases: ['P1', 'P5'] });
-check('a basket containing a retired module is refused whole, not trimmed',
-  r.code === 400 && r.body.error === 'not_for_sale' && created.length === 0,
-  'got ' + r.code + ', ' + created.length + ' sessions');
-
-seed();
-r = await call(checkout, { phases: ['P1', 'P3'], email: 'buyer@example.com' });
-check('a basket of real modules still checks out', r.code === 200 && !!r.body.url, 'got ' + r.code);
-
-// The panel is the other door into Stripe and had the same hole.
-seed();
-r = await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: ['P5'] });
-check('the panel cannot start a retired module either', created.length === 0, created.length + ' created');
-check('and it never reaches their live site', !site().modules.includes('P5'), JSON.stringify(site().modules));
-
-// Grandfathering. Deleting P5 from the panel catalogue outright would mean the
-// browser stopped sending it, and the server would read that as "turn it off":
-// a paying customer silently loses what they bought. They keep it.
-function seedPaidP5() {
+RETIRED.add('P2');   // stand-in for "sold but not built", for these checks only
+try {
   seed();
-  KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, name: 'Test Shop', plan: ['P0'], stripeCustomerId: 'cus_old' } }));
-  putSite({ slug: 'test-shop', business: 'Test Shop', email: EMAIL, phone: '816-555-0101', modules: ['P0', 'P5'], published: true, claimed: true });
-  stripeSubs = [{
-    id: 'sub_1', status: 'active', cancel_at_period_end: false, current_period_end: 9999999999,
-    items: { data: [{ id: 'si_p5', price: { id: P5 }, current_period_end: 9999999999 }] },
-  }];
+  r = await call(checkout, { phases: ['P2'], email: 'buyer@example.com' });
+  check('the public checkout refuses a retired module',
+    r.code === 400 && r.body.error === 'not_for_sale', 'got ' + r.code + ' ' + JSON.stringify(r.body));
+  check('and no Stripe session was created for it', created.length === 0, created.length + ' created');
+
+  // The dangerous near-miss: silently dropping the unbuilt item and charging for
+  // the rest would take money for a basket the customer never agreed to.
+  seed();
+  r = await call(checkout, { phases: ['P1', 'P2'], email: 'buyer@example.com' });
+  check('a basket containing a retired module is refused whole, not trimmed',
+    r.code === 400 && r.body.error === 'not_for_sale' && created.length === 0,
+    'got ' + r.code + ', ' + created.length + ' sessions');
+
+  // The panel is the other door into Stripe and had the same hole.
+  seed();
+  r = await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: ['P2'] });
+  check('the panel cannot start a retired module either', created.length === 0, created.length + ' created');
+  check('and it never reaches their live site', !site().modules.includes('P2'), JSON.stringify(site().modules));
+
+  // Grandfathering. Removing a module from the panel catalogue outright would
+  // mean the browser stopped sending it, and the server reads that absence as
+  // "turn it off": a paying customer silently loses what they bought.
+  const P2P = 'price_1ToXlrPmxnF3rtBMz3ybz47E';
+  function seedPaid() {
+    seed();
+    KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, name: 'Test Shop', plan: ['P0'], stripeCustomerId: 'cus_old' } }));
+    putSite({ slug: 'test-shop', business: 'Test Shop', email: EMAIL, phone: '816-555-0101', modules: ['P0', 'P2'], published: true, claimed: true });
+    stripeSubs = [{
+      id: 'sub_1', status: 'active', cancel_at_period_end: false, current_period_end: 9999999999,
+      items: { data: [{ id: 'si_p2', price: { id: P2P }, current_period_end: 9999999999 }] },
+    }];
+  }
+
+  seedPaid();
+  r = await call(switchApi, { action: 'state', e: EMAIL, t: TOK });
+  check('someone who already bought it still sees it in their panel',
+    r.body.modules && r.body.modules.P2 && r.body.modules.P2.state === 'active', JSON.stringify(r.body.modules));
+
+  seedPaid();
+  r = await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: ['P2'] });
+  check('saving the panel does not confiscate what they already pay for',
+    r.body.modules && r.body.modules.P2 && r.body.modules.P2.state === 'active', JSON.stringify(r.body));
+  check('and it stays on their site', site().modules.includes('P2'), JSON.stringify(site().modules));
+
+  seedPaid();
+  r = await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: [] });
+  check('but they can still switch it off themselves',
+    r.body.modules && r.body.modules.P2 && r.body.modules.P2.state === 'ending', JSON.stringify(r.body));
+} finally {
+  RETIRED.delete('P2');
 }
 
-seedPaidP5();
-r = await call(switchApi, { action: 'state', e: EMAIL, t: TOK });
-check('someone who already bought it still sees it in their panel',
-  r.body.modules && r.body.modules.P5 && r.body.modules.P5.state === 'active', JSON.stringify(r.body.modules));
+// Both are back on sale because both now do something. This is the check that
+// fails if anyone re-lists a module without building it.
+seed();
+r = await call(checkout, { phases: ['P5', 'P6'], email: 'buyer@example.com' });
+check('CRM and automation can be bought again, now that they exist',
+  r.code === 200 && !!r.body.url, 'got ' + r.code + ' ' + JSON.stringify(r.body));
 
-seedPaidP5();
-r = await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: ['P5'] });
-check('saving the panel does not confiscate what they already pay for',
-  r.body.modules && r.body.modules.P5 && r.body.modules.P5.state === 'active', JSON.stringify(r.body));
-check('and it stays on their site', site().modules.includes('P5'), JSON.stringify(site().modules));
-
-seedPaidP5();
-r = await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: [] });
-check('but they can still switch it off themselves',
-  r.body.modules && r.body.modules.P5 && r.body.modules.P5.state === 'ending', JSON.stringify(r.body));
-
-// The bot was quoting a price for both of them.
 const chatSrc = await (await import('node:fs/promises')).readFile('C:/Users/Chris/killswitch/api/chat.js', 'utf8');
-check('the sales bot no longer lists a CRM or automation price',
-  !/P5 CRM/.test(chatSrc) && !/P6 Marketing Automation/.test(chatSrc));
-check('and it is told to refuse them by name', /NO CRM product/.test(chatSrc));
+check('the bot sells them again', /P5 CRM/.test(chatSrc) && /P6 Marketing Automation/.test(chatSrc));
+check('but is told how narrow they are', /not a pipeline/.test(chatSrc) && /no texts/i.test(chatSrc));
 
 // ---------------------------------------------------------------------------
 // The public pricing page used to charge a card and provision nothing: no
@@ -675,11 +721,18 @@ check('an existing customer keeps their record', accounts()[EMAIL].name === 'Tes
 check('and reuses their Stripe customer instead of making a second one',
   decodeURIComponent(created[0] || '').includes('customer=cus_old'), decodeURIComponent(created[0] || '').slice(0, 200));
 
-// The retirement gate has to hold on this path too, before any account is made.
-seed();
-r = await call(checkout, { phases: ['P5'], email: NEW });
-check('a retired module is still refused even with a valid email',
-  r.code === 400 && r.body.error === 'not_for_sale' && created.length === 0);
+// Basket first, email second, and no account created for a refused sale.
+RETIRED.add('P2');
+try {
+  seed();
+  r = await call(checkout, { phases: ['P2'], email: NEW });
+  check('a retired module is refused even with a valid email',
+    r.code === 400 && r.body.error === 'not_for_sale' && created.length === 0);
+  check('and a refused sale leaves no half-made account behind',
+    !accounts()[NEW], Object.keys(accounts()).join(','));
+} finally {
+  RETIRED.delete('P2');
+}
 
 // ---------------------------------------------------------------------------
 // "Contact form" has always been listed under the free tier and the template had
@@ -814,6 +867,117 @@ seed();
 x = await getXml();
 check('no customers yet still yields a valid empty sitemap',
   x.code === 200 && x.body.includes('<urlset') && x.body.includes('</urlset>'), x.body);
+
+// ---------------------------------------------------------------------------
+// P5 and P6, the two that were sold with nothing behind them. Built, not cut.
+console.log('\n16. The CRM keeps people, and the automation follows them up');
+
+const { recordContact, listContacts, updateContact, summarise } = await import('file:///C:/Users/Chris/killswitch/lib/crm.js');
+const { queueFollowUps, dueItems, retire, bodyFor, statsFor } = await import('file:///C:/Users/Chris/killswitch/lib/automation.js');
+const P5P = 'price_1ToXluPmxnF3rtBMEleF5u3D';
+
+const crmSite = { ...freeSite, email: EMAIL, modules: ['P0', 'P5', 'P6'] };
+
+// The whole point of P5: an enquiry in March and a booking in June are ONE
+// customer with a history, not two emails that scrolled away.
+seed();
+await recordContact('free-shop', { name: 'Dana Reed', handle: 'dana@example.com', kind: 'message', text: 'Do you do brakes?', at: '2026-03-01T10:00:00Z' });
+await recordContact('free-shop', { name: 'Dana Reed', handle: 'dana@example.com', kind: 'booking', text: 'Tuesday 9am', at: '2026-06-01T10:00:00Z' });
+let cs = await listContacts('free-shop');
+check('two enquiries from one person make ONE contact', cs.length === 1, JSON.stringify(cs.length));
+check('and both are kept as history', cs[0].entries.length === 2, JSON.stringify(cs[0].entries));
+check('the email is picked out so they can be replied to', cs[0].email === 'dana@example.com');
+check('a new contact starts as needing a reply', cs[0].status === 'new');
+
+await recordContact('free-shop', { name: 'Sam', handle: '816-555-2222', kind: 'message', text: 'quote please', at: '2026-06-02T10:00:00Z' });
+cs = await listContacts('free-shop');
+check('a different person is a different contact', cs.length === 2);
+check('a phone number is stored as a phone, not an email',
+  cs.find((c) => c.name === 'Sam').phone === '816-555-2222');
+check('newest first, so the panel opens on what just came in', cs[0].name === 'Sam', cs.map((c) => c.name).join(','));
+
+await updateContact('free-shop', cs[0].id, { status: 'won' });
+cs = await listContacts('free-shop');
+check('the owner can mark someone won', cs.find((c) => c.name === 'Sam').status === 'won');
+check('and the counts follow', summarise(cs).won === 1 && summarise(cs).new === 1, JSON.stringify(summarise(cs)));
+check('an invented status is refused', (await updateContact('free-shop', cs[0].id, { status: 'banana' })) === null);
+
+// It has to be reachable from the panel, gated on Stripe like everything else.
+seed();
+putSite(crmSite);
+KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, name: 'Test Shop', stripeCustomerId: 'cus_a' } }));
+stripeSubs = [{ id: 'sub_1', status: 'active', cancel_at_period_end: false, current_period_end: 9999999999,
+  items: { data: [{ id: 'si_p5', price: { id: P5P }, current_period_end: 9999999999 }] } }];
+await recordContact('free-shop', { name: 'Dana', handle: 'dana@example.com', kind: 'message', text: 'hi', at: '2026-06-01T10:00:00Z' });
+r = await call(switchApi, { action: 'crm', e: EMAIL, t: TOK });
+check('a paying customer sees their list', r.body.entitled === true && r.body.contacts.length === 1, JSON.stringify(r.body).slice(0, 140));
+
+seed();
+putSite(crmSite);
+r = await call(switchApi, { action: 'crm', e: EMAIL, t: TOK });
+check('someone not paying for it sees nothing', r.body.entitled === false, JSON.stringify(r.body));
+r = await call(switchApi, { action: 'crm-update', e: EMAIL, t: TOK, id: 'x', status: 'won' });
+check('and cannot write to it either', r.body.error === 'not_entitled', JSON.stringify(r.body));
+
+// ---- P6 ----
+const T0 = Date.parse('2026-06-01T10:00:00Z');
+seed();
+let n = await queueFollowUps({ slug: 'free-shop', business: "Jo's Garage", phone: '816-555-0101' },
+  { name: 'Dana Reed', handle: 'dana@example.com', kind: 'message' }, T0);
+check('an enquiry queues both follow-ups', n === 2, String(n));
+
+let due = await dueItems(T0);
+check('the thank-you is due immediately', due.length === 1 && due[0].step === 'ack', JSON.stringify(due.map((d) => d.step)));
+check('the review request is NOT sent early', !due.some((d) => d.step === 'review'));
+
+due = await dueItems(T0 + 3 * 86400000);
+check('and IS due three days later', due.some((d) => d.step === 'review'), JSON.stringify(due.map((d) => d.step)));
+
+// No email address means nothing to send to, and we do not send texts.
+seed();
+n = await queueFollowUps({ slug: 'free-shop', business: 'X' }, { name: 'Sam', handle: '816-555-2222', kind: 'message' }, T0);
+check('a phone-only enquiry queues nothing, because we do not send texts', n === 0, String(n));
+
+// A second enquiry must not stack a second review request on the same person.
+seed();
+await queueFollowUps({ slug: 'free-shop', business: 'X' }, { name: 'D', handle: 'd@e.com', kind: 'message' }, T0);
+await queueFollowUps({ slug: 'free-shop', business: 'X' }, { name: 'D', handle: 'd@e.com', kind: 'booking' }, T0 + 3600000);
+due = await dueItems(T0 + 10 * 86400000);
+check('a repeat enquiry does not double up on the same person', due.length === 2, JSON.stringify(due.map((d) => d.id)));
+
+const ack = bodyFor({ step: 'ack', name: 'Dana Reed', business: "Jo's Garage", kind: 'booking', businessPhone: '816-555-0101' });
+check('the thank-you names the business, not us', ack.lines.join(' ').includes("Jo's Garage"));
+check('and knows it was a booking', ack.lines.join(' ').toLowerCase().includes('book'));
+const rev = bodyFor({ step: 'review', name: 'Dana Reed', business: "Jo's Garage" });
+check('the review request asks for a review', rev.subject.toLowerCase().includes('how did we do'));
+check('and offers a way out if it went badly', rev.lines.join(' ').toLowerCase().includes('not right'));
+
+seed();
+await queueFollowUps({ slug: 'free-shop', business: 'X' }, { name: 'D', handle: 'd@e.com', kind: 'message' }, T0);
+let st2 = await statsFor('free-shop');
+check('the panel can see what is queued', st2.pending === 2, JSON.stringify(st2));
+due = await dueItems(T0);
+await retire(due[0].id, '2026-06-01T10:00:01Z');
+st2 = await statsFor('free-shop');
+check('and what has already gone out', st2.sent === 1 && st2.pending === 1, JSON.stringify(st2));
+
+// The end to end path: a message on a live site lands in the CRM and queues mail.
+seed();
+putSite(crmSite);
+r = await call(siteAction, { action: 'contact', slug: 'free-shop', name: 'Pat', contact: 'pat@example.com', message: 'Do you fit tyres?' });
+check('a real enquiry through the site is accepted', r.code === 200);
+await new Promise((res) => setTimeout(res, 40));   // the writes are fire and forget
+cs = await listContacts('free-shop');
+check('and it lands in the customer list by itself', cs.length === 1 && cs[0].name === 'Pat', JSON.stringify(cs.map((c) => c.name)));
+check('with its follow-ups queued', (await statsFor('free-shop')).pending === 2, JSON.stringify(await statsFor('free-shop')));
+
+// A site NOT paying for them records nothing, so switching off really stops it.
+seed();
+putSite({ ...freeSite, email: EMAIL, modules: ['P0'] });
+r = await call(siteAction, { action: 'contact', slug: 'free-shop', name: 'Pat', contact: 'pat@example.com', message: 'hello' });
+await new Promise((res) => setTimeout(res, 40));
+check('no CRM record without P5', (await listContacts('free-shop')).length === 0);
+check('no follow-ups queued without P6', (await statsFor('free-shop')).pending === 0);
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

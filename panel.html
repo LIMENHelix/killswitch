@@ -49,6 +49,26 @@
   .spark{display:flex;align-items:flex-end;gap:2px;height:44px;flex:1;min-width:140px}
   .spark i{flex:1;background:var(--go);border-radius:1px;min-height:2px;opacity:.75}
   .stnote{font-size:.8rem;color:var(--mute-2);margin-top:10px}
+  .crmbar{display:flex;gap:26px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:18px 22px;margin-bottom:12px}
+  .crmlist{border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--panel)}
+  .crow{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start;padding:15px 20px;border-top:1px solid var(--line-soft)}
+  .crow:first-child{border-top:none}
+  .crow h4{font-family:"Manrope",sans-serif;font-weight:700;font-size:1rem;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .crow .who{font-size:.84rem;color:var(--mute);margin-top:2px}
+  .crow .who a{color:var(--amber)}
+  .crow .last{font-size:.86rem;color:var(--mute);margin-top:7px;white-space:pre-wrap}
+  .crow .when{font-family:"IBM Plex Mono",monospace;font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mute-2);margin-top:6px}
+  .cst{font-family:"IBM Plex Mono",monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:2px;border:1px solid}
+  .cst.new{background:rgba(255,196,46,.12);color:var(--amber);border-color:rgba(255,196,46,.45)}
+  .cst.contacted{background:rgba(182,186,194,.10);color:var(--mute);border-color:var(--line)}
+  .cst.won{background:rgba(27,164,90,.16);color:var(--ok);border-color:rgba(27,164,90,.5)}
+  .cst.lost{background:rgba(255,85,70,.12);color:#ff8f84;border-color:rgba(255,85,70,.42)}
+  .cacts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .cacts button{font-family:"IBM Plex Mono",monospace;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;
+    background:var(--metal);color:var(--mute);border:1px solid var(--line);border-radius:2px;padding:6px 10px;cursor:pointer}
+  .cacts button:hover{color:var(--ink);border-color:var(--mute-2)}
+  .cacts button.on{background:var(--go);color:#fff;border-color:var(--go)}
+  .cacts button:focus-visible{outline:2px solid var(--go);outline-offset:2px}
 
   /* module rows */
   .mlist{border:1px solid var(--line);border-radius:2px;overflow:hidden;background:var(--panel)}
@@ -205,6 +225,21 @@
     <p class="stnote" id="stNote">People who opened your website. Counted when the page loads in someone's browser.</p>
   </section>
 
+  <!-- P5 CRM. Every enquiry and booking from their site, kept as people rather
+       than as emails that scroll away. Hidden unless they pay for it. -->
+  <section class="s" id="crmWrap" hidden>
+    <div class="s-lbl">Your customers</div>
+    <div class="crmbar">
+      <div class="stat"><b id="crmTotal">0</b><span>people</span></div>
+      <div class="stat"><b id="crmNew">0</b><span>need a reply</span></div>
+      <div class="stat"><b id="crmWon">0</b><span>won</span></div>
+      <div class="stat" id="autoStat" hidden><b id="crmQueued">0</b><span>follow-ups queued</span></div>
+      <div class="stat" id="autoSentStat" hidden><b id="crmSent">0</b><span>sent automatically</span></div>
+    </div>
+    <div class="crmlist" id="crmList"></div>
+    <p class="stnote" id="crmNote"></p>
+  </section>
+
   <section class="s">
     <div class="s-lbl">Your modules</div>
     <div class="mlist" id="mlist"></div>
@@ -268,13 +303,11 @@
     { id:'P3', name:'Online Booking & Scheduling', desc:'Customers self-book, day or night.', price:19, state:'active' },
     { id:'P4', name:'Hosting & Maintenance', desc:'Small changes made for you, usually the same day. Hosting included.', price:29, state:'off' },
     { id:'P11', name:'Care Plan', desc:'Website management: request changes anytime (hours, text, photos, new pages), and we keep it running.', price:99, state:'off' },
-    // RETIRED, not deleted. These were on sale with nothing built behind them.
-    // They are hidden from the catalogue, so nobody can start paying for one,
-    // but a customer who bought one before it was pulled still sees their own
-    // switch and can turn it off. render() drops a retired module only when it
-    // is already off. Never re-list one of these without the product existing.
-    { id:'P5', name:'CRM & Customer Database', desc:'Every lead and customer in one place.', price:29, state:'off', retired:true },
-    { id:'P6', name:'Marketing Automation', desc:'Follow-ups and review requests, automatic.', price:29, state:'off', retired:true },
+    // The `retired:true` flag still exists (render() hides a retired module
+    // unless the customer already has it), but nothing carries it: both of
+    // these are built now. See lib/crm.js and lib/automation.js.
+    { id:'P5', name:'CRM & Customer Database', desc:'Every enquiry and booking from your site, kept as a customer list you can work through.', price:29, state:'off' },
+    { id:'P6', name:'Marketing Automation', desc:'An instant thank-you to anyone who contacts you, and a review request three days later.', price:29, state:'off' },
     { id:'P7', name:'Payments & Checkout', desc:'A Pay button linked to a secure card page in your name.', price:19, state:'off' },
     { id:'P8', name:'Visitor Numbers', desc:'How many people opened your site, right here in this panel.', price:19, state:'off' },
     { id:'P9', name:'24/7 AI Assistant', desc:'An AI that answers and books any time.', price:29, state:'off' },
@@ -509,6 +542,77 @@
       if(d && !d.error){ applyState(d); LIVE=true; baselineOn = paidOn(); committedState = snapshot(); }
       render();
       loadStats();
+      loadCrm();
+    });
+  }
+
+  // ---- P5: their customer list, and P6's queue alongside it ----
+  function loadCrm(){
+    var wrap = document.getElementById('crmWrap');
+    if(!wrap) return;
+    return sw('crm').then(function(d){
+      if(!d || !d.entitled){ wrap.hidden = true; return; }
+      wrap.hidden = false;
+      var s = d.summary || {total:0,new:0,won:0};
+      document.getElementById('crmTotal').textContent = s.total;
+      document.getElementById('crmNew').textContent = s.new;
+      document.getElementById('crmWon').textContent = s.won;
+
+      var a = d.automation;
+      document.getElementById('autoStat').hidden = !a;
+      document.getElementById('autoSentStat').hidden = !a;
+      if(a){
+        document.getElementById('crmQueued').textContent = a.pending;
+        document.getElementById('crmSent').textContent = a.sent;
+      }
+      renderCrm(d.contacts || []);
+    }).catch(function(){ /* never break the panel over the customer list */ });
+  }
+
+  function esc2(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function when2(iso){ try{ return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }catch(e){ return ''; } }
+
+  function renderCrm(list){
+    var el = document.getElementById('crmList');
+    var note = document.getElementById('crmNote');
+    if(!list.length){
+      el.innerHTML = '';
+      note.textContent = 'Nobody has contacted you through your site yet. Every message and booking request will land here automatically.';
+      return;
+    }
+    note.textContent = 'Everyone who has contacted you through your website. Mark them off as you go so you can see who still needs a reply.';
+    el.innerHTML = list.map(function(c){
+      var last = (c.entries && c.entries.length) ? c.entries[c.entries.length-1] : null;
+      var reach = c.email
+        ? '<a href="mailto:'+esc2(c.email)+'">'+esc2(c.email)+'</a>'
+        : (c.phone ? '<a href="tel:'+esc2(c.phone).replace(/[^0-9+]/g,'')+'">'+esc2(c.phone)+'</a>' : '');
+      return '<div class="crow" data-id="'+esc2(c.id)+'">'+
+        '<div>'+
+          '<h4>'+esc2(c.name||'Someone')+' <span class="cst '+esc2(c.status)+'">'+esc2(c.status)+'</span></h4>'+
+          (reach ? '<div class="who">'+reach+'</div>' : '')+
+          (last ? '<div class="last">'+esc2(last.kind==='booking' ? ('Asked to book: '+last.text) : last.text)+'</div>' : '')+
+          '<div class="when">'+esc2(when2(c.createdAt))+' · '+(c.entries?c.entries.length:0)+' message'+((c.entries&&c.entries.length===1)?'':'s')+'</div>'+
+        '</div>'+
+        '<div class="cacts">'+
+          ['contacted','won','lost'].map(function(st){
+            return '<button type="button" data-st="'+st+'"'+(c.status===st?' class="on"':'')+'>'+st+'</button>';
+          }).join('')+
+        '</div>'+
+      '</div>';
+    }).join('');
+
+    el.querySelectorAll('.crow .cacts button').forEach(function(b){
+      b.addEventListener('click', function(){
+        var row = b.closest('.crow');
+        var id = row.getAttribute('data-id'), st = b.getAttribute('data-st');
+        // Optimistic: the shop owner taps and it responds, then the server
+        // confirms. A failed write reloads the truth rather than lying.
+        row.querySelectorAll('.cacts button').forEach(function(x){ x.classList.remove('on'); });
+        b.classList.add('on');
+        var pill = row.querySelector('.cst');
+        if(pill){ pill.className = 'cst '+st; pill.textContent = st; }
+        sw('crm-update', { id:id, status:st }).then(function(d){ if(!d||d.error) loadCrm(); });
+      });
     });
   }
 

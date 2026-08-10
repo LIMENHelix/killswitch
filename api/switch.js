@@ -13,6 +13,8 @@ import { stripeGet, stripePost, stripeDelete } from '../lib/stripe.js';
 import { notifyOperator, labelPhases } from '../lib/notify.js';
 import { syncModules, siteForEmail } from '../lib/sites.js';
 import { getStats } from '../lib/stats.js';
+import { listContacts, updateContact, summarise } from '../lib/crm.js';
+import { statsFor } from '../lib/automation.js';
 import { ensureLinked, liveSubs } from '../lib/entitle.js';
 
 const LIVE_STATUSES = ['active', 'trialing', 'past_due'];
@@ -50,6 +52,8 @@ export default async function handler(req, res) {
   try {
     if (action === 'state') { res.status(200).json(await readState(account)); return; }
     if (action === 'stats') { res.status(200).json(await readStats(account)); return; }
+    if (action === 'crm') { res.status(200).json(await readCrm(account)); return; }
+    if (action === 'crm-update') { res.status(200).json(await writeCrm(account, body)); return; }
     if (action === 'apply') { res.status(200).json(await applyChanges(account, body.on, host, email)); return; }
     if (action === 'link')  { res.status(200).json(await link(account, body.session_id, host)); return; }
     res.status(400).json({ error: 'unknown_action' });
@@ -101,6 +105,40 @@ async function readStats(account) {
   const site = await siteForEmail(account.email);
   if (!site) return { entitled: true, stats: null };
   return { entitled: true, slug: site.slug, stats: await getStats(site.slug) };
+}
+
+// ---- P5 CRM + P6 automation, both read from Stripe like everything else ----
+async function paidPhases(account) {
+  return new Set(Object.keys(itemsByPhase(await liveSubs(account.stripeCustomerId))));
+}
+
+async function readCrm(account) {
+  const phases = await paidPhases(account);
+  if (!phases.has('P5')) return { entitled: false };
+
+  const site = await siteForEmail(account.email);
+  if (!site) return { entitled: true, contacts: [], summary: summarise([]) };
+
+  const contacts = await listContacts(site.slug);
+  return {
+    entitled: true, slug: site.slug, contacts, summary: summarise(contacts),
+    // The automation panel rides along, because "what is queued to go out to
+    // these people" belongs next to the people, not on a screen of its own.
+    automation: phases.has('P6') ? await statsFor(site.slug) : null,
+  };
+}
+
+async function writeCrm(account, body) {
+  const phases = await paidPhases(account);
+  if (!phases.has('P5')) return { error: 'not_entitled' };
+  const site = await siteForEmail(account.email);
+  if (!site) return { error: 'no_site' };
+
+  const rec = await updateContact(site.slug, String(body.id || ''), {
+    status: body.status, note: body.note,
+  });
+  if (!rec) return { error: 'not_found' };
+  return { ok: true, contact: rec };
 }
 
 async function applyChanges(account, on, host, email) {

@@ -139,12 +139,35 @@
           <a class="path__buy" href="https://buy.stripe.com/7sY00l8Q870Rduf8sB1ck08" target="_blank" rel="noopener">Buy now</a></div>
       </div>
 
-      <!-- P5 CRM & Customer Database and P6 Marketing Automation were listed here
-           at $29/mo each with nothing built behind them, and both were payable:
-           through the basket, and through their own buy.stripe.com links. Pulled
-           2026-08-10. They go back on the page when the product exists, not
-           before. lib/prices.js RETIRED refuses them server-side as well, so
-           removing this markup is the second lock, not the only one. -->
+      <div class="path__rung">
+        <div class="path__pick"><input type="checkbox" class="path__cb" data-phase="P5" data-name="CRM &amp; Customer Database" data-monthly="29" aria-label="Add P5 CRM and Customer Database"></div>
+        <div class="path__phase">P5</div>
+        <div class="path__body">
+          <h5>CRM &amp; Customer Database</h5>
+          <div class="path__stage">Ledger</div>
+          <span class="path__k">What it does</span>
+          <div class="path__v">Every message and booking request from your website is kept as a person, not an email that scrolls away. One list, in your control panel, showing who got in touch, what they said, and who still needs a reply. Somebody who enquires in March and books in June is one customer with a history, not two lost emails.</div>
+          <span class="path__k">Sold under it</span>
+          <div class="path__items"><span>Your customer list</span><span>Every message they ever sent, in one place</span><span>Mark them contacted, won or lost</span><span>See at a glance who still needs a reply</span><span>Tap to call or email them back</span></div>
+          <details class="path__more"><summary>What you get, and who it's for</summary><div class="path__more-body"><p><b>The problem</b>Enquiries arrive as emails and get buried. The good ones slip through, and you cannot tell who you have already called back.</p><p><b>Who it's for</b>Anyone getting more enquiries than they can hold in their head.</p><p><b>What changes</b>Every enquiry and booking from your site lands in one list in your panel, with its full history and a status you set. Nothing arrives without being recorded.</p></div></details>
+        </div>
+        <div class="path__price">$29<small>/mo</small></div>
+      </div>
+
+      <div class="path__rung">
+        <div class="path__pick"><input type="checkbox" class="path__cb" data-phase="P6" data-name="Marketing Automation" data-monthly="29" aria-label="Add P6 Marketing Automation"></div>
+        <div class="path__phase">P6</div>
+        <div class="path__body">
+          <h5>Marketing Automation</h5>
+          <div class="path__stage">Pipeline</div>
+          <span class="path__k">What it does</span>
+          <div class="path__v">Two follow-ups you would otherwise forget, sent for you. The moment someone contacts you they get a thank-you in your name, so nobody sits in silence wondering if you got it. Three days later they get a short review request, which is the ask that wins repeat business and the one nobody remembers to make.</div>
+          <span class="path__k">Sold under it</span>
+          <div class="path__items"><span>Instant thank-you in your name</span><span>Review request three days later</span><span>Sent automatically, nothing to remember</span><span>Stops the moment you switch it off</span><span>See what is queued and what has gone</span></div>
+          <details class="path__more"><summary>What you get, and who it's for</summary><div class="path__more-body"><p><b>The problem</b>Follow-up wins the job and asking for a review wins the next one, but both happen at the exact moment you are busiest.</p><p><b>Who it's for</b>Any business where a slow reply loses the work.</p><p><b>What changes</b>Both messages go out on their own. Needs P5 so there is a contact list behind it, and it only writes to people who left an email address. We do not send automated texts.</p></div></details>
+        </div>
+        <div class="path__price">$29<small>/mo</small></div>
+      </div>
 
       <div class="path__rung">
         <div class="path__pick"><input type="checkbox" class="path__cb" data-phase="P7" data-name="Payments &amp; Checkout" data-monthly="19" data-once="149" aria-label="Add P7 Payments and Checkout"></div>

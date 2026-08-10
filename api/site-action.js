@@ -5,6 +5,8 @@
 import { getSite, has } from '../lib/sites.js';
 import { notifyOperator } from '../lib/notify.js';
 import { recordView } from '../lib/stats.js';
+import { recordContact } from '../lib/crm.js';
+import { queueFollowUps } from '../lib/automation.js';
 
 const clean = (v, n = 120) => String(v == null ? '' : v).trim().slice(0, n);
 
@@ -80,6 +82,19 @@ export default async function handler(req, res) {
         `Name: ${name}`, `Reply to: ${contact}`, message,
       ].filter(Boolean),
     });
+    // P5 keeps the person, not just the email. Fire and forget in both
+    // directions: a CRM write must never stop the message reaching the
+    // business, and the business hearing about it must not depend on storage.
+    if (has(site, 'P5')) {
+      recordContact(site.slug, { name, handle: contact, kind: 'message', text: message })
+        .catch((e) => console.error('[site-action] crm', e));
+    }
+    // P6 turns that enquiry into an automatic reply and a review request later.
+    if (has(site, 'P6')) {
+      queueFollowUps(site, { name, handle: contact, kind: 'message' })
+        .catch((e) => console.error('[site-action] automation', e));
+    }
+
     res.status(200).json({ ok: true });
     return;
   }
@@ -102,6 +117,19 @@ export default async function handler(req, res) {
       heading: 'A booking came in through a customer site',
       lines: [`Site: ${site.business} (/s/${site.slug})`, `Name: ${name}`, `Phone: ${phone}`, `Requested: ${when || 'not stated'}`],
     });
+
+    // A booking is the same person as an enquiry, so it lands on the SAME
+    // contact record rather than creating a second one. That is what turns a
+    // list of messages into a customer history.
+    if (has(site, 'P5')) {
+      recordContact(site.slug, { name, handle: phone, kind: 'booking', text: when || 'no time stated' })
+        .catch((e) => console.error('[site-action] crm', e));
+    }
+    if (has(site, 'P6')) {
+      queueFollowUps(site, { name, handle: phone, kind: 'booking' })
+        .catch((e) => console.error('[site-action] automation', e));
+    }
+
     res.status(200).json({ ok: true });
     return;
   }

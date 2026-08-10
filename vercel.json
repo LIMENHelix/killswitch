@@ -3,7 +3,8 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "crons": [
-    { "path": "/api/cron-mail", "schedule": "0 14,20 * * *" }
+    { "path": "/api/cron-mail", "schedule": "0 14,20 * * *" },
+    { "path": "/api/cron-followups", "schedule": "0 * * * *" }
   ],
   "rewrites": [
     { "source": "/s/:slug", "destination": "/api/site?slug=:slug" },
