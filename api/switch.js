@@ -8,7 +8,7 @@
 // from a small per-account map so the promise stays visible.
 import { getAccount, upsertAccount } from '../lib/store.js';
 import { verifyPanel, panelToken } from '../lib/panel-auth.js';
-import { MONTHLY, PRICE_TO_PHASE } from '../lib/prices.js';
+import { MONTHLY, PRICE_TO_PHASE, isSellable } from '../lib/prices.js';
 import { stripeGet, stripePost, stripeDelete } from '../lib/stripe.js';
 import { notifyOperator, labelPhases } from '../lib/notify.js';
 import { syncModules } from '../lib/sites.js';
@@ -125,7 +125,14 @@ async function applyChanges(account, on, host, email) {
   }
 
   // 3) Additions.
-  const toAdd = [...desired].filter((p) => !items[p]);
+  //
+  // A RETIRED module can never be added, only kept or dropped. P5 and P6 are
+  // priced in Stripe but unbuilt, so they are gone from the panel: the only
+  // people who can still hold one are those who bought it before it was pulled.
+  // The filter is on ADDITIONS alone, deliberately. Their existing item is left
+  // untouched above, so it keeps billing and rendering exactly as before, and
+  // removal still works normally the moment they switch it off.
+  const toAdd = [...desired].filter((p) => !items[p] && isSellable(p));
   toAdd.forEach((p) => { delete ending[p]; });
 
   let url = null;
@@ -159,9 +166,18 @@ async function applyChanges(account, on, host, email) {
   // them anyway, so booking and the AI assistant went live the instant someone
   // clicked Save, and abandoning the checkout left them switched on free forever.
   // They turn on when link() confirms the payment, not before.
+  //
+  // ONLY WHAT STRIPE IS ACTUALLY BILLING MAY RENDER. `desired` is just what the
+  // browser asked for, so filtering it alone was not enough: any phase we
+  // declined to add (a retired module, say) stayed in `desired` and got written
+  // straight onto the live site, unpaid and unpayable. A phase renders only if
+  // Stripe was already billing it when this request began (`held`) or we just
+  // added it to a live subscription (`toAdd` with no checkout outstanding).
   try {
+    const held = new Set(Object.keys(items));
     const pending = url ? new Set(toAdd) : new Set();
-    const liveNow = [...desired].filter((p) => !turnedOff.includes(p) && !pending.has(p));
+    const liveNow = [...desired].filter((p) =>
+      !turnedOff.includes(p) && !pending.has(p) && (held.has(p) || toAdd.includes(p)));
     await syncModules(email, liveNow);
   } catch (err) { console.error('[switch] site sync', err); }
 

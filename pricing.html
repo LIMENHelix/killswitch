@@ -139,38 +139,12 @@
           <a class="path__buy" href="https://buy.stripe.com/7sY00l8Q870Rduf8sB1ck08" target="_blank" rel="noopener">Buy now</a></div>
       </div>
 
-      <div class="path__rung">
-        <div class="path__pick"><input type="checkbox" class="path__cb" data-phase="P5" data-name="CRM &amp; Customer Database" data-monthly="29" data-once="499" aria-label="Add P5 CRM and Customer Database"></div>
-        <div class="path__phase">P5</div>
-        <div class="path__body">
-          <h5>CRM &amp; Customer Database</h5>
-          <div class="path__stage">Ledger</div>
-          <span class="path__k">What it does</span>
-          <div class="path__v">One simple place that remembers every customer and every person who reaches out, instead of notes scattered across your phone, your inbox, and sticky notes. Nobody gets forgotten.</div>
-          <span class="path__k">Sold under it</span>
-          <div class="path__items"><span>Your customer list</span><span>See each deal's stage</span><span>Full contact history</span><span>Simple overview screen</span><span>Reports you can save</span></div>
-          <details class="path__more"><summary>What you get, and who it's for</summary><div class="path__more-body"><p><b>The problem</b>Leads and customers live in texts, sticky notes, and your head, so the good ones slip through.</p><p><b>Who it's for</b>Businesses juggling more leads and repeat customers than they can track by memory.</p><p><b>What changes</b>Every contact, conversation, and job sits in one place, so nothing gets dropped and you can see your whole pipeline at a glance.</p></div></details>
-        </div>
-        <div class="path__price">$29<small>/mo</small>
-          <a class="path__buy" href="https://buy.stripe.com/aFafZj4zS5WN1Lx8sB1ck09" target="_blank" rel="noopener">Buy now</a>
-          <a class="path__buy-alt" href="https://buy.stripe.com/14A9AVeas1Gxeyj8sB1ck0h" target="_blank" rel="noopener">or $499 once</a></div>
-      </div>
-
-      <div class="path__rung">
-        <div class="path__pick"><input type="checkbox" class="path__cb" data-phase="P6" data-name="Marketing Automation" data-monthly="29" aria-label="Add P6 Marketing Automation"></div>
-        <div class="path__phase">P6</div>
-        <div class="path__body">
-          <h5>Marketing Automation</h5>
-          <div class="path__stage">Pipeline</div>
-          <span class="path__k">What it does</span>
-          <div class="path__v">The follow-up messages, reminders, and review requests that win you repeat business get sent automatically, so you never have to remember to do them yourself.</div>
-          <span class="path__k">Sold under it</span>
-          <div class="path__items"><span>Automatic follow-ups</span><span>Sends leads to the right person</span><span>Asks happy customers for reviews</span><span>Connects your other apps</span><span>Alerts you and your team</span></div>
-          <details class="path__more"><summary>What you get, and who it's for</summary><div class="path__more-body"><p><b>The problem</b>Follow-ups, review requests, and reminders eat your day, or they just don't happen.</p><p><b>Who it's for</b>Businesses that know follow-up wins deals but never have the time for it.</p><p><b>What changes</b>The routine outreach runs itself. Leads get routed, customers get nudged, and reviews get requested automatically.</p></div></details>
-        </div>
-        <div class="path__price">$29<small>/mo</small>
-          <a class="path__buy" href="https://buy.stripe.com/cNi7sN7M4fxn4XJ6kt1ck0a" target="_blank" rel="noopener">Buy now</a></div>
-      </div>
+      <!-- P5 CRM & Customer Database and P6 Marketing Automation were listed here
+           at $29/mo each with nothing built behind them, and both were payable:
+           through the basket, and through their own buy.stripe.com links. Pulled
+           2026-08-10. They go back on the page when the product exists, not
+           before. lib/prices.js RETIRED refuses them server-side as well, so
+           removing this markup is the second lock, not the only one. -->
 
       <div class="path__rung">
         <div class="path__pick"><input type="checkbox" class="path__cb" data-phase="P7" data-name="Payments &amp; Checkout" data-monthly="19" data-once="149" aria-label="Add P7 Payments and Checkout"></div>

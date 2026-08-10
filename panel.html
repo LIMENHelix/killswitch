@@ -247,8 +247,13 @@
     { id:'P3', name:'Online Booking & Scheduling', desc:'Customers self-book, day or night.', price:19, state:'active' },
     { id:'P4', name:'Hosting & Maintenance', desc:'We keep it online, safe, and updated.', price:29, state:'off' },
     { id:'P11', name:'Care Plan', desc:'Website management: request changes anytime (hours, text, photos, new pages), and we keep it running.', price:99, state:'off' },
-    { id:'P5', name:'CRM & Customer Database', desc:'Every lead and customer in one place.', price:29, state:'off' },
-    { id:'P6', name:'Marketing Automation', desc:'Follow-ups and review requests, automatic.', price:29, state:'off' },
+    // RETIRED, not deleted. These were on sale with nothing built behind them.
+    // They are hidden from the catalogue, so nobody can start paying for one,
+    // but a customer who bought one before it was pulled still sees their own
+    // switch and can turn it off. render() drops a retired module only when it
+    // is already off. Never re-list one of these without the product existing.
+    { id:'P5', name:'CRM & Customer Database', desc:'Every lead and customer in one place.', price:29, state:'off', retired:true },
+    { id:'P6', name:'Marketing Automation', desc:'Follow-ups and review requests, automatic.', price:29, state:'off', retired:true },
     { id:'P7', name:'Payments & Checkout', desc:'Take card payments on your site.', price:19, state:'off' },
     { id:'P8', name:'Analytics & Reporting', desc:'A plain-English monthly report.', price:19, state:'off' },
     { id:'P9', name:'24/7 AI Assistant', desc:'An AI that answers and books any time.', price:29, state:'off' },
@@ -286,7 +291,9 @@
   }
 
   function render(){
-    listEl.innerHTML = MODULES.map(function(m){
+    // A retired module shows ONLY to someone already paying for it, so they can
+    // see what they have and switch it off. It is never offered to anyone else.
+    listEl.innerHTML = MODULES.filter(function(m){ return !m.retired || m.state!=='off'; }).map(function(m){
       var control = m.custom
         ? '<a class="m-book" href="'+CALENDLY+'" target="_blank" rel="noopener">Book a call</a>'
         : '<button class="'+swClass(m)+'" data-id="'+m.id+'" role="switch" aria-checked="'+(m.state!=='off')+'" aria-label="Toggle '+m.name+'"><span class="led"></span><span class="slot"></span><span class="lever"></span></button>';

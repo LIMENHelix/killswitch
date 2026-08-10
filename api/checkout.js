@@ -10,17 +10,10 @@
 // this endpoint only handles the monthly bundle. P0 (free) and P10 (custom) are
 // intentionally not buyable here.
 
-const MONTHLY = {
-  P1: 'price_1ToXlLPmxnF3rtBM5NRurfkt', // SEO & Local Listings — $19/mo
-  P2: 'price_1ToXlrPmxnF3rtBMz3ybz47E', // Content & Email Marketing — $29/mo
-  P3: 'price_1ToXlsPmxnF3rtBM9Dc9mDul', // Online Booking & Scheduling — $19/mo
-  P4: 'price_1ToXltPmxnF3rtBMvKKaw7vx', // Hosting & Maintenance — $29/mo
-  P5: 'price_1ToXluPmxnF3rtBMEleF5u3D', // CRM & Customer Database — $29/mo
-  P6: 'price_1ToXlvPmxnF3rtBM7aDkUq1Y', // Marketing Automation — $29/mo
-  P7: 'price_1ToXlwPmxnF3rtBMfqIS7WEs', // Payments & Checkout — $19/mo
-  P8: 'price_1ToXlyPmxnF3rtBMendZWgMs', // Analytics & Reporting — $19/mo
-  P9: 'price_1ToXlzPmxnF3rtBMv1DlSFC5', // 24/7 AI Assistant — $29/mo
-};
+// One source of truth for what a module costs and whether it can be sold at all.
+// This file used to keep its own copy of the price map, which is how P5 and P6
+// stayed purchasable here after being pulled from the pricing page.
+import { MONTHLY, isSellable } from '../lib/prices.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -41,9 +34,20 @@ export default async function handler(req, res) {
   if (!body || typeof body !== 'object') body = {};
 
   const phases = Array.isArray(body.phases) ? body.phases : [];
+
+  // A retired module is refused OUTRIGHT rather than quietly dropped from the
+  // basket. Silently ignoring it would charge for the rest of the selection
+  // while the customer believed they had bought all of it.
+  const retired = phases.filter((p) => MONTHLY[p] && !isSellable(p));
+  if (retired.length) {
+    res.status(400).json({ error: 'not_for_sale', phases: retired });
+    return;
+  }
+
   const priceIds = [];
   const seen = {};
   for (const p of phases) {
+    if (!isSellable(p)) continue;
     const id = MONTHLY[p];
     if (id && !seen[id]) { seen[id] = true; priceIds.push(id); }
   }

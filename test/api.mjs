@@ -52,8 +52,30 @@ globalThis.fetch = async (url, opts = {}) => {
     if (path.startsWith('/checkout/sessions/')) {
       return json({ customer: 'cus_paid', payment_status: 'paid', amount_total: 1900 });
     }
-    if (path.startsWith('/subscription_items')) return json({ id: 'si_new' });
-    if (path.startsWith('/subscriptions/')) return json({ id: 'sub_1', current_period_end: 9999999999 });
+    // These used to return a canned OK and leave stripeSubs untouched, so a test
+    // could not tell a real cancellation from a no-op: the next read handed back
+    // the pre-change subscription and everything looked "still active". The stub
+    // mutates now, so switching something off is observed rather than assumed.
+    const form = (b) => Object.fromEntries(new URLSearchParams(String(b || '')));
+    if (path.startsWith('/subscription_items/') && opts.method === 'DELETE') {
+      const id = path.slice('/subscription_items/'.length).split('?')[0];
+      for (const s of stripeSubs) s.items.data = s.items.data.filter((it) => it.id !== id);
+      return json({ id, deleted: true });
+    }
+    if (path === '/subscription_items' && opts.method === 'POST') {
+      const f = form(opts.body);
+      const sub = stripeSubs.find((s) => s.id === f.subscription);
+      const item = { id: 'si_' + f.price.slice(-6), price: { id: f.price }, current_period_end: 9999999999 };
+      if (sub) sub.items.data.push(item);
+      return json(item);
+    }
+    if (path.startsWith('/subscriptions/')) {
+      const id = path.slice('/subscriptions/'.length).split('?')[0];
+      const sub = stripeSubs.find((s) => s.id === id);
+      const f = form(opts.body);
+      if (sub && f.cancel_at_period_end !== undefined) sub.cancel_at_period_end = f.cancel_at_period_end === 'true';
+      return json(sub || { id, current_period_end: 9999999999 });
+    }
     throw new Error('unexpected stripe path ' + path);
   }
 
@@ -529,6 +551,75 @@ check('a low rating is never excluded, only labelled',
 check('their published hours go live', d2.hours.length === 2 && d2.hours[0].h === '7am to 3pm');
 check("Google's description does NOT", d2.about === '' && d2.proposed.about.includes('sourdough'));
 check('and it says whose words they are', d2.proposedNote.includes('not the owner'));
+
+// ---------------------------------------------------------------------------
+// A module with nothing built behind it must not be sellable, and retiring one
+// must not quietly cancel it for whoever already bought it. Both halves matter:
+// the first is the liability, the second is the way a naive fix creates a new one.
+console.log('\n11. Retired modules: cannot be bought, are not confiscated');
+
+const checkout = (await import('file:///C:/Users/Chris/killswitch/api/checkout.js')).default;
+const P5 = 'price_1ToXluPmxnF3rtBMEleF5u3D';  // CRM, retired
+const P6 = 'price_1ToXlvPmxnF3rtBM7aDkUq1Y';  // Marketing Automation, retired
+
+seed();
+r = await call(checkout, { phases: ['P5', 'P6'] });
+check('the public checkout refuses a retired module',
+  r.code === 400 && r.body.error === 'not_for_sale', 'got ' + r.code + ' ' + JSON.stringify(r.body));
+check('and no Stripe session was created for it', created.length === 0, created.length + ' created');
+
+// The dangerous near-miss: silently dropping the unbuilt item and charging for
+// the rest would take money for a basket the customer never agreed to.
+seed();
+r = await call(checkout, { phases: ['P1', 'P5'] });
+check('a basket containing a retired module is refused whole, not trimmed',
+  r.code === 400 && r.body.error === 'not_for_sale' && created.length === 0,
+  'got ' + r.code + ', ' + created.length + ' sessions');
+
+seed();
+r = await call(checkout, { phases: ['P1', 'P3'] });
+check('a basket of real modules still checks out', r.code === 200 && !!r.body.url, 'got ' + r.code);
+
+// The panel is the other door into Stripe and had the same hole.
+seed();
+r = await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: ['P5'] });
+check('the panel cannot start a retired module either', created.length === 0, created.length + ' created');
+check('and it never reaches their live site', !site().modules.includes('P5'), JSON.stringify(site().modules));
+
+// Grandfathering. Deleting P5 from the panel catalogue outright would mean the
+// browser stopped sending it, and the server would read that as "turn it off":
+// a paying customer silently loses what they bought. They keep it.
+function seedPaidP5() {
+  seed();
+  KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, name: 'Test Shop', plan: ['P0'], stripeCustomerId: 'cus_old' } }));
+  putSite({ slug: 'test-shop', business: 'Test Shop', email: EMAIL, phone: '816-555-0101', modules: ['P0', 'P5'], published: true, claimed: true });
+  stripeSubs = [{
+    id: 'sub_1', status: 'active', cancel_at_period_end: false, current_period_end: 9999999999,
+    items: { data: [{ id: 'si_p5', price: { id: P5 }, current_period_end: 9999999999 }] },
+  }];
+}
+
+seedPaidP5();
+r = await call(switchApi, { action: 'state', e: EMAIL, t: TOK });
+check('someone who already bought it still sees it in their panel',
+  r.body.modules && r.body.modules.P5 && r.body.modules.P5.state === 'active', JSON.stringify(r.body.modules));
+
+seedPaidP5();
+r = await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: ['P5'] });
+check('saving the panel does not confiscate what they already pay for',
+  r.body.modules && r.body.modules.P5 && r.body.modules.P5.state === 'active', JSON.stringify(r.body));
+check('and it stays on their site', site().modules.includes('P5'), JSON.stringify(site().modules));
+
+seedPaidP5();
+r = await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: [] });
+check('but they can still switch it off themselves',
+  r.body.modules && r.body.modules.P5 && r.body.modules.P5.state === 'ending', JSON.stringify(r.body));
+
+// The bot was quoting a price for both of them.
+const chatSrc = await (await import('node:fs/promises')).readFile('C:/Users/Chris/killswitch/api/chat.js', 'utf8');
+check('the sales bot no longer lists a CRM or automation price',
+  !/P5 CRM/.test(chatSrc) && !/P6 Marketing Automation/.test(chatSrc));
+check('and it is told to refuse them by name', /NO CRM product/.test(chatSrc));
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
