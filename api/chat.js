@@ -1,5 +1,5 @@
-// Killswitch Websites AI Support — the real AI concierge (Claude Haiku 4.5).
-// Calls the Anthropic Messages API directly via fetch — no SDK, no build step.
+// Killswitch Websites AI Support: the real AI concierge (Claude Haiku 4.5).
+// Calls the Anthropic Messages API directly via fetch, no SDK, no build step.
 // Requires env var ANTHROPIC_API_KEY (set in the Vercel project settings).
 // Cost controls: Haiku model, max_tokens capped, last ~8 messages only,
 // per-message length cap. Set a monthly spend limit in the Anthropic console too.
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
 
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) {
-    // Not configured yet — tell the client so it can fall back to the scripted bot.
+    // Not configured yet, tell the client so it can fall back to the scripted bot.
     res.status(503).json({ error: 'not_configured' });
     return;
   }
@@ -100,7 +100,7 @@ export default async function handler(req, res) {
       .join('')
       .trim();
 
-    res.status(200).json({ reply: text || "Sorry — I didn't quite catch that. Mind rephrasing?" });
+    res.status(200).json({ reply: text || "Sorry, I didn't quite catch that. Mind rephrasing?" });
   } catch (e) {
     console.error('[killswitch chat] error', e);
     res.status(500).json({ error: 'server' });

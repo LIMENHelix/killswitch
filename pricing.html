@@ -43,7 +43,7 @@
   <div class="container">
     <div class="eyebrow">Pricing</div>
     <h1>The website's free.<br>Pay only for the power you add.</h1>
-    <p>We build your site free and hand you the keys — you own it. Add booking, payments, an AI assistant, or a dashboard for a low monthly, with several available to own outright. No surprises, cancel anytime.</p>
+    <p>We build your site free and hand you the keys. You own it. Add booking, payments, an AI assistant, or a dashboard for a low monthly, with several available to own outright. No surprises, cancel anytime.</p>
     <p style="margin-top:26px"><a class="btn" href="https://calendly.com/chrishubbel72/30min" target="_blank" rel="noopener">Talk to a real, live human</a></p>
   </div>
 </section>
@@ -54,7 +54,7 @@
     <div class="byo__intro">
       <div class="eyebrow">The growth path</div>
       <h2 class="section__title">Start free. Add power as you grow.</h2>
-      <p>Every business moves through the same stages. Each Killswitch Websites phase is built for one of them — check the ones you want and we'll put together your plan. Own several of them outright, or run them for a low monthly. Cancel anytime.</p>
+      <p>Every business moves through the same stages. Each Killswitch Websites phase is built for one of them, so check the ones you want and we'll put together your plan. Own several of them outright, or run them for a low monthly. Cancel anytime.</p>
     </div>
 
     <div class="path">
@@ -244,8 +244,8 @@
   <div class="container faq-wrap">
     <h2 class="section__title">Questions, answered</h2>
     <div class="faq">
-      <div class="faq__item"><button class="faq__q">Do I own everything? <span>+</span></button><div class="faq__a"><p>Yes. The site, the code, the domain, the accounts — all in your name. No lock-in, ever.</p></div></div>
-      <div class="faq__item"><button class="faq__q">How do payments work? <span>+</span></button><div class="faq__a"><p>A deposit to start, the balance at launch. Pay securely by card — we'll send a payment link or invoice. Card payments are handled by Stripe.</p></div></div>
+      <div class="faq__item"><button class="faq__q">Do I own everything? <span>+</span></button><div class="faq__a"><p>Yes. The site, the code, the domain, the accounts, all in your name. No lock-in, ever.</p></div></div>
+      <div class="faq__item"><button class="faq__q">How do payments work? <span>+</span></button><div class="faq__a"><p>A deposit to start, the balance at launch. Pay securely by card, and we'll send a payment link or invoice. Card payments are handled by Stripe.</p></div></div>
       <div class="faq__item"><button class="faq__q">How do I request changes? <span>+</span></button><div class="faq__a"><p>Text or email us in plain English. On a care plan, most small changes go live the same day.</p></div></div>
       <div class="faq__item"><button class="faq__q">What if I already have a website? <span>+</span></button><div class="faq__a"><p>We rebuild or migrate it onto our stack so we can move fast, then improve it from there.</p></div></div>
       <div class="faq__item"><button class="faq__q">How long does it take? <span>+</span></button><div class="faq__a"><p>Your free website is live in minutes. Larger custom builds take about a week, and bigger systems are scoped on our first call.</p></div></div>
@@ -256,7 +256,7 @@
 <section class="section section--cta" id="contact">
   <div class="container contact">
     <h2>Tell us what you need.</h2>
-    <p>One message and we'll send back a plan and a price. No pressure, no jargon — you'll talk to the person who builds it.</p>
+    <p>One message and we'll send back a plan and a price. No pressure, no jargon. You'll talk to the person who builds it.</p>
     <form class="contact__form" id="contactForm">
       <input type="text" placeholder="Name" required />
       <input type="text" placeholder="Phone or email" required />
@@ -384,13 +384,13 @@
     if (!b.items.length) { note.hidden = false; note.style.color = '#ef4444'; note.textContent = 'Check at least one phase to build your plan.'; return; }
     if (!name || !contact) { note.hidden = false; note.style.color = '#ef4444'; note.textContent = 'Add your name and a way to reach you.'; return; }
     var order = b.items.map(function (it) {
-      if (it.custom) return '• ' + it.phase + ' ' + it.name + ' — Custom (scope call)';
-      return '• ' + it.phase + ' ' + it.name + ' — ' + money(it.mo) + '/mo' + (it.once ? (' (or ' + money(it.once) + ' once)') : '');
+      if (it.custom) return '• ' + it.phase + ' ' + it.name + ' · Custom (scope call)';
+      return '• ' + it.phase + ' ' + it.name + ' · ' + money(it.mo) + '/mo' + (it.once ? (' (or ' + money(it.once) + ' once)') : '');
     }).join('\n');
     var message = 'GROWTH-PATH PLAN\n' + order + '\n\nMonthly total: ' + money(b.mo) + '/mo' + (b.hasOnce ? ('\nOne-time option: from ' + money(b.once)) : '') + (b.hasCustom ? '\nIncludes P10 Engine (custom scope).' : '');
     note.hidden = false; note.style.color = ''; note.textContent = 'Sending…';
     fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ access_key: KEY, subject: 'New growth-path plan — Killswitch Websites', from_name: 'Killswitch Websites Growth Path', name: name, contact: contact, message: message, source: 'growth-path' }) })
+      body: JSON.stringify({ access_key: KEY, subject: 'New growth-path plan · Killswitch Websites', from_name: 'Killswitch Websites Growth Path', name: name, contact: contact, message: message, source: 'growth-path' }) })
       .then(function (r) { return r.json(); }).then(function (d) {
         if (d.success) { note.style.color = ''; note.innerHTML = '✓ Sent! Skip the wait and <a href="https://calendly.com/chrishubbel72/30min" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600">talk to a real, live human →</a>'; form.reset(); }
         else { note.style.color = '#ef4444'; note.textContent = '⚠ Not sent: ' + (d.message || 'please try again'); }

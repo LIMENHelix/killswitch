@@ -95,7 +95,7 @@ export default async function handler(req, res) {
       `Name: ${name}`, `Phone: ${phone}`, `Requested: ${when || 'not stated'}`,
       'Call them back to confirm the time.',
     ];
-    await emailBusiness(site, `Booking request — ${name}`, lines);
+    await emailBusiness(site, `Booking request from ${name}`, lines);
     // Operator copy, so a silent failure at the customer end is still visible.
     await notifyOperator({
       subject: `Booking request on ${site.business}`,

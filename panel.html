@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Your control panel · Killswitch Websites</title>
 <meta name="robots" content="noindex" />
-<meta name="description" content="Your Killswitch Websites control panel — flip your modules on and off, and ask for changes to your site." />
+<meta name="description" content="Your Killswitch Websites control panel: flip your modules on and off, and ask for changes to your site." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230a0b0e'/%3E%3Cg fill='none' stroke='%23FF3826' stroke-width='9' stroke-linecap='round'%3E%3Cpath d='M62.5 30.4 A25 25 0 1 1 37.5 30.4'/%3E%3Cpath d='M50 22 V52'/%3E%3C/g%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -380,11 +380,11 @@
   function zap(){
     var c = ac(); if(!c || muted) return;
     var t = c.currentTime, lvl = powerCount();
-    // SNAP — short mechanical throw click
+    // SNAP: short mechanical throw click
     var sn = c.createOscillator(); sn.type='square'; sn.frequency.setValueAtTime(340,t); sn.frequency.exponentialRampToValueAtTime(80,t+0.03);
     var sg = c.createGain(); sg.gain.setValueAtTime(0.30,t); sg.gain.exponentialRampToValueAtTime(0.0001,t+0.05);
     sn.connect(sg).connect(c.destination); sn.start(t); sn.stop(t+0.06);
-    // BUZZ — longer sustained electric hum, begins right after the snap
+    // BUZZ: longer sustained electric hum, begins right after the snap
     var bt = t+0.04, dur = 1.25 + lvl*0.06;
     var o = c.createOscillator(); o.type='sawtooth'; var base = 84 + lvl*7;
     o.frequency.setValueAtTime(base*1.3, bt); o.frequency.linearRampToValueAtTime(base, bt+dur);
@@ -407,7 +407,7 @@
     var g = c.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.13,t+0.006); g.gain.exponentialRampToValueAtTime(0.0001,t+0.14);
     o.connect(g).connect(c.destination); o.start(t); o.stop(t+0.15);
   }
-  /* white lightning burst — a "short circuit" thrown off the switch on ON */
+  /* white lightning burst, a "short circuit" thrown off the switch on ON */
   function ksSparks(el){
     if(!el || !el.getBoundingClientRect) return;
     var r=el.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2, S=150, c=S/2;
@@ -455,7 +455,7 @@
       if(newlyOn.length){
         var names=[], total=0;
         newlyOn.forEach(function(id){ var mm=MODULES.find(function(x){ return x.id===id; }); if(mm){ names.push(mm.name); total+=(mm.price||0); } });
-        if(!confirm('Start '+names.join(', ')+' — $'+total+'/mo.\n\nYour card is charged for the first month now. You can switch anything off anytime and it keeps working until your next billing date, then stops — but payments already made are not refunded.\n\nContinue to secure checkout?')) return;
+        if(!confirm('Start '+names.join(', ')+' for $'+total+'/mo.\n\nYour card is charged for the first month now. You can switch anything off anytime and it keeps working until your next billing date, then stops, but payments already made are not refunded.\n\nContinue to secure checkout?')) return;
       }
       var btn=document.getElementById('saveBtn'); btn.disabled=true;
       saveNote.style.color=''; saveNote.textContent='Saving your changes...';

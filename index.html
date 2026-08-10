@@ -123,6 +123,7 @@
   .proof{margin-top:26px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:.9rem;color:var(--mute-2)}
   .proof a{color:var(--amber);border-bottom:1px solid rgba(255,196,46,.4);padding-bottom:1px}
   .proof a:hover{color:var(--ink);border-color:var(--ink)}
+  .proof-tag{font-family:"IBM Plex Mono",monospace;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mute-2);border:1px solid var(--line);border-radius:2px;padding:2px 7px}
   .talk{margin-top:14px;font-size:.88rem;color:var(--mute-2)}
   .talk a{color:var(--mute);border-bottom:1px solid var(--line)}
   .talk a:hover{color:var(--ink)}
@@ -243,9 +244,16 @@
 
       <p class="cap-note">Your site goes live at <b>killswitchwebsites.com/yourbusiness</b>, ready to share. Want your own web address like yourbusiness.com? That's the first upgrade whenever you want it.</p>
 
+      <!-- "Built recently" read as a delivered customer, and the page it links
+           to says in its own banner "DEMO, not live yet, not affiliated with the
+           shop yet". Proof that dissolves when you click it does the opposite of
+           its job, which matters here because this line exists to replace the
+           defensive copy that made the page read as bait and switch. It says
+           demo now. A real customer replaces it the day there is one. -->
       <div class="proof">
-        <span>Built recently:</span>
+        <span>See one we built:</span>
         <a href="/demos/oouwees-barbershop-gladstone" target="_blank" rel="noopener">OouWee's Barbershop, Gladstone MO &rarr;</a>
+        <span class="proof-tag">demo</span>
       </div>
       <p class="talk">Prefer to talk? Call <a href="tel:+19139331687"><b>(913) 933-1687</b></a>, or <a href="https://calendly.com/chrishubbel72/30min" target="_blank" rel="noopener">book a quick call</a>.</p>
     </div>
@@ -350,13 +358,13 @@
       headers:{ 'Content-Type':'application/json', 'Accept':'application/json' },
       body: JSON.stringify({
         access_key: WEB3FORMS_KEY,
-        subject: '🔔 FREE SITE request — Killswitch Websites',
+        subject: '🔔 FREE SITE request · Killswitch Websites',
         from_name: 'Killswitch Websites Website',
         name: business,
         business: business,
         phone: phone,
         contact: email,
-        source: 'free site — homepage form',
+        source: 'free site · homepage form',
         message: 'FREE SITE REQUEST (homepage form)\n' +
                  'Business: ' + business + '\n' +
                  'Phone: ' + phone + '\n' +

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Start your free site — Killswitch Websites</title>
+<title>Start your free site · Killswitch Websites</title>
 <meta name="description" content="Tell us about your business and we will build your free website. A few quick questions and you are on your way." />
 <meta name="robots" content="noindex" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -175,10 +175,10 @@
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({
         access_key: KEY,
-        subject: '🔔 NEW Killswitch Websites SIGNUP — ' + business,
+        subject: '🔔 NEW Killswitch Websites SIGNUP · ' + business,
         from_name: 'Killswitch Websites Signup',
         name: name, contact: email, business: business,
-        source: 'signup — /start', message: message
+        source: 'signup · /start', message: message
       })
     })
     .then(function (r) { return r.json().catch(function () { return {}; }); })
