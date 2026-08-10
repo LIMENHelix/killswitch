@@ -99,10 +99,21 @@ check('CRM is sold as the list it is', copy.includes('kept as a person, not an e
 check('and does not claim to import from anywhere else', !/import/i.test(copy));
 check('automation names its two messages', copy.includes('thank-you') && copy.includes('review request'));
 check('and rules out texts, which we do not send', copy.includes('We do not send automated texts'));
-// The old per-rung buy.stripe.com links bypassed every server check, so the
-// restored rungs deliberately do NOT carry them: the basket is the only door.
-check('the restored rungs carry no bypass Stripe link',
-  !(await evaluate(`document.body.innerHTML.includes('1ck09') || document.body.innerHTML.includes('1ck0a') || document.body.innerHTML.includes('1ck0h')`)));
+// EVERY rung that can be bought has a one-click Buy now, because that is the
+// path a non-technical owner actually takes. Removing two of them left the page
+// inconsistent for no benefit: the links were never disabled in Stripe, only
+// hidden, so hiding them cost a conversion path and prevented nothing.
+// 12 Stripe links: 9 monthly Buy now, plus the 3 one-time alternatives on the
+// build-once modules (booking, CRM, payments). P0 and P10 also use .path__buy
+// but point at Calendly, which is why the class count is 11 and not 9.
+const stripeLinks = await evaluate(`(document.body.innerHTML.match(/buy\.stripe\.com/g)||[]).length`);
+check('all 12 Stripe buy links are on the page', stripeLinks === 12, String(stripeLinks));
+check('every rung that takes money offers one click',
+  (await evaluate(`[...document.querySelectorAll('.path__buy')].length`)) === 11);
+check('CRM can be bought in one click again',
+  await evaluate(`document.body.innerHTML.includes('1ck09')`));
+check('and so can automation',
+  await evaluate(`document.body.innerHTML.includes('1ck0a')`));
 
 console.log('\nTHE EMAIL GATE fires before any card is asked for');
 await evaluate(`document.querySelector('.path__cb[data-phase="P1"]').click()`);
