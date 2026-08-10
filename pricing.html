@@ -217,8 +217,12 @@
         <div class="byo__cart-h">Your plan</div>
         <ul id="ladderList"></ul>
         <div class="byo__total">Monthly <span id="ladderMonthly">$0</span></div>
+        <!-- Required. Without an email there is no account to switch these on
+             for, which is exactly how this page used to take money and deliver
+             nothing. api/checkout.js refuses the sale without it. -->
+        <input type="email" id="ladderEmail" placeholder="Your email" autocomplete="email" required aria-label="Your email">
         <button class="btn btn--block" id="ladderCheckout" type="button">Continue to secure checkout →</button>
-        <p class="byo__fine" id="ladderFine">Tick the phases you want and pay for the whole set in one secure Stripe checkout. To own a phase outright instead, use its "or $X once" link. The Engine is scoped on a call.</p>
+        <p class="byo__fine" id="ladderFine">Tick what you want and pay for the whole set in one secure Stripe checkout. We email you a control panel where you can switch any of it back off yourself, and switching off runs to the end of the cycle you already paid for. To own a phase outright instead, use its "or $X once" link. The Engine is scoped on a call.</p>
         <p class="byo__note" id="ladderNote" hidden></p>
         <details class="path__more" style="border-top:none;margin-top:6px">
           <summary>Prefer a plan by email first?</summary>
@@ -348,9 +352,17 @@
         return;
       }
       var phases = buyable.map(function (it) { return it.phase; });
+      var emailEl = document.getElementById('ladderEmail');
+      var email = emailEl ? emailEl.value.trim() : '';
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+        note.hidden = false; note.style.color = '#ef4444';
+        note.textContent = 'Add your email so we can set these up on your account.';
+        if (emailEl) emailEl.focus();
+        return;
+      }
       note.hidden = false; note.style.color = ''; note.textContent = 'Opening secure checkout…';
       checkoutBtn.disabled = true;
-      fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phases: phases }) })
+      fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, phases: phases }) })
         .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
         .then(function (res) {
           if (res.ok && res.d && res.d.url) { window.location.href = res.d.url; return; }

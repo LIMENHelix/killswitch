@@ -577,7 +577,7 @@ check('a basket containing a retired module is refused whole, not trimmed',
   'got ' + r.code + ', ' + created.length + ' sessions');
 
 seed();
-r = await call(checkout, { phases: ['P1', 'P3'] });
+r = await call(checkout, { phases: ['P1', 'P3'], email: 'buyer@example.com' });
 check('a basket of real modules still checks out', r.code === 200 && !!r.body.url, 'got ' + r.code);
 
 // The panel is the other door into Stripe and had the same hole.
@@ -620,6 +620,54 @@ const chatSrc = await (await import('node:fs/promises')).readFile('C:/Users/Chri
 check('the sales bot no longer lists a CRM or automation price',
   !/P5 CRM/.test(chatSrc) && !/P6 Marketing Automation/.test(chatSrc));
 check('and it is told to refuse them by name', /NO CRM product/.test(chatSrc));
+
+// ---------------------------------------------------------------------------
+// The public pricing page used to charge a card and provision nothing: no
+// account, no panel, no modules switched on, nobody told, and no webhook to
+// catch it later. These check that a purchase there now lands somewhere.
+console.log('\n12. Buying from the pricing page actually provisions something');
+
+const NEW = 'walkin@example.com';
+
+seed();
+r = await call(checkout, { phases: ['P1'] });
+check('no email, no sale', r.code === 400 && r.body.error === 'email_required', 'got ' + r.code + ' ' + JSON.stringify(r.body));
+check('and nothing was charged', created.length === 0);
+
+seed();
+r = await call(checkout, { phases: ['P1'], email: 'not-an-address' });
+check('a malformed email is refused too', r.code === 400 && r.body.error === 'email_required');
+
+seed();
+r = await call(checkout, { phases: ['P1', 'P3'], email: NEW });
+check('a real purchase opens checkout', r.code === 200 && !!r.body.url, JSON.stringify(r.body));
+
+const accounts = () => JSON.parse(KV.get('ks:accounts'));
+check('an account exists BEFORE they pay, so the money has somewhere to land',
+  !!accounts()[NEW], Object.keys(accounts()).join(','));
+
+const sess = decodeURIComponent(created[0] || '');
+check('they come back to their own panel, not a static thank-you page',
+  /success_url=[^&]*\/panel\?e=/.test(sess) && !sess.includes('/pricing?checkout=success'), sess.slice(0, 220));
+check('and it carries the session id that triggers linking',
+  sess.includes('session_id={CHECKOUT_SESSION_ID}'), sess.slice(0, 260));
+check('Stripe is told who is buying', sess.includes('customer_email=' + NEW) || sess.includes('customer_email=walkin'), sess.slice(0, 200));
+
+// An existing customer must not be reset to a free plan by buying an upgrade,
+// and must not end up with a second Stripe customer object.
+seed();
+KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, name: 'Test Shop', plan: ['P0', 'P3'], stripeCustomerId: 'cus_old' } }));
+r = await call(checkout, { phases: ['P1'], email: EMAIL });
+check('an existing customer keeps their record', accounts()[EMAIL].name === 'Test Shop'
+  && accounts()[EMAIL].plan.includes('P3'), JSON.stringify(accounts()[EMAIL]));
+check('and reuses their Stripe customer instead of making a second one',
+  decodeURIComponent(created[0] || '').includes('customer=cus_old'), decodeURIComponent(created[0] || '').slice(0, 200));
+
+// The retirement gate has to hold on this path too, before any account is made.
+seed();
+r = await call(checkout, { phases: ['P5'], email: NEW });
+check('a retired module is still refused even with a valid email',
+  r.code === 400 && r.body.error === 'not_for_sale' && created.length === 0);
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
