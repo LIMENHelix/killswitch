@@ -22,6 +22,7 @@ const PANEL = 'C:/Users/Chris/killswitch/panel.html';
 // What the fake /api/switch reports as this customer's live subscriptions.
 let MODULES_LIVE = {};
 let applied = null;
+let STATS = { entitled: false };
 
 const server = http.createServer((req, res) => {
   if (req.url.startsWith('/api/switch')) {
@@ -30,6 +31,7 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       const body = JSON.parse(b || '{}');
       res.setHeader('content-type', 'application/json');
+      if (body.action === 'stats') { res.end(JSON.stringify(STATS)); return; }
       if (body.action === 'apply') applied = body.on;
       res.end(JSON.stringify({ ok: true, site: 'test-shop', name: 'Test Shop', linked: true, modules: MODULES_LIVE }));
     });
@@ -84,8 +86,8 @@ const { result: t } = await send('Target.createTarget', { url: 'about:blank' }, 
 await send('Runtime.enable');
 await send('Page.enable');
 
-async function load(live) {
-  MODULES_LIVE = live; applied = null; consoleErrors.length = 0;
+async function load(live, stats = { entitled: false }) {
+  MODULES_LIVE = live; applied = null; STATS = stats; consoleErrors.length = 0;
   await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/panel?e=shop%40example.com&t=tok` });
   await new Promise((r) => setTimeout(r, 1400));
 }
@@ -130,6 +132,28 @@ await new Promise((r) => setTimeout(r, 200));
 check('switching it off is allowed',
   (await evaluate(`document.querySelector('#mlist .klsw[data-id="P5"]').getAttribute('aria-checked')`)) === 'false'
   || (await evaluate(`document.getElementById('mlist').textContent`)).toLowerCase().includes('until'));
+
+console.log('\nP8 VISITOR NUMBERS, the module they could not see before');
+await load({ P1: { state: 'active', endsAt: 9999999999 } });
+check('someone not paying for it sees no stats section',
+  await evaluate(`document.getElementById('statsWrap').hidden === true`));
+
+const series = Array.from({ length: 30 }, (_, i) => ({ date: '2026-07-' + String(i + 1).padStart(2, '0'), views: i }));
+await load({ P8: { state: 'active', endsAt: 9999999999 } },
+  { entitled: true, slug: 'test-shop', stats: { allTime: 1234, thisMonth: 87, lastMonth: 42, last30: 435, series } });
+check('no javascript errors', consoleErrors.length === 0, consoleErrors.join(' | '));
+check('a paying customer sees the section', await evaluate(`document.getElementById('statsWrap').hidden === false`));
+check('this month is their real number', (await evaluate(`document.getElementById('stMonth').textContent`)) === '87');
+check('last month is shown beside it', (await evaluate(`document.getElementById('stLast').textContent`)) === '42');
+check('all time is formatted for a human', (await evaluate(`document.getElementById('stAll').textContent`)) === '1,234');
+check('the 30 day chart is drawn', (await evaluate(`document.querySelectorAll('#stSpark i').length`)) === 30);
+
+// Three zeros with no explanation reads as broken, so it says so in words.
+await load({ P8: { state: 'active', endsAt: 9999999999 } },
+  { entitled: true, slug: 'test-shop', stats: { allTime: 0, thisMonth: 0, lastMonth: 0, last30: 0, series: series.map((s) => ({ ...s, views: 0 })) } });
+check('a site with no visitors yet says so in words',
+  (await evaluate(`document.getElementById('stNote').textContent`)).toLowerCase().includes('nobody has opened'),
+  await evaluate(`document.getElementById('stNote').textContent`));
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 try { chrome.kill(); } catch { /* already gone */ }

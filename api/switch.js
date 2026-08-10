@@ -11,7 +11,8 @@ import { verifyPanel, panelToken } from '../lib/panel-auth.js';
 import { MONTHLY, PRICE_TO_PHASE, isSellable } from '../lib/prices.js';
 import { stripeGet, stripePost, stripeDelete } from '../lib/stripe.js';
 import { notifyOperator, labelPhases } from '../lib/notify.js';
-import { syncModules } from '../lib/sites.js';
+import { syncModules, siteForEmail } from '../lib/sites.js';
+import { getStats } from '../lib/stats.js';
 import { ensureLinked, liveSubs } from '../lib/entitle.js';
 
 const LIVE_STATUSES = ['active', 'trialing', 'past_due'];
@@ -48,6 +49,7 @@ export default async function handler(req, res) {
 
   try {
     if (action === 'state') { res.status(200).json(await readState(account)); return; }
+    if (action === 'stats') { res.status(200).json(await readStats(account)); return; }
     if (action === 'apply') { res.status(200).json(await applyChanges(account, body.on, host, email)); return; }
     if (action === 'link')  { res.status(200).json(await link(account, body.session_id, host)); return; }
     res.status(400).json({ error: 'unknown_action' });
@@ -86,6 +88,19 @@ async function readState(account) {
     if (ending[phase] && ending[phase] > now) modules[phase] = { state: 'ending', endsAt: ending[phase] };
   }
   return { site: account.site || '', name: account.name || '', linked: !!account.stripeCustomerId, modules };
+}
+
+// P8 is the only module the customer cannot see working from their own site, so
+// this is where it becomes visible. Entitlement is read from Stripe, not from
+// the site record, so switching P8 off stops the numbers with the billing.
+async function readStats(account) {
+  const subs = await liveSubs(account.stripeCustomerId);
+  const phases = new Set(Object.keys(itemsByPhase(subs)));
+  if (!phases.has('P8')) return { entitled: false };
+
+  const site = await siteForEmail(account.email);
+  if (!site) return { entitled: true, stats: null };
+  return { entitled: true, slug: site.slug, stats: await getStats(site.slug) };
 }
 
 async function applyChanges(account, on, host, email) {

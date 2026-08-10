@@ -4,6 +4,7 @@
 // endpoint refuses, which stops a switched-off feature being driven by hand.
 import { getSite, has } from '../lib/sites.js';
 import { notifyOperator } from '../lib/notify.js';
+import { recordView } from '../lib/stats.js';
 
 const clean = (v, n = 120) => String(v == null ? '' : v).trim().slice(0, n);
 
@@ -37,6 +38,17 @@ export default async function handler(req, res) {
 
   const site = await getSite(body.slug).catch(() => null);
   if (!site || !site.published) { res.status(404).json({ error: 'no_site' }); return; }
+
+  // ---- P8 view beacon ----
+  // Gated like everything else: a switched-off module must not be drivable by
+  // hand. Answers 204 with no body because nothing is waiting on the reply.
+  if (body.action === 'view') {
+    if (!has(site, 'P8')) { res.status(403).json({ error: 'module_off' }); return; }
+    try { await recordView(site.slug); }
+    catch (e) { console.error('[site-action] view', e); }
+    res.status(204).end();
+    return;
+  }
 
   // ---- Contact message: FREE, no module required ----
   // Every site gets this, including the free ones, because "Contact form" has

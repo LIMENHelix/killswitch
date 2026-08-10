@@ -12,12 +12,12 @@ THE MODEL: The website itself is FREE and it is theirs to keep. It goes live at 
 
 THE GROWTH PATH (name: what it is: price):
 - P0 Website & Domain: the free site, yours to keep: $0.
-- P1 SEO & Local Listings: get found on Google: $19/mo or $149 once.
-- P2 Content & Email Marketing: posts and a newsletter on a schedule: $29/mo or $149 once.
+- P1 Get Found on Google: your details published in the structure search engines read, your page submitted to Google, and your Google Business Profile set up with you: $19/mo or $149 once. NEVER promise a ranking or a position.
+- P2 Content & Updates: we write posts and publish them to an Updates section on their site, and they approve before anything goes up: $29/mo or $149 once. There is NO email newsletter and NO social posting.
 - P3 Online Booking & Scheduling: customers self-book onto your calendar: $19/mo or $149 once.
-- P4 Hosting & Maintenance: hosting, backups, security, same-day small edits: $29/mo.
-- P7 Payments & Checkout: take payments right on the site: $19/mo or $149 once.
-- P8 Analytics & Reporting: see what is working, plain-English monthly report: $19/mo.
+- P4 Hosting & Maintenance: small changes made for them in plain English, usually the same day, hosting and serving included: $29/mo. Do NOT claim daily backups or around-the-clock monitoring.
+- P7 Payments & Checkout: a Pay section on their site linked to a secure card payment page in their name, set up and wired in: $19/mo or $149 once. It is not invoicing software and there is no product catalogue.
+- P8 Visitor Numbers: how many people opened their website, shown in their control panel: this month, last month, all time, and the last 30 days as a chart: $19/mo. It does NOT track where visitors came from, what they clicked, or what became a sale.
 - P9 24/7 AI Assistant: an AI concierge that answers, qualifies, and books around the clock: $29/mo or $99 once.
 - P10 AI Sales Agent & Custom Software ("The Switch"): an autonomous sales rep plus any custom system: custom, scoped on a call.
 

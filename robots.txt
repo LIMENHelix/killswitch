@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://killswitchwebsites.com/sitemap.xml
+Sitemap: https://killswitchwebsites.com/sitemap-sites.xml

@@ -31,6 +31,12 @@ globalThis.fetch = async (url, opts = {}) => {
         const flat = []; for (const [k, val] of Object.entries(h)) flat.push(k, val);
         return flat;
       }
+      // Visitor counters (lib/stats.js). Upstash returns the new value.
+      if (cmd === 'INCR') { const n = Number(KV.get(key) || 0) + 1; KV.set(key, String(n)); return n; }
+      // No TTL in this Map, so EXPIRE is accepted and ignored. That means the
+      // 100 day cleanup on daily rows is NOT covered here; it is a Redis
+      // behaviour, not ours, and faking a clock to test it would prove nothing.
+      if (cmd === 'EXPIRE') return 1;
       throw new Error('unexpected kv cmd ' + cmd);
     };
     // /pipeline takes an array of command arrays and returns one result each
@@ -107,6 +113,12 @@ function mkres() {
   const r = { code: 0, body: null };
   r.status = (c) => { r.code = c; return r; };
   r.json = (o) => { r.body = o; return r; };
+  // A real response has end(), used for 204s that carry no body. Without it the
+  // harness was not just incomplete, it was less capable than production and
+  // would fail a handler that is perfectly correct.
+  r.end = () => r;
+  r.setHeader = () => {};
+  r.send = (b) => { r.body = b; return r; };
   return r;
 }
 const call = async (h, body) => { const res = mkres(); await h({ method: 'POST', body, headers: { host: 'test.local' } }, res); return res; };
@@ -719,6 +731,89 @@ seed();
 putSite({ ...freeSite, email: EMAIL, published: false });
 r = await call(siteAction, { action: 'contact', slug: 'free-shop', name: 'Jo', contact: 'x', message: 'hi' });
 check('an unpublished site cannot be messaged', r.code === 404, 'got ' + r.code);
+
+// ---------------------------------------------------------------------------
+// P8 was $19/mo for "a plain-English monthly report" and delivered a script
+// whose data went to OUR dashboard. The customer had no screen and no number.
+console.log('\n14. Analytics shows the customer their own number');
+
+const { recordView, getStats } = await import('file:///C:/Users/Chris/killswitch/lib/stats.js');
+const sitemapSites = (await import('file:///C:/Users/Chris/killswitch/api/sitemap-sites.js')).default;
+
+const P8 = 'price_1ToXlyPmxnF3rtBMendZWgMs';
+const paidSite = { ...freeSite, email: EMAIL, modules: ['P0', 'P8'] };
+
+seed();
+putSite(paidSite);
+r = await call(siteAction, { action: 'view', slug: 'free-shop' });
+check('a view on a paid site is counted', r.code === 204, 'got ' + r.code);
+
+seed();
+putSite({ ...freeSite, email: EMAIL, modules: ['P0'] });
+r = await call(siteAction, { action: 'view', slug: 'free-shop' });
+check('a view on a site NOT paying for it is refused',
+  r.code === 403 && r.body.error === 'module_off', 'got ' + r.code);
+
+// Counting, over three days, read back the way the panel reads it.
+seed();
+const day1 = new Date('2026-08-08T12:00:00Z'), day2 = new Date('2026-08-09T12:00:00Z'), day3 = new Date('2026-08-10T12:00:00Z');
+await recordView('free-shop', day1);
+await recordView('free-shop', day2);
+await recordView('free-shop', day2);
+await recordView('free-shop', day3);
+const st = await getStats('free-shop', day3);
+check('all time counts every view', st.allTime === 4, JSON.stringify(st.allTime));
+check('this month is separate from all time', st.thisMonth === 4, JSON.stringify(st.thisMonth));
+check('the 30 day series is 30 long', st.series.length === 30, String(st.series.length));
+check('and puts the two views on the right day',
+  st.series[st.series.length - 2].views === 2, JSON.stringify(st.series.slice(-3)));
+check('a site nobody has visited reads zero, not null',
+  (await getStats('never-seen', day3)).allTime === 0);
+
+// The panel only gets numbers if Stripe says they are paying, so switching P8
+// off stops the data with the billing rather than leaving it running.
+seed();
+putSite(paidSite);
+KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, name: 'Test Shop', stripeCustomerId: 'cus_a' } }));
+stripeSubs = [{ id: 'sub_1', status: 'active', cancel_at_period_end: false, current_period_end: 9999999999,
+  items: { data: [{ id: 'si_p8', price: { id: P8 }, current_period_end: 9999999999 }] } }];
+r = await call(switchApi, { action: 'stats', e: EMAIL, t: TOK });
+check('a paying customer gets their numbers', r.code === 200 && r.body.entitled === true && !!r.body.stats, JSON.stringify(r.body).slice(0, 160));
+
+seed();
+putSite(paidSite);
+r = await call(switchApi, { action: 'stats', e: EMAIL, t: TOK });
+check('a customer not paying for it gets nothing', r.body.entitled === false, JSON.stringify(r.body));
+
+// ---- the sitemap P1 now promises ----
+console.log('\n15. Customer sites are actually submitted to Google');
+
+function mkxml() {
+  const r = { code: 0, body: '', headers: {} };
+  r.status = (c) => { r.code = c; return r; };
+  r.setHeader = (k, v) => { r.headers[k] = v; };
+  r.send = (b) => { r.body = b; return r; };
+  return r;
+}
+const getXml = async () => { const res = mkxml(); await sitemapSites({ method: 'GET', headers: { host: 'test.local' } }, res); return res; };
+
+seed();
+putSite({ ...freeSite, slug: 'claimed-shop', business: 'Claimed', published: true, claimed: true });
+putSite({ ...freeSite, slug: 'draft-shop', business: 'Draft', published: true, claimed: false });
+putSite({ ...freeSite, slug: 'hidden-shop', business: 'Hidden', published: false, claimed: false });
+let x = await getXml();
+check('the sitemap is valid xml', x.code === 200 && x.body.startsWith('<?xml'), x.body.slice(0, 60));
+check('a claimed site is submitted', x.body.includes('/s/claimed-shop'), x.body);
+// The important one: a site built for a business that has agreed to nothing
+// must never be handed to Google, which is the whole point of `claimed`.
+check('a published-but-unclaimed draft is NOT submitted', !x.body.includes('/s/draft-shop'), x.body);
+check('an unpublished site is not submitted', !x.body.includes('/s/hidden-shop'), x.body);
+check('it is served as xml', String(x.headers['content-type']).includes('xml'), x.headers['content-type']);
+
+seed();
+x = await getXml();
+check('no customers yet still yields a valid empty sitemap',
+  x.code === 200 && x.body.includes('<urlset') && x.body.includes('</urlset>'), x.body);
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

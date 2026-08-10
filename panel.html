@@ -42,6 +42,13 @@
 
   section.s{padding:30px 0}
   .s-lbl{font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--mute-2);margin-bottom:14px}
+  .stats{display:flex;align-items:flex-end;gap:26px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:20px 22px}
+  .stat{display:flex;flex-direction:column;gap:2px}
+  .stat b{font-family:"IBM Plex Mono",monospace;font-size:1.7rem;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.1}
+  .stat span{font-size:.76rem;color:var(--mute-2)}
+  .spark{display:flex;align-items:flex-end;gap:2px;height:44px;flex:1;min-width:140px}
+  .spark i{flex:1;background:var(--go);border-radius:1px;min-height:2px;opacity:.75}
+  .stnote{font-size:.8rem;color:var(--mute-2);margin-top:10px}
 
   /* module rows */
   .mlist{border:1px solid var(--line);border-radius:2px;overflow:hidden;background:var(--panel)}
@@ -184,6 +191,20 @@
     </div>
   </div>
 
+  <!-- P8 Analytics. Hidden unless they are paying for it. This is the only place
+       a P8 customer can see anything at all: before this the module loaded a
+       counting script whose data went to us and gave them no screen. -->
+  <section class="s" id="statsWrap" hidden>
+    <div class="s-lbl">Your visitors</div>
+    <div class="stats">
+      <div class="stat"><b id="stMonth">0</b><span>this month</span></div>
+      <div class="stat"><b id="stLast">0</b><span>last month</span></div>
+      <div class="stat"><b id="stAll">0</b><span>all time</span></div>
+      <div class="spark" id="stSpark" aria-hidden="true"></div>
+    </div>
+    <p class="stnote" id="stNote">People who opened your website. Counted when the page loads in someone's browser.</p>
+  </section>
+
   <section class="s">
     <div class="s-lbl">Your modules</div>
     <div class="mlist" id="mlist"></div>
@@ -242,10 +263,10 @@
   // with the free site + the Starter set so the operator can preview the UX.
   var MODULES = [
     { id:'P0', name:'Website & Domain', desc:'Your live website, yours to keep.', price:0, locked:true, state:'active' },
-    { id:'P1', name:'Get Found on Google', desc:'Show up when nearby customers search.', price:19, state:'active' },
-    { id:'P2', name:'Content & Email Marketing', desc:'Posts and a newsletter on a schedule.', price:29, state:'off' },
+    { id:'P1', name:'Get Found on Google', desc:'Your details in the structure Google reads, and your Business Profile set up with you.', price:19, state:'active' },
+    { id:'P2', name:'Content & Updates', desc:'We write posts and publish them to your site. You approve first.', price:29, state:'off' },
     { id:'P3', name:'Online Booking & Scheduling', desc:'Customers self-book, day or night.', price:19, state:'active' },
-    { id:'P4', name:'Hosting & Maintenance', desc:'We keep it online, safe, and updated.', price:29, state:'off' },
+    { id:'P4', name:'Hosting & Maintenance', desc:'Small changes made for you, usually the same day. Hosting included.', price:29, state:'off' },
     { id:'P11', name:'Care Plan', desc:'Website management: request changes anytime (hours, text, photos, new pages), and we keep it running.', price:99, state:'off' },
     // RETIRED, not deleted. These were on sale with nothing built behind them.
     // They are hidden from the catalogue, so nobody can start paying for one,
@@ -254,8 +275,8 @@
     // is already off. Never re-list one of these without the product existing.
     { id:'P5', name:'CRM & Customer Database', desc:'Every lead and customer in one place.', price:29, state:'off', retired:true },
     { id:'P6', name:'Marketing Automation', desc:'Follow-ups and review requests, automatic.', price:29, state:'off', retired:true },
-    { id:'P7', name:'Payments & Checkout', desc:'Take card payments on your site.', price:19, state:'off' },
-    { id:'P8', name:'Analytics & Reporting', desc:'A plain-English monthly report.', price:19, state:'off' },
+    { id:'P7', name:'Payments & Checkout', desc:'A Pay button linked to a secure card page in your name.', price:19, state:'off' },
+    { id:'P8', name:'Visitor Numbers', desc:'How many people opened your site, right here in this panel.', price:19, state:'off' },
     { id:'P9', name:'24/7 AI Assistant', desc:'An AI that answers and books any time.', price:29, state:'off' },
     { id:'P10', name:'AI Sales Agent & Custom Software', desc:'Custom, scoped on a quick call.', price:null, custom:true, state:'off' }
   ];
@@ -487,7 +508,36 @@
     return sw('state').then(function(d){
       if(d && !d.error){ applyState(d); LIVE=true; baselineOn = paidOn(); committedState = snapshot(); }
       render();
+      loadStats();
     });
+  }
+
+  // ---- P8: the numbers, for the only module they cannot see from their site ----
+  function loadStats(){
+    var wrap = document.getElementById('statsWrap');
+    if(!wrap) return;
+    return sw('stats').then(function(d){
+      if(!d || !d.entitled){ wrap.hidden = true; return; }
+      wrap.hidden = false;
+      var s = d.stats;
+      if(!s){
+        document.getElementById('stNote').textContent = 'Your numbers start the moment your site goes live.';
+        return;
+      }
+      document.getElementById('stMonth').textContent = s.thisMonth.toLocaleString();
+      document.getElementById('stLast').textContent = s.lastMonth.toLocaleString();
+      document.getElementById('stAll').textContent = s.allTime.toLocaleString();
+      var peak = Math.max.apply(null, s.series.map(function(x){ return x.views; }).concat([1]));
+      document.getElementById('stSpark').innerHTML = s.series.map(function(x){
+        var h = Math.round((x.views / peak) * 100);
+        return '<i style="height:' + Math.max(h, 3) + '%" title="' + x.date + ': ' + x.views + '"></i>';
+      }).join('');
+      // Say plainly when there is nothing yet, rather than showing three zeros
+      // and letting them wonder whether it is broken.
+      if(s.allTime === 0){
+        document.getElementById('stNote').textContent = 'Nobody has opened your site yet. This fills in as visitors arrive.';
+      }
+    }).catch(function(){ /* stats are never worth breaking the panel over */ });
   }
   if(acctEmail && acctToken){
     if(sessionId){ sw('link',{session_id:sessionId}).then(loadState); }
