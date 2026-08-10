@@ -669,5 +669,56 @@ r = await call(checkout, { phases: ['P5'], email: NEW });
 check('a retired module is still refused even with a valid email',
   r.code === 400 && r.body.error === 'not_for_sale' && created.length === 0);
 
+// ---------------------------------------------------------------------------
+// "Contact form" has always been listed under the free tier and the template had
+// none: the only two forms were booking (P3) and the AI widget (P9), both paid.
+// A free customer's finished site could not be messaged at all.
+console.log('\n13. The free site can actually be contacted');
+
+// renderSite is already imported above; only these two are new here.
+const siteAction = (await import('file:///C:/Users/Chris/killswitch/api/site-action.js')).default;
+const { SITE_DEFAULT } = await import('file:///C:/Users/Chris/killswitch/lib/sites.js');
+
+const freeSite = {
+  ...SITE_DEFAULT, slug: 'free-shop', business: 'Free Shop', phone: '816-555-0101',
+  services: [{ name: 'Repairs' }], modules: ['P0'], published: true, claimed: true,
+};
+const freeHtml = renderSite(freeSite);
+check('a free site renders a contact form', freeHtml.includes('ksContact'));
+check('and still gets no paid booking form', !freeHtml.includes('id="book"'));
+check('and still gets no paid AI widget', !freeHtml.includes('aiBtn'));
+
+seed();
+putSite({ ...freeSite, email: EMAIL });
+r = await call(siteAction, { action: 'contact', slug: 'free-shop', name: 'Jo', contact: '816-555-9999', message: 'Do you do brakes?' });
+check('a visitor message on a FREE site is accepted', r.code === 200 && r.body.ok, 'got ' + r.code + ' ' + JSON.stringify(r.body));
+
+// The contrast that proves it is genuinely ungated: the SAME free site still
+// cannot take a booking, because booking is paid and contact is not.
+r = await call(siteAction, { action: 'book', slug: 'free-shop', name: 'Jo', phone: '816-555-9999', when: 'Tue' });
+check('while booking on that same free site is still refused',
+  r.code === 403 && r.body.error === 'module_off', 'got ' + r.code + ' ' + JSON.stringify(r.body));
+
+seed();
+putSite({ ...freeSite, email: EMAIL });
+r = await call(siteAction, { action: 'contact', slug: 'free-shop', name: 'Jo', contact: 'x', message: '' });
+check('an empty message is refused', r.code === 400, 'got ' + r.code);
+
+// The honeypot answers 200 so a bot learns nothing from being caught. Proving
+// it actually short-circuits rather than just happening to succeed: the same
+// submission with a REQUIRED FIELD MISSING still returns 200, which can only
+// happen if the honeypot returned before validation ran.
+seed();
+putSite({ ...freeSite, email: EMAIL });
+r = await call(siteAction, { action: 'contact', slug: 'free-shop', name: 'Bot', contact: '', message: '', website: 'http://spam' });
+check('a bot filling the honeypot is dropped before anything is sent',
+  r.code === 200 && r.body.ok, 'got ' + r.code + ' ' + JSON.stringify(r.body));
+
+// An unpublished site is still a hard 404 on this path, same as booking.
+seed();
+putSite({ ...freeSite, email: EMAIL, published: false });
+r = await call(siteAction, { action: 'contact', slug: 'free-shop', name: 'Jo', contact: 'x', message: 'hi' });
+check('an unpublished site cannot be messaged', r.code === 404, 'got ' + r.code);
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

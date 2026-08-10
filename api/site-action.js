@@ -38,6 +38,40 @@ export default async function handler(req, res) {
   const site = await getSite(body.slug).catch(() => null);
   if (!site || !site.published) { res.status(404).json({ error: 'no_site' }); return; }
 
+  // ---- Contact message: FREE, no module required ----
+  // Every site gets this, including the free ones, because "Contact form" has
+  // always been listed under the $0 tier. Deliberately NOT module-gated: a free
+  // customer whose site cannot be messaged is the gap this closes.
+  if (body.action === 'contact') {
+    // Honeypot. A field positioned off-screen and hidden from assistive tech,
+    // so a person never sees it and a bot fills it in. Answer 200 either way:
+    // telling a bot it was caught only teaches it to stop filling the field.
+    if (String(body.website || '').trim()) { res.status(200).json({ ok: true }); return; }
+
+    const name = clean(body.name, 80), contact = clean(body.contact, 120), message = clean(body.message, 1200);
+    if (!name || !contact || !message) { res.status(400).json({ error: 'name_contact_and_message_required' }); return; }
+
+    const delivered = await emailBusiness(site, `Message from ${name}`, [
+      '<b>New message from your website</b>',
+      `Name: ${name}`, `Reply to: ${contact}`, message,
+    ]);
+    // ALWAYS notify the operator, not just on failure. Most sites are built from
+    // leads that have a street address and no email address at all, so
+    // `delivered` is false for them and this copy is the only thing standing
+    // between a real customer enquiry and a black hole. The operator relays it.
+    await notifyOperator({
+      subject: `Website message for ${site.business}`,
+      heading: delivered ? 'A message came in through a customer site' : 'A message came in and WE COULD NOT FORWARD IT',
+      lines: [
+        `Site: ${site.business} (/s/${site.slug})`,
+        delivered ? null : 'No email address on file for this business, so they have NOT seen this. Call them with it.',
+        `Name: ${name}`, `Reply to: ${contact}`, message,
+      ].filter(Boolean),
+    });
+    res.status(200).json({ ok: true });
+    return;
+  }
+
   // ---- P3 booking request ----
   if (body.action === 'book') {
     if (!has(site, 'P3')) { res.status(403).json({ error: 'module_off' }); return; }
