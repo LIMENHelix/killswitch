@@ -139,7 +139,7 @@ const lobCards = [];
 const anthropicCalls = [];
 let siteWriterReply = null;
 
-const { panelToken } = await import('../lib/panel-auth.js');
+const { panelToken, signPanel, verifyPanel, revokePanelTokens } = await import('../lib/panel-auth.js');
 const support = (await import('../api/support.js')).default;
 const switchApi = (await import('../api/switch.js')).default;
 
@@ -158,7 +158,10 @@ function mkres() {
 const call = async (h, body) => { const res = mkres(); await h({ method: 'POST', body, headers: { host: 'test.local' } }, res); return res; };
 
 const EMAIL = 'shop@example.com';
-const TOK = panelToken(EMAIL);
+// Every seeded account carries this nonce, so a token can be minted
+// synchronously here instead of awaiting a KV read at module load.
+const NONCE = 'testnonce0000';
+const TOK = signPanel(EMAIL, NONCE, Date.now() + 90 * 86400000);
 const P3 = 'price_1ToXlsPmxnF3rtBM9Dc9mDul';  // Online Booking
 const P11 = 'price_1TnMiMPmxnF3rtBMgqTJpLh6'; // Care Plan
 
@@ -177,7 +180,7 @@ function putSite(rec) {
 }
 function seed() {
   KV.clear(); stripeSubs = []; stripeCustomers = []; created = [];
-  KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, name: 'Test Shop', plan: ['P0'] } }));
+  KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, tokenNonce: NONCE, name: 'Test Shop', plan: ['P0'] } }));
   putSite({ slug: 'test-shop', business: 'Test Shop', email: EMAIL, phone: '816-555-0101', modules: ['P0'], published: true, claimed: true });
 }
 const site = () => JSON.parse(KV.get('ks:site:test-shop'));
@@ -422,7 +425,7 @@ KV.set('ks:leads', JSON.stringify([
 KV.set('ks:leadmeta', { A: JSON.stringify({ siteSlug: 'charlies-brake-muffler' }), B: JSON.stringify({ siteSlug: 'paying-shop' }) });
 putSite({ slug: 'charlies-brake-muffler', business: "Charlie's Brake & Muffler", city: 'Lenexa', trade: 'auto repair', leadId: 'A', published: false, claimed: false, modules: ['P0'] });
 putSite({ slug: 'paying-shop', business: 'Paying Shop', city: 'KC', email: EMAIL, leadId: 'B', published: true, claimed: true, modules: ['P0'] });
-KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, name: 'Pat', stripeCustomerId: 'cus_paid' } }));
+KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, tokenNonce: NONCE, name: 'Pat', stripeCustomerId: 'cus_paid' } }));
 stripeSubs = [{ id: 's1', status: 'active', cancel_at_period_end: false, current_period_end: 9999999999,
   items: { data: [{ id: 'i1', price: { id: P11, recurring: { interval: 'month' }, unit_amount: 9900 }, current_period_end: 9999999999 }] } }];
 
@@ -646,7 +649,7 @@ try {
   const P2P = 'price_1ToXlrPmxnF3rtBMz3ybz47E';
   function seedPaid() {
     seed();
-    KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, name: 'Test Shop', plan: ['P0'], stripeCustomerId: 'cus_old' } }));
+    KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, tokenNonce: NONCE, name: 'Test Shop', plan: ['P0'], stripeCustomerId: 'cus_old' } }));
     putSite({ slug: 'test-shop', business: 'Test Shop', email: EMAIL, phone: '816-555-0101', modules: ['P0', 'P2'], published: true, claimed: true });
     stripeSubs = [{
       id: 'sub_1', status: 'active', cancel_at_period_end: false, current_period_end: 9999999999,
@@ -719,7 +722,7 @@ check('Stripe is told who is buying', sess.includes('customer_email=' + NEW) || 
 // An existing customer must not be reset to a free plan by buying an upgrade,
 // and must not end up with a second Stripe customer object.
 seed();
-KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, name: 'Test Shop', plan: ['P0', 'P3'], stripeCustomerId: 'cus_old' } }));
+KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, tokenNonce: NONCE, name: 'Test Shop', plan: ['P0', 'P3'], stripeCustomerId: 'cus_old' } }));
 r = await call(checkout, { phases: ['P1'], email: EMAIL });
 check('an existing customer keeps their record', accounts()[EMAIL].name === 'Test Shop'
   && accounts()[EMAIL].plan.includes('P3'), JSON.stringify(accounts()[EMAIL]));
@@ -832,7 +835,7 @@ check('a site nobody has visited reads zero, not null',
 // off stops the data with the billing rather than leaving it running.
 seed();
 putSite(paidSite);
-KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, name: 'Test Shop', stripeCustomerId: 'cus_a' } }));
+KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, tokenNonce: NONCE, name: 'Test Shop', stripeCustomerId: 'cus_a' } }));
 stripeSubs = [{ id: 'sub_1', status: 'active', cancel_at_period_end: false, current_period_end: 9999999999,
   items: { data: [{ id: 'si_p8', price: { id: P8 }, current_period_end: 9999999999 }] } }];
 r = await call(switchApi, { action: 'stats', e: EMAIL, t: TOK });
@@ -910,7 +913,7 @@ check('an invented status is refused', (await updateContact('free-shop', cs[0].i
 // It has to be reachable from the panel, gated on Stripe like everything else.
 seed();
 putSite(crmSite);
-KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, name: 'Test Shop', stripeCustomerId: 'cus_a' } }));
+KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, tokenNonce: NONCE, name: 'Test Shop', stripeCustomerId: 'cus_a' } }));
 stripeSubs = [{ id: 'sub_1', status: 'active', cancel_at_period_end: false, current_period_end: 9999999999,
   items: { data: [{ id: 'si_p5', price: { id: P5P }, current_period_end: 9999999999 }] } }];
 await recordContact('free-shop', { name: 'Dana', handle: 'dana@example.com', kind: 'message', text: 'hi', at: '2026-06-01T10:00:00Z' });
@@ -1074,7 +1077,7 @@ check('and creates no junk account', Object.keys(accts()).length === 1, Object.k
 
 // An existing customer must not be reset by a second purchase.
 seed();
-KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, name: 'Test Shop', plan: ['P0', 'P3'], stripeCustomerId: 'cus_old' } }));
+KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, tokenNonce: NONCE, name: 'Test Shop', plan: ['P0', 'P3'], stripeCustomerId: 'cus_old' } }));
 stripeSubs = [];
 w = await hook({ type: 'checkout.session.completed', data: { object: { customer: 'cus_old', customer_details: { email: EMAIL }, amount_total: 1900 } } });
 check('an existing customer keeps their record', accts()[EMAIL].name === 'Test Shop' && accts()[EMAIL].plan.includes('P3'),
@@ -1160,7 +1163,7 @@ const ON_THE_12TH = Date.parse('2026-10-12T09:00:00Z');
 
 function seedPaid(prices) {
   seed();
-  KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, name: 'Test Shop', stripeCustomerId: 'cus_1' } }));
+  KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, tokenNonce: NONCE, name: 'Test Shop', stripeCustomerId: 'cus_1' } }));
   putSite({ slug: 'test-shop', business: 'Test Shop', email: EMAIL, phone: '816-555-0101',
     modules: ['P0', ...prices.map((p) => (p === P1PRICE ? 'P1' : 'P3'))], published: true, claimed: true });
   stripeSubs = [{ id: 'sub_1', status: 'active', cancel_at_period_end: false, current_period_end: PAID_TO,
@@ -1287,6 +1290,110 @@ check('another customer site is unaffected', await (async () => {
   const r = await call2(siteAction, '5.5.5.5', { action: 'contact', slug: 'other-shop', name: 'Jo', contact: 'jo@x.com', message: 'hi' });
   return r.code === 200;
 })());
+
+// ---------------------------------------------------------------------------
+// Panel tokens: expiring, and revocable per customer.
+//
+// Before, a token was HMAC(email) alone: a leaked /panel link was permanent
+// access, and the only revocation was rotating KS_PANEL_SECRET, which signs out
+// every customer at once.
+console.log('\n21. Panel links expire, and can be revoked one customer at a time');
+
+const DAY21 = 86400000;
+
+seed();
+check('a freshly minted token verifies', await verifyPanel(EMAIL, TOK));
+check('it carries its expiry in the token itself', TOK.indexOf('.') > 0, TOK.slice(0, 12));
+check('a token for someone else does not verify', !(await verifyPanel('other@example.com', TOK)));
+check('a tampered signature does not verify',
+  !(await verifyPanel(EMAIL, TOK.slice(0, -1) + (TOK.endsWith('a') ? 'b' : 'a'))));
+check('an empty token does not verify', !(await verifyPanel(EMAIL, '')));
+
+// ---- expiry ----
+seed();
+const expired = signPanel(EMAIL, NONCE, Date.now() - 1000);
+check('an expired token is refused', !(await verifyPanel(EMAIL, expired)));
+const nearlyOut = signPanel(EMAIL, NONCE, Date.now() + 5000);
+check('one that has not expired yet still works', await verifyPanel(EMAIL, nearlyOut));
+check('the expiry cannot be edited without breaking the signature',
+  !(await verifyPanel(EMAIL, (Date.now() + 999 * DAY21).toString(36) + TOK.slice(TOK.indexOf('.')))));
+
+// ---- revocation, the whole point ----
+seed();
+KV.set('ks:accounts', JSON.stringify({
+  [EMAIL]: { email: EMAIL, tokenNonce: NONCE, name: 'Test Shop' },
+  'other@example.com': { email: 'other@example.com', tokenNonce: 'othernonce123', name: 'Other' },
+}));
+const otherTok = signPanel('other@example.com', 'othernonce123', Date.now() + 90 * DAY21);
+check('two customers, both links working',
+  (await verifyPanel(EMAIL, TOK)) && (await verifyPanel('other@example.com', otherTok)));
+
+await revokePanelTokens(EMAIL);
+check('revoking one customer kills THEIR link', !(await verifyPanel(EMAIL, TOK)));
+check('and leaves everyone else alone', await verifyPanel('other@example.com', otherTok));
+
+const reissued = await panelToken(EMAIL);
+check('a new link can be issued after revoking', await verifyPanel(EMAIL, reissued));
+check('and the revoked one stays dead', !(await verifyPanel(EMAIL, TOK)));
+
+// ---- legacy grace ----
+seed();
+const legacy = (await import('node:crypto')).createHmac('sha256', process.env.KS_PANEL_SECRET)
+  .update(EMAIL).digest('hex').slice(0, 40);
+check('a link sent before this change still works during the grace period',
+  await verifyPanel(EMAIL, legacy));
+check('a forged legacy token does not', !(await verifyPanel(EMAIL, 'f'.repeat(40))));
+
+// ---- verify NEVER writes, and NEVER throws ----
+seed();
+const beforeVerify = KV.get('ks:accounts');
+await verifyPanel(EMAIL, TOK);
+check('verifying does not write to the account, so a leaked link cannot create state',
+  KV.get('ks:accounts') === beforeVerify);
+
+// The risk the operator asked about: with the new async KV read, an outage must
+// return false, not throw up into the handler.
+seed();
+const realFetch = globalThis.fetch;
+globalThis.fetch = async (u, o) => {
+  if (String(u).startsWith('https://kv.test')) throw new Error('ECONNREFUSED');
+  return realFetch(u, o);
+};
+let threw = false, verdict = null;
+try { verdict = await verifyPanel(EMAIL, TOK); } catch (e) { threw = true; }
+globalThis.fetch = realFetch;
+check('when the store is unreachable, verify returns false rather than throwing',
+  threw === false && verdict === false, threw ? 'it threw' : String(verdict));
+
+// ---- the lazy nonce race the operator asked about ----
+// upsertAccount is a read-modify-write of the whole account map, so a
+// simultaneous write from another flow can drop a field. If it drops the nonce
+// we just wrote, the token we mint must still be the one that verifies.
+seed();
+KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, name: 'Legacy, no nonce' } }));
+const [mintedA, mintedB] = await Promise.all([panelToken(EMAIL), panelToken(EMAIL)]);
+check('two flows minting at once both produce a working link',
+  (await verifyPanel(EMAIL, mintedA)) && (await verifyPanel(EMAIL, mintedB)),
+  JSON.stringify({ a: mintedA.slice(0, 10), b: mintedB.slice(0, 10) }));
+check('and the account ends up with exactly one nonce',
+  typeof JSON.parse(KV.get('ks:accounts'))[EMAIL].tokenNonce === 'string');
+
+// A legacy account gets a nonce the first time a link is minted for it.
+seed();
+KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, name: 'Legacy' } }));
+check('a pre-nonce account has none to start', !JSON.parse(KV.get('ks:accounts'))[EMAIL].tokenNonce);
+const upgraded = await panelToken(EMAIL);
+check('minting gives it one', !!JSON.parse(KV.get('ks:accounts'))[EMAIL].tokenNonce);
+check('and the link works', await verifyPanel(EMAIL, upgraded));
+check('a mint for an account that does not exist yields no token',
+  (await panelToken('nobody@example.com')) === '');
+
+// ---- the endpoints still work end to end with the new token ----
+seed();
+r = await call(switchApi, { action: 'state', e: EMAIL, t: TOK });
+check('the panel still loads with a new-format token', r.code === 200, JSON.stringify(r.body).slice(0, 60));
+r = await call(switchApi, { action: 'state', e: EMAIL, t: 'not-a-token' });
+check('and refuses a junk one', r.code === 401);
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

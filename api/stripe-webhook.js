@@ -179,7 +179,7 @@ async function onCheckout(session) {
   }
 
   // They may have bought through a link and never seen a panel, so send it.
-  const tok = panelToken(email);
+  const tok = await panelToken(email);
   const portalUrl = 'https://killswitchwebsites.com/panel?e=' + encodeURIComponent(email) + (tok ? '&t=' + tok : '');
   if (!existing || !existing.stripeCustomerId) {
     try { await sendPanelLink({ email, portalUrl, phases }); }

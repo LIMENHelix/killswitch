@@ -12,7 +12,7 @@ import { writeSite } from '../lib/site-writer.js';
 // Bulk draft generation writes hundreds of records per call.
 export const config = { maxDuration: 60 };
 import { onboardCustomer } from '../lib/onboard.js';
-import { panelToken } from '../lib/panel-auth.js';
+import { signPanel } from '../lib/panel-auth.js';
 import { identify, isOwner } from '../lib/roles.js';
 import { listSites, getSite, upsertSite, bulkUpsert, migrateAll, slugify } from '../lib/sites.js';
 
@@ -302,7 +302,9 @@ export default async function handler(req, res) {
     const accounts = Object.keys(map).map((k) => {
       const a = map[k];
       const s = (a.stripeCustomerId && byCust[a.stripeCustomerId]) || null;
-      const tok = panelToken(a.email);
+      // Sync, because this runs inside a .map over every account. Accounts
+      // that predate nonces get no link rather than a write from a read path.
+      const tok = a.tokenNonce ? signPanel(a.email, a.tokenNonce, Date.now() + 90 * 86400000) : '';
       return {
         email: a.email,
         name: a.name || '',

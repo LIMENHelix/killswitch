@@ -7,6 +7,18 @@
     { "path": "/api/cron-followups", "schedule": "0 * * * *" },
     { "path": "/api/cron-maintenance", "schedule": "30 3 * * *" }
   ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "geolocation=(), microphone=(), camera=()" },
+        { "key": "Content-Security-Policy", "value": "frame-ancestors 'none'; object-src 'none'; base-uri 'self'" }
+      ]
+    }
+  ],
   "rewrites": [
     { "source": "/s/:slug", "destination": "/api/site?slug=:slug" },
     { "source": "/sitemap-sites.xml", "destination": "/api/sitemap-sites" }

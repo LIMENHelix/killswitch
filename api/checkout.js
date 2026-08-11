@@ -110,7 +110,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const tok = panelToken(email);
+  const tok = await panelToken(email);
   const back = '/panel?e=' + encodeURIComponent(email) + (tok ? '&t=' + tok : '');
 
   const params = new URLSearchParams();

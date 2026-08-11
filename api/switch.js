@@ -28,7 +28,7 @@ export default async function handler(req, res) {
 
   const email = String(body.e || '').trim().toLowerCase();
   const token = String(body.t || '');
-  if (!verifyPanel(email, token)) { res.status(401).json({ error: 'unauthorized' }); return; }
+  if (!await verifyPanel(email, token)) { res.status(401).json({ error: 'unauthorized' }); return; }
 
   const found = await getAccount(email);
   if (!found) { res.status(404).json({ error: 'not_found' }); return; }
@@ -201,7 +201,7 @@ async function applyChanges(account, on, host, email) {
       for (const p of toAdd) await stripePost('/subscription_items', { subscription: existingSub.id, price: MONTHLY[p], proration_behavior: 'none' });
     } else {
       // First purchase (or no live sub): ONE checkout bundling all adds.
-      const tok = panelToken(email);
+      const tok = await panelToken(email);
       const back = '/panel?e=' + encodeURIComponent(email) + '&t=' + tok;
       const params = { mode: 'subscription', success_url: host + back + '&session_id={CHECKOUT_SESSION_ID}', cancel_url: host + back, allow_promotion_codes: 'true' };
       toAdd.forEach((p, i) => { params['line_items[' + i + '][price]'] = MONTHLY[p]; params['line_items[' + i + '][quantity]'] = 1; });

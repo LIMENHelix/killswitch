@@ -43,7 +43,7 @@ export default async function handler(req, res) {
   // ---- who is asking ----
   const email = String(body.e || '').trim().toLowerCase();
   const token = String(body.t || '');
-  if (!verifyPanel(email, token)) { res.status(401).json({ error: 'unauthorized' }); return; }
+  if (!await verifyPanel(email, token)) { res.status(401).json({ error: 'unauthorized' }); return; }
 
   let account;
   try { account = await getAccount(email); }
