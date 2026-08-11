@@ -186,7 +186,13 @@ async function applyChanges(account, on, host, email) {
   // untouched above, so it keeps billing and rendering exactly as before, and
   // removal still works normally the moment they switch it off.
   const toAdd = [...desired].filter((p) => !items[p] && isSellable(p));
-  toAdd.forEach((p) => { delete ending[p]; });
+
+  // Clear the expiry for EVERYTHING they want on, not just the new additions.
+  // Someone who switches a module off and then changes their mind before the
+  // cycle ends is still being billed for it, so there is nothing to add: toAdd
+  // is empty, and clearing only toAdd left the old expiry in place. The daily
+  // sweep would then have switched off a module they were paying for.
+  [...desired].forEach((p) => { delete ending[p]; });
 
   let url = null;
   if (toAdd.length) {
@@ -226,11 +232,21 @@ async function applyChanges(account, on, host, email) {
   // straight onto the live site, unpaid and unpayable. A phase renders only if
   // Stripe was already billing it when this request began (`held`) or we just
   // added it to a live subscription (`toAdd` with no checkout outstanding).
+  //
+  // THEY PAID FOR THE CYCLE, SO THEY KEEP THE CYCLE. Switching something off
+  // used to strip it from the live site that same second, while the panel and
+  // the billing both said it runs to the paid-through date. Flip Booking off on
+  // the 2nd, paid to the 11th, and the booking form vanished on the 2nd: nine
+  // days bought and not delivered. A turned-off module stays live until its
+  // period actually ends, and cron-maintenance removes it the day after.
   try {
     const held = new Set(Object.keys(items));
     const pending = url ? new Set(toAdd) : new Set();
-    const liveNow = [...desired].filter((p) =>
-      !turnedOff.includes(p) && !pending.has(p) && (held.has(p) || toAdd.includes(p)));
+    const stillPaidFor = Object.keys(ending).filter((p) => ending[p] > now);
+    const liveNow = [...new Set([
+      ...[...desired].filter((p) => !turnedOff.includes(p) && !pending.has(p) && (held.has(p) || toAdd.includes(p))),
+      ...stillPaidFor,
+    ])];
     await syncModules(email, liveNow);
   } catch (err) { console.error('[switch] site sync', err); }
 

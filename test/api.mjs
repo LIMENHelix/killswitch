@@ -1132,5 +1132,88 @@ const allGood = async () => ({ status: 200 });
 up = await checkUptime('https://test.local', sites, allGood, DAY0);
 check('and recovery is visible', up.failures.length === 0);
 
+// ---------------------------------------------------------------------------
+// "They flip it on, their card is charged. They use it. They flip it off on the
+//  2nd, it runs until the 11th, then it stops. No prorating, no refunds."
+//
+// The billing half was already right. The DELIVERY half was not: switching
+// something off stripped it from the live site that same second, so nine days
+// they had paid for were not delivered, while the panel promised the opposite.
+console.log('\n19. Switch off keeps working until the cycle they paid for ends');
+
+const { sweepExpired } = await import('file:///C:/Users/Chris/killswitch/lib/backup.js');
+const { removeModules } = await import('file:///C:/Users/Chris/killswitch/lib/sites.js');
+const { getAccounts, saveAccounts } = await import('file:///C:/Users/Chris/killswitch/lib/store.js');
+
+const P1PRICE = 'price_1ToXlLPmxnF3rtBM5NRurfkt';   // Get Found on Google
+const P3PRICE = 'price_1ToXlsPmxnF3rtBM9Dc9mDul';   // Online Booking
+
+// Their cycle is paid through the 11th.
+const PAID_TO = Math.floor(Date.parse('2026-10-11T00:00:00Z') / 1000);
+const ON_THE_2ND = Date.parse('2026-10-02T09:00:00Z');
+const ON_THE_12TH = Date.parse('2026-10-12T09:00:00Z');
+
+function seedPaid(prices) {
+  seed();
+  KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, name: 'Test Shop', stripeCustomerId: 'cus_1' } }));
+  putSite({ slug: 'test-shop', business: 'Test Shop', email: EMAIL, phone: '816-555-0101',
+    modules: ['P0', ...prices.map((p) => (p === P1PRICE ? 'P1' : 'P3'))], published: true, claimed: true });
+  stripeSubs = [{ id: 'sub_1', status: 'active', cancel_at_period_end: false, current_period_end: PAID_TO,
+    items: { data: prices.map((pr, i) => ({ id: 'si_' + i, price: { id: pr }, current_period_end: PAID_TO })) } }];
+}
+
+// ---- one of two modules switched off ----
+seedPaid([P1PRICE, P3PRICE]);
+r = await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: ['P1'] });
+check('billing says it ends on the day they are paid to',
+  r.body.modules.P3 && r.body.modules.P3.state === 'ending' && r.body.modules.P3.endsAt === PAID_TO,
+  JSON.stringify(r.body.modules));
+check('and booking is STILL LIVE on their website, because they paid for it',
+  site().modules.includes('P3'), JSON.stringify(site().modules));
+check('while the module they kept is untouched', site().modules.includes('P1'));
+
+// The day after the cycle ends, the sweep takes it away. Nothing else does.
+let sw = await sweepExpired({ getAccounts, saveAccounts, removeModules }, ON_THE_12TH);
+check('the sweep finds it once the paid period has passed',
+  sw.expired.length === 1 && sw.expired[0].phases.includes('P3'), JSON.stringify(sw.expired));
+check('and NOW it comes off their website', !site().modules.includes('P3'), JSON.stringify(site().modules));
+check('the module they still pay for survives the sweep', site().modules.includes('P1'), JSON.stringify(site().modules));
+check('and the expiry is forgotten, so it cannot fire twice',
+  !((await getAccounts())[EMAIL].ending || {}).P3, JSON.stringify((await getAccounts())[EMAIL].ending));
+
+// ---- run it BEFORE the cycle ends: nothing may happen ----
+seedPaid([P1PRICE, P3PRICE]);
+await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: ['P1'] });
+sw = await sweepExpired({ getAccounts, saveAccounts, removeModules }, ON_THE_2ND);
+check('running the sweep DURING the paid period takes nothing away',
+  sw.expired.length === 0 && site().modules.includes('P3'), JSON.stringify(site().modules));
+
+// ---- their last module switched off ----
+seedPaid([P1PRICE]);
+r = await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: [] });
+check('cancelling the whole subscription still ends at the paid-to date',
+  r.body.modules.P1 && r.body.modules.P1.state === 'ending' && r.body.modules.P1.endsAt === PAID_TO,
+  JSON.stringify(r.body.modules));
+check('and it stays live until then', site().modules.includes('P1'), JSON.stringify(site().modules));
+sw = await sweepExpired({ getAccounts, saveAccounts, removeModules }, ON_THE_12TH);
+check('then goes, leaving the free site behind', !site().modules.includes('P1') && site().modules.includes('P0'),
+  JSON.stringify(site().modules));
+
+// ---- switching it back on before the cycle ends must not later be swept ----
+seedPaid([P1PRICE, P3PRICE]);
+await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: ['P1'] });           // off
+stripeSubs[0].items.data.push({ id: 'si_re', price: { id: P3PRICE }, current_period_end: PAID_TO });
+await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: ['P1', 'P3'] });     // back on
+sw = await sweepExpired({ getAccounts, saveAccounts, removeModules }, ON_THE_12TH);
+check('changing their mind and switching it back on cancels the expiry',
+  site().modules.includes('P3'), JSON.stringify(site().modules));
+
+// ---- no refunds, ever ----
+seedPaid([P1PRICE, P3PRICE]);
+const callsBefore = JSON.stringify(stripeSubs);
+await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: ['P1'] });
+check('switching off never asks Stripe for a refund or a proration',
+  !JSON.stringify(created).includes('refund') && callsBefore !== JSON.stringify(stripeSubs));
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

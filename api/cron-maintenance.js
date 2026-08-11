@@ -4,9 +4,10 @@
 //
 // FAILS CLOSED on CRON_SECRET, same pattern as the other two crons, because an
 // open endpoint that walks every customer site is a free denial-of-service lever.
-import { runBackup, checkUptime, lastUptime } from '../lib/backup.js';
-import { listSites } from '../lib/sites.js';
-import { notifyOperator } from '../lib/notify.js';
+import { runBackup, checkUptime, lastUptime, sweepExpired } from '../lib/backup.js';
+import { listSites, removeModules } from '../lib/sites.js';
+import { getAccounts, saveAccounts } from '../lib/store.js';
+import { notifyOperator, labelPhases } from '../lib/notify.js';
 
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
@@ -14,7 +15,26 @@ export default async function handler(req, res) {
     || (req.query && (req.query.token === process.env.ADMIN_KEY || req.query.token === process.env.SWITCH_TOKEN));
   if (!secret || !allowed) { res.status(401).json({ error: 'unauthorized' }); return; }
 
-  const out = { backup: null, uptime: null, errors: [] };
+  const out = { backup: null, uptime: null, expired: null, errors: [] };
+
+  // FIRST, because it is the only thing that actually ends a paid module. A
+  // customer switched something off, kept it for the cycle they paid for, and
+  // this is the day it stops.
+  try {
+    out.expired = await sweepExpired({ getAccounts, saveAccounts, removeModules });
+    for (const e of out.expired.expired) {
+      await notifyOperator({
+        subject: `Module ended - ${e.email}`,
+        heading: 'A switched-off module reached the end of its paid cycle',
+        lines: [`Customer: ${e.email}`, `Now off: ${labelPhases(e.phases)}`,
+          'They switched this off earlier and kept it until the cycle they had paid for ran out.'],
+        url: 'https://killswitchwebsites.com/master', urlText: 'Open Master Panel',
+      });
+    }
+  } catch (e) {
+    console.error('[cron-maintenance] sweep', e);
+    out.errors.push('sweep');
+  }
 
   try {
     out.backup = await runBackup();
