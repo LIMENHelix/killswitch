@@ -382,6 +382,7 @@
     .then(function(r){ return r.json().catch(function(){ return {}; }); })
     .then(function(d){
       if(d && d.success){
+        if(window.ksEvent) ksEvent('signup_submitted', { source: 'homepage' });
         form.style.display = 'none';
         done.classList.add('show');
         setSwitch(true, false);
@@ -399,5 +400,6 @@
 })();
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
+<script defer src="/ks-analytics.js"></script>
 </body>
 </html>

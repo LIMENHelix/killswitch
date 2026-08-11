@@ -184,6 +184,7 @@
     .then(function (r) { return r.json().catch(function () { return {}; }); })
     .then(function (d) {
       if (d && d.success) {
+        if (window.ksEvent) ksEvent('signup_submitted', { source: 'start-page' });
         form.style.display = 'none'; setNote('', false);
         document.getElementById('startDone').style.display = 'block';
         document.getElementById('startDone').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -198,5 +199,6 @@
 </script>
 <script src="/ks-fx.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
+<script defer src="/ks-analytics.js"></script>
 </body>
 </html>

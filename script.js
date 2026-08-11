@@ -109,6 +109,7 @@ async function sendLead(payload, noteEl, formEl) {
       noteEl.style.color = '#ef4444';
     }
   }
+  if (ok && window.ksEvent) ksEvent('contact_submitted', { source: payload.source || 'website' });
   if (ok) formEl.reset();
 }
 

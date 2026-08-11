@@ -388,6 +388,9 @@
       }
       note.hidden = false; note.style.color = ''; note.textContent = 'Opening secure checkout…';
       checkoutBtn.disabled = true;
+      // Fired here, not on the response: the next thing that happens after a
+      // successful response is a navigation to Stripe, which wipes the queue.
+      if (window.ksEvent) ksEvent('checkout_started', { modules: phases.join('+'), monthly: b.mo });
       fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, phases: phases }) })
         .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
         .then(function (res) {
@@ -418,7 +421,8 @@
     fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ access_key: KEY, subject: 'New growth-path plan · Killswitch Websites', from_name: 'Killswitch Websites Growth Path', name: name, contact: contact, message: message, source: 'growth-path' }) })
       .then(function (r) { return r.json(); }).then(function (d) {
-        if (d.success) { note.style.color = ''; note.innerHTML = '✓ Sent! Skip the wait and <a href="https://calendly.com/chrishubbel72/30min" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600">talk to a real, live human →</a>'; form.reset(); }
+        if (d.success) { if (window.ksEvent) ksEvent('plan_emailed', { monthly: b.mo });
+          note.style.color = ''; note.innerHTML = '✓ Sent! Skip the wait and <a href="https://calendly.com/chrishubbel72/30min" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600">talk to a real, live human →</a>'; form.reset(); }
         else { note.style.color = '#ef4444'; note.textContent = '⚠ Not sent: ' + (d.message || 'please try again'); }
       }).catch(function () { note.style.color = '#ef4444'; note.textContent = '⚠ Network error, please try again.'; });
   });
@@ -427,5 +431,6 @@
 <script src="script.js"></script>
 <script src="/ks-fx.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
+<script defer src="/ks-analytics.js"></script>
 </body>
 </html>
