@@ -15,6 +15,7 @@ import { getAccount } from '../lib/store.js';
 import { verifyPanel } from '../lib/panel-auth.js';
 import { entitlements, canRequestChanges, CHANGE_PHASES } from '../lib/entitle.js';
 import { notifyOperator } from '../lib/notify.js';
+import { limited, LIMITS } from '../lib/ratelimit.js';
 
 const SYSTEM = `You are the Killswitch Websites site-support assistant, helping an existing customer request changes to the website Killswitch Websites built and runs for them. They are on a plan that covers changes, so you never need to sell them anything.
 
@@ -59,6 +60,10 @@ export default async function handler(req, res) {
     res.status(403).json({ error: 'not_entitled', need: CHANGE_PHASES });
     return;
   }
+
+  // Panel auth is not a spend limit: one customer's leaked link should not
+  // be able to run the Anthropic key flat.
+  if (await limited(req, res, { bucket: 'support:' + email, ...LIMITS.support })) return;
 
   const action = body.action || 'ask';
 

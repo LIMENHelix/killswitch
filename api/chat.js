@@ -42,11 +42,16 @@ STRICT RULES, follow these exactly every time:
 8. NEVER use long dashes (em dashes or en dashes) in your replies. Use commas, periods, or parentheses instead. Only ordinary hyphens in hyphenated words are fine.
 9. BE PRECISE ABOUT P5 AND P6, because they are narrower than the words suggest. P5 is a customer LIST built from their own website's enquiries and bookings, in their control panel. It is not a sales pipeline, it does not import contacts from anywhere else, and it does not connect to other apps. P6 sends exactly TWO messages, an instant thank-you and a review request three days later, by email only, to people who left an email address. There are no automated texts, no lead routing to other people, and no app integrations. Never describe either as more than this.`;
 
+import { limited, LIMITS } from '../lib/ratelimit.js';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
+
+  // Anthropic on every call, from anyone, with no account needed.
+  if (await limited(req, res, { bucket: 'chat', ...LIMITS.chat })) return;
 
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) {

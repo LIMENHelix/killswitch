@@ -7,6 +7,7 @@ import { notifyOperator } from '../lib/notify.js';
 import { recordView } from '../lib/stats.js';
 import { recordContact } from '../lib/crm.js';
 import { queueFollowUps } from '../lib/automation.js';
+import { limited, LIMITS } from '../lib/ratelimit.js';
 
 const clean = (v, n = 120) => String(v == null ? '' : v).trim().slice(0, n);
 
@@ -46,6 +47,7 @@ export default async function handler(req, res) {
   // hand. Answers 204 with no body because nothing is waiting on the reply.
   if (body.action === 'view') {
     if (!has(site, 'P8')) { res.status(403).json({ error: 'module_off' }); return; }
+    if (await limited(req, res, { bucket: 'view:' + site.slug, ...LIMITS.siteView })) return;
     try { await recordView(site.slug); }
     catch (e) { console.error('[site-action] view', e); }
     res.status(204).end();
@@ -61,6 +63,13 @@ export default async function handler(req, res) {
     // so a person never sees it and a bot fills it in. Answer 200 either way:
     // telling a bot it was caught only teaches it to stop filling the field.
     if (String(body.website || '').trim()) { res.status(200).json({ ok: true }); return; }
+
+    // Two emails go out per accepted message, one to the business and one to
+    // the operator, so a loop here is an unbounded Resend bill and a sender
+    // reputation problem. Fails OPEN: losing a real enquiry costs more than
+    // the handful of extra sends an outage might let through.
+    if (await limited(req, res, { bucket: 'contact:' + site.slug, ...LIMITS.siteContact,
+      message: 'You have already sent a few messages. Please call us instead.' })) return;
 
     const name = clean(body.name, 80), contact = clean(body.contact, 120), message = clean(body.message, 1200);
     if (!name || !contact || !message) { res.status(400).json({ error: 'name_contact_and_message_required' }); return; }
@@ -102,6 +111,8 @@ export default async function handler(req, res) {
   // ---- P3 booking request ----
   if (body.action === 'book') {
     if (!has(site, 'P3')) { res.status(403).json({ error: 'module_off' }); return; }
+    if (await limited(req, res, { bucket: 'book:' + site.slug, ...LIMITS.siteBook,
+      message: 'You have already sent a few requests. Please call us instead.' })) return;
     const name = clean(body.name, 80), phone = clean(body.phone, 40), when = clean(body.when, 160);
     if (!name || !phone) { res.status(400).json({ error: 'name_and_phone_required' }); return; }
 
@@ -137,6 +148,9 @@ export default async function handler(req, res) {
   // ---- P9 AI assistant ----
   if (body.action === 'ask') {
     if (!has(site, 'P9')) { res.status(403).json({ error: 'module_off' }); return; }
+    // Anthropic on every call. Fails CLOSED: an unmetered loop here is pure
+    // cost, and there is no lead to lose by refusing it.
+    if (await limited(req, res, { bucket: 'ask:' + site.slug, ...LIMITS.siteAsk })) return;
     const key = process.env.ANTHROPIC_API_KEY;
     if (!key) { res.status(503).json({ error: 'not_configured' }); return; }
 

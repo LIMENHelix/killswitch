@@ -1215,5 +1215,73 @@ await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: ['P1'] });
 check('switching off never asks Stripe for a refund or a proration',
   !JSON.stringify(created).includes('refund') && callsBefore !== JSON.stringify(stripeSubs));
 
+// ---------------------------------------------------------------------------
+// The audit's top finding: four public routes reach a paid API with no limit at
+// all. The contact form I added made it worse, because one accepted message now
+// sends TWO emails.
+console.log('\n20. The endpoints that spend money have a ceiling');
+
+const { hit, callerIp, LIMITS } = await import('file:///C:/Users/Chris/killswitch/lib/ratelimit.js');
+const chatApi = (await import('file:///C:/Users/Chris/killswitch/api/chat.js')).default;
+
+const ipReq = (ip, body) => ({ method: 'POST', body, headers: { host: 'test.local', 'x-forwarded-for': ip } });
+const callIp = async (h, ip, body) => { const r = mkres(); await h(ipReq(ip, body), r); return r; };
+
+// ---- the counter itself ----
+seed();
+let last;
+for (let i = 0; i < 5; i++) last = await hit('probe', '1.1.1.1', 3, 60);
+check('a bucket counts every hit', last.count === 5, JSON.stringify(last));
+check('and reports over the limit once past it', last.ok === false);
+check('the first three were allowed', (await hit('probe2', '1.1.1.1', 3, 60)).ok === true);
+check('a DIFFERENT caller has its own bucket', (await hit('probe', '2.2.2.2', 3, 60)).ok === true);
+check('it says how long to wait', last.retryAfter > 0 && last.retryAfter <= 60, String(last.retryAfter));
+
+// x-forwarded-for is a chain and only the FIRST entry is the real client.
+// Trusting the last, or the whole string, lets anyone mint a fresh bucket.
+check('the caller is the first address in the chain, not the proxies',
+  callerIp({ headers: { 'x-forwarded-for': '9.9.9.9, 10.0.0.1, 10.0.0.2' } }) === '9.9.9.9');
+check('a forged prefix cannot buy a new bucket per request',
+  callerIp({ headers: { 'x-forwarded-for': '9.9.9.9, 1.2.3.4' } })
+  === callerIp({ headers: { 'x-forwarded-for': '9.9.9.9, 5.6.7.8' } }));
+check('a missing header still yields something stable', callerIp({ headers: {} }) === 'unknown');
+
+// ---- the AI endpoint, which fails CLOSED ----
+seed();
+const msg = { messages: [{ role: 'user', content: 'hello' }] };
+let ok = 0, blocked = 0;
+for (let i = 0; i < LIMITS.chat.limit + 3; i++) {
+  const r = await callIp(chatApi, '3.3.3.3', msg);
+  if (r.code === 429) blocked++; else ok++;
+}
+check('the marketing bot serves a normal number of questions', ok === LIMITS.chat.limit, String(ok));
+check('and then refuses, rather than paying Anthropic forever', blocked === 3, String(blocked));
+
+seed();
+let r2 = await callIp(chatApi, '4.4.4.4', msg);
+check('a different visitor is unaffected by that block', r2.code !== 429, String(r2.code));
+
+// ---- the contact form, which fails OPEN ----
+seed();
+putSite({ ...freeSite, email: EMAIL, modules: ['P0'] });
+const call2 = async (h, ip, body) => { const rr = mkres(); await h(ipReq(ip, body), rr); return rr; };
+let sent = 0, stopped = 0;
+for (let i = 0; i < LIMITS.siteContact.limit + 2; i++) {
+  const r = await call2(siteAction, '5.5.5.5', { action: 'contact', slug: 'free-shop', name: 'Jo', contact: 'jo@x.com', message: 'hi' });
+  if (r.code === 429) stopped++; else sent++;
+}
+check('a real person can send a message, several times over',
+  sent === LIMITS.siteContact.limit, String(sent));
+check('but a loop is stopped before it becomes an email bill', stopped === 2, String(stopped));
+check('and is told to phone instead, rather than just failing',
+  (await call2(siteAction, '5.5.5.5', { action: 'contact', slug: 'free-shop', name: 'Jo', contact: 'jo@x.com', message: 'hi' })).body.message.includes('call us'));
+
+// One abused site must not silence every other customer's contact form.
+check('another customer site is unaffected', await (async () => {
+  putSite({ ...freeSite, slug: 'other-shop', email: 'o@x.com', modules: ['P0'] });
+  const r = await call2(siteAction, '5.5.5.5', { action: 'contact', slug: 'other-shop', name: 'Jo', contact: 'jo@x.com', message: 'hi' });
+  return r.code === 200;
+})());
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

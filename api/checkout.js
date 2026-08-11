@@ -34,6 +34,7 @@ import { getAccount, upsertAccount } from '../lib/store.js';
 import { panelToken } from '../lib/panel-auth.js';
 import { sendPanelLink } from '../lib/onboard.js';
 import { notifyOperator, labelPhases } from '../lib/notify.js';
+import { limited, LIMITS } from '../lib/ratelimit.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -52,6 +53,8 @@ export default async function handler(req, res) {
     try { body = JSON.parse(body); } catch { body = {}; }
   }
   if (!body || typeof body !== 'object') body = {};
+
+  if (await limited(req, res, { bucket: 'checkout', ...LIMITS.checkout })) return;
 
   const phases = Array.isArray(body.phases) ? body.phases : [];
 
