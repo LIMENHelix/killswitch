@@ -15,7 +15,7 @@ THE GROWTH PATH (name: what it is: price):
 - P1 Get Found on Google: your details published in the structure search engines read, your page submitted to Google, and your Google Business Profile set up with you: $19/mo or $149 once. NEVER promise a ranking or a position.
 - P2 Content & Updates: we write posts and publish them to an Updates section on their site, and they approve before anything goes up: $29/mo or $149 once. There is NO email newsletter and NO social posting.
 - P3 Online Booking & Scheduling: customers self-book onto your calendar: $19/mo or $149 once.
-- P4 Hosting & Maintenance: small changes made for them in plain English, usually the same day, hosting and serving included: $29/mo. Do NOT claim daily backups or around-the-clock monitoring.
+- P4 Hosting & Maintenance: small changes made for them in plain English usually the same day, hosting and serving, a nightly backup of their site kept 30 days, and an automated uptime check that alerts us if their site stops answering: $29/mo.
 - P5 CRM & Customer Database: every message and booking from their site kept as one person with their full history, in their control panel, with a status they set: $29/mo. It is a customer LIST, not a pipeline, and it imports nothing from elsewhere.
 - P6 Marketing Automation: an instant thank-you when someone contacts them, and a review request three days later, sent for them by email: $29/mo. Needs P5. Email only, no texts.
 - P7 Payments & Checkout: a Pay section on their site linked to a secure card payment page in their name, set up and wired in: $19/mo or $149 once. It is not invoicing software and there is no product catalogue.

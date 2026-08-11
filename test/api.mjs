@@ -979,5 +979,158 @@ await new Promise((res) => setTimeout(res, 40));
 check('no CRM record without P5', (await listContacts('free-shop')).length === 0);
 check('no follow-ups queued without P6', (await statsFor('free-shop')).pending === 0);
 
+// ---------------------------------------------------------------------------
+// The webhook: the ear that makes a no-code payment link provision itself.
+// Nothing existing changed, so these are all NEW behaviours on a NEW endpoint.
+console.log('\n17. A payment through ANY door now sets the customer up');
+
+const crypto2 = await import('node:crypto');
+const { verifySignature } = await import('file:///C:/Users/Chris/killswitch/api/stripe-webhook.js');
+const webhook = (await import('file:///C:/Users/Chris/killswitch/api/stripe-webhook.js')).default;
+
+const WHSEC = 'whsec_test_secret';
+function signed(payload, secret = WHSEC, t = Math.floor(Date.now() / 1000)) {
+  const body = Buffer.from(JSON.stringify(payload));
+  const sig = crypto2.createHmac('sha256', secret).update(t + '.' + body.toString('utf8'), 'utf8').digest('hex');
+  return { body, header: `t=${t},v1=${sig}` };
+}
+
+// A fake request that streams the raw bytes, because the signature is over them.
+function rawReq(body, header) {
+  const listeners = {};
+  const req = {
+    method: 'POST',
+    headers: { 'stripe-signature': header, host: 'test.local' },
+    on(ev, fn) { listeners[ev] = fn; return req; },
+  };
+  setTimeout(() => { if (listeners.data) listeners.data(body); if (listeners.end) listeners.end(); }, 0);
+  return req;
+}
+const hook = async (payload, { secret = WHSEC, tamper = false, t } = {}) => {
+  const { body, header } = signed(payload, secret, t);
+  const res = mkres();
+  await webhook(rawReq(tamper ? Buffer.from(body.toString('utf8') + ' ') : body, header), res);
+  return res;
+};
+
+// ---- signature, checked directly ----
+const p1 = signed({ hello: 'world' });
+check('a correct signature verifies', verifySignature(p1.body, p1.header, WHSEC));
+check('the wrong secret does not', !verifySignature(p1.body, p1.header, 'whsec_other'));
+check('a tampered body does not', !verifySignature(Buffer.from('{"hello":"evil"}'), p1.header, WHSEC));
+check('no signature header does not', !verifySignature(p1.body, '', WHSEC));
+const old = signed({ hello: 'world' }, WHSEC, Math.floor(Date.now() / 1000) - 4000);
+check('a replayed event from an hour ago is refused', !verifySignature(old.body, old.header, WHSEC));
+
+// ---- the endpoint refuses anything it cannot verify ----
+process.env.STRIPE_WEBHOOK_SECRET = WHSEC;
+seed();
+let w = await hook({ type: 'checkout.session.completed', data: { object: {} } }, { secret: 'whsec_wrong' });
+check('the endpoint rejects a forged event', w.code === 400, 'got ' + w.code);
+
+seed();
+w = await hook({ type: 'checkout.session.completed', data: { object: {} } }, { tamper: true });
+check('and a tampered body', w.code === 400, 'got ' + w.code);
+
+delete process.env.STRIPE_WEBHOOK_SECRET;
+seed();
+w = await hook({ type: 'checkout.session.completed', data: { object: {} } });
+check('with no secret configured it fails CLOSED, not open', w.code === 503, 'got ' + w.code);
+process.env.STRIPE_WEBHOOK_SECRET = WHSEC;
+
+// ---- the payload that matters: someone bought through a payment link ----
+const LINKBUYER = 'linkbuyer@example.com';
+const P9P = 'price_1ToXlzPmxnF3rtBMv1DlSFC5';
+
+seed();
+putSite({ slug: 'link-shop', business: 'Link Shop', email: LINKBUYER, modules: ['P0'], published: true, claimed: true });
+stripeSubs = [{ id: 'sub_link', status: 'active', cancel_at_period_end: false, current_period_end: 9999999999,
+  items: { data: [{ id: 'si_p9', price: { id: P9P }, current_period_end: 9999999999 }] } }];
+w = await hook({
+  type: 'checkout.session.completed', id: 'evt_1',
+  data: { object: { customer: 'cus_link', customer_details: { email: LINKBUYER }, amount_total: 2900 } },
+});
+check('a link purchase is accepted', w.code === 200, 'got ' + w.code);
+
+const accts = () => JSON.parse(KV.get('ks:accounts'));
+check('an account is created for someone who never touched our site',
+  !!accts()[LINKBUYER], Object.keys(accts()).join(','));
+check('and their Stripe customer is attached',
+  accts()[LINKBUYER].stripeCustomerId === 'cus_link', JSON.stringify(accts()[LINKBUYER]));
+const linkSite = () => JSON.parse(KV.get('ks:site:link-shop'));
+check('what they paid for is switched ON for their site',
+  linkSite().modules.includes('P9'), JSON.stringify(linkSite().modules));
+
+// The case that used to vanish entirely: a payment link that collected no email.
+seed();
+w = await hook({ type: 'checkout.session.completed', data: { object: { customer: 'cus_x', amount_total: 1900 } } });
+check('a payment with no email still returns 200 rather than retrying forever', w.code === 200);
+check('and creates no junk account', Object.keys(accts()).length === 1, Object.keys(accts()).join(','));
+
+// An existing customer must not be reset by a second purchase.
+seed();
+KV.set('ks:accounts', JSON.stringify({ [EMAIL]: { email: EMAIL, name: 'Test Shop', plan: ['P0', 'P3'], stripeCustomerId: 'cus_old' } }));
+stripeSubs = [];
+w = await hook({ type: 'checkout.session.completed', data: { object: { customer: 'cus_old', customer_details: { email: EMAIL }, amount_total: 1900 } } });
+check('an existing customer keeps their record', accts()[EMAIL].name === 'Test Shop' && accts()[EMAIL].plan.includes('P3'),
+  JSON.stringify(accts()[EMAIL]));
+
+// Our own bug must never become a Stripe retry storm.
+seed();
+w = await hook({ type: 'checkout.session.completed', data: { object: { customer: 12345, customer_details: null } } });
+check('a malformed event is acknowledged, not retried for days', w.code === 200, 'got ' + w.code);
+
+seed();
+w = await hook({ type: 'customer.discount.created', data: { object: {} } });
+check('an event we do not care about is acknowledged quietly', w.code === 200);
+
+// ---------------------------------------------------------------------------
+// P4: the two claims that had no code behind them.
+console.log('\n18. Daily backups and around-the-clock watching');
+
+const { runBackup, listBackups, restorePreview, checkUptime, lastUptime, stamp } =
+  await import('file:///C:/Users/Chris/killswitch/lib/backup.js');
+
+const DAY0 = new Date('2026-08-10T03:30:00Z');
+seed();
+putSite({ slug: 'a-shop', business: 'A Shop', email: 'a@x.com', modules: ['P0'], published: true, claimed: true, tagline: 'original' });
+putSite({ slug: 'b-shop', business: 'B Shop', email: 'b@x.com', modules: ['P0'], published: true, claimed: true });
+let bk = await runBackup(DAY0);
+check('a backup snapshots every site', bk.sites === 3, JSON.stringify(bk));
+check('and is dated', bk.stamp === '2026-08-10', bk.stamp);
+check('it shows up in the list', (await listBackups()).some((b) => b.stamp === '2026-08-10'));
+
+// The point of a backup is getting one customer back, so that is what is tested.
+const before = await restorePreview('2026-08-10', 'a-shop');
+check('a single site can be read back out of it', before && before.tagline === 'original', JSON.stringify(before));
+
+putSite({ slug: 'a-shop', business: 'A Shop', email: 'a@x.com', modules: ['P0'], published: true, claimed: true, tagline: 'RUINED' });
+const after = await restorePreview('2026-08-10', 'a-shop');
+check('and still reads the OLD content after the live record is wrecked',
+  after && after.tagline === 'original', JSON.stringify(after));
+
+// Running twice in a day must not produce two backups.
+await runBackup(DAY0);
+check('a second run the same day overwrites rather than duplicating',
+  (await listBackups()).filter((b) => b.stamp === '2026-08-10').length === 1);
+
+// ---- uptime ----
+seed();
+const sites = [{ slug: 'up-shop', business: 'Up Shop', published: true }, { slug: 'down-shop', business: 'Down Shop', published: true }];
+const fakeFetch = async (url) => ({ status: url.includes('down-shop') ? 500 : 200 });
+let up = await checkUptime('https://test.local', sites, fakeFetch, DAY0);
+check('every published site is checked', up.checked === 2, JSON.stringify(up));
+check('a broken one is reported', up.failures.length === 1 && up.failures[0].slug === 'down-shop', JSON.stringify(up.failures));
+check('a healthy one is not', !up.failures.some((f) => f.slug === 'up-shop'));
+check('the result is stored for the next comparison', (await lastUptime()).failures.length === 1);
+
+const deadFetch = async () => { throw new Error('ECONNREFUSED'); };
+up = await checkUptime('https://test.local', sites, deadFetch, DAY0);
+check('a site that does not respond at all counts as down', up.failures.length === 2, JSON.stringify(up.failures));
+
+const allGood = async () => ({ status: 200 });
+up = await checkUptime('https://test.local', sites, allGood, DAY0);
+check('and recovery is visible', up.failures.length === 0);
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
