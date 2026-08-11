@@ -96,6 +96,7 @@ header.nav{position:sticky;top:0;z-index:60;background:rgba(18,18,20,.85);backdr
   font-family:"Manrope",sans-serif;font-weight:700;letter-spacing:.01em;font-size:1rem;
   padding:15px 26px;border-radius:2px;cursor:pointer;
   display:inline-flex;align-items:center;justify-content:center;gap:10px;white-space:nowrap;
+  max-width:100%;
   background:var(--go);color:var(--go-ink);border:1px solid var(--go);
   box-shadow:0 6px 20px -10px rgba(0,0,0,.55);
   transition:transform .15s ease, box-shadow .25s ease, background .25s, filter .2s, opacity .25s;
@@ -356,6 +357,7 @@ section.s{padding:88px 0;border-top:1px solid var(--line-soft)}
 
 /* ---- CASE STUDY + WORK GRID (work) ---- */
 .case{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;margin-top:20px}
+.case>*,.case__media,.case__text{min-width:0}
 .case__tag{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--amber);background:color-mix(in srgb,var(--amber) 10%,transparent);padding:5px 13px;border-radius:2px;margin-bottom:20px}
 .case__text h2{font-size:clamp(1.8rem,3.4vw,2.6rem);margin-bottom:16px}
 .case__text>p{color:var(--mute);font-size:1.05rem;margin-bottom:26px}
@@ -441,6 +443,12 @@ section.s{padding:88px 0;border-top:1px solid var(--line-soft)}
 /* ---- growth-path ladder (pricing) with kill-switch lever picks ---- */
 .path{max-width:880px;margin:0 auto}
 .path__rung{display:grid;grid-template-columns:52px 58px 1fr auto;gap:20px;align-items:center;padding:18px 22px;border-bottom:1px solid var(--line)}
+/* A grid item defaults to min-width:auto and will not shrink below its widest
+   content, so the 1fr body pushed the whole ladder past the screen on a phone. */
+.path__rung>*{min-width:0}
+.path__body{min-width:0}
+.path__items{flex-wrap:wrap}
+.path__v,.path__more-body p{overflow-wrap:break-word}
 .path__rung:last-child{border-bottom:0}
 .path__phase{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:1.12rem;color:var(--amber);text-align:center;letter-spacing:.02em}
 .path__body h5{font-family:"Manrope",sans-serif;font-size:1.05rem;color:var(--ink);font-weight:700;margin-bottom:2px}
@@ -474,6 +482,23 @@ section.s{padding:88px 0;border-top:1px solid var(--line-soft)}
 @media(max-width:640px){
   .path__rung{grid-template-columns:40px 40px 1fr;gap:12px;padding:15px 14px}
   .path__price{grid-column:2 / -1;text-align:left;margin-top:6px}
+}
+
+/* Below this width a button label like "Or skip the form and talk to a real,
+   live human" cannot fit on one line, and nowrap made it run off the page
+   rather than wrap. Buttons stay single-line everywhere it actually fits. */
+@media(max-width:560px){
+  .btn{white-space:normal;text-align:center}
+  .ui-kpis{grid-template-columns:1fr 1fr}
+  .cts,.work-grid{grid-template-columns:1fr}
+}
+@media(max-width:380px){
+  /* The mock dashboard has a fixed 54px rail, so at the narrowest phone width
+     even a two-up KPI row clips its own numbers inside the window. */
+  .ui{grid-template-columns:38px 1fr}
+  .ui-kpis{grid-template-columns:1fr}
+  .ui-kpi{padding:9px 11px}
+  .ui-kpi b{font-size:1.1rem}
 }
 
 /* ---- FOOTER ---- */

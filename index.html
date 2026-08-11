@@ -74,7 +74,9 @@
 
   /* NAV */
   .nav{position:relative;z-index:3;border-bottom:1px solid var(--line-soft);background:rgba(18,18,20,.72);backdrop-filter:blur(9px)}
-  .nav-in{display:flex;align-items:center;justify-content:space-between;padding:11px 24px;gap:20px}
+  /* wrap rather than overflow: at 320px the brand, three links and the phone
+     number do not fit on one line and used to run 68px off the screen. */
+  .nav-in{display:flex;align-items:center;justify-content:space-between;padding:11px 24px;gap:12px 20px;flex-wrap:wrap}
   .brand{display:inline-flex;align-items:center;gap:10px;font-family:"Manrope",sans-serif;font-weight:900;letter-spacing:.04em;color:var(--red);font-size:1.05rem}
   .brand-ic{width:20px;height:20px;flex:none}
   .nav-links{display:flex;align-items:center;gap:26px}
@@ -190,6 +192,12 @@
     .nav-in{padding:14px 20px}
     .nav-links a:nth-child(1){display:none}
     .foot-in{flex-direction:column;align-items:flex-start}
+  }
+  @media(max-width:400px){
+    /* Only the phone number really matters at this width, so the remaining
+       nav links step aside for it rather than squeezing it off the edge. */
+    .nav-links a:nth-child(2){display:none}
+    .brand{font-size:.95rem}
   }
   @media(prefers-reduced-motion:reduce){
     *{animation:none!important;transition:none!important}

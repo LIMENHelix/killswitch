@@ -157,6 +157,8 @@
   .pyr-big .lt{fill:var(--ash);font-family:var(--disp);font-weight:800;text-anchor:middle;transition:fill .3s ease}
   .pyr-big .lt.on{fill:var(--volt)}
   .tiers{display:flex;flex-direction:column;gap:0;border-top:1px solid var(--line)}
+  .tier-row>*{min-width:0}
+  @media(max-width:400px){.tier-row{grid-template-columns:60px 1fr;gap:12px}}
   .tier-row{display:grid;grid-template-columns:96px 1fr;gap:20px;padding:24px 4px;border-bottom:1px solid var(--line);
     cursor:default;position:relative;transition:background .2s ease}
   .tier-row:hover,.tier-row:focus-within{background:rgba(50,187,241,.045)}
@@ -183,7 +185,7 @@
   .cert:hover{background:rgba(255,255,255,.026)}
   .cert:hover::before{transform:scaleY(1)}
   .cert .code{padding:30px 26px 30px 22px;border-right:1px solid var(--line);display:flex;flex-direction:column;justify-content:center}
-  .cert .code .acr{font-family:var(--disp);font-weight:800;font-size:clamp(38px,5.4vw,60px);line-height:.86;color:var(--white)}
+  .cert .code .acr{font-family:var(--disp);font-weight:800;font-size:clamp(30px,4.6vw,60px);line-height:.86;color:var(--white);overflow-wrap:break-word;min-width:0}
   .cert .code .iss{font-family:var(--mono);font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--volt);margin-bottom:10px;line-height:1.6}
   .cert .bd{padding:30px 8px 32px 30px}
   .cert .full{font-family:var(--disp);font-weight:700;text-transform:uppercase;font-size:24px;letter-spacing:.02em;line-height:1.05}
@@ -289,7 +291,11 @@
   .opt{display:flex;align-items:center;gap:15px;padding:17px 18px;border:1px solid var(--edge);border-radius:12px;cursor:pointer;
     background:var(--card);transition:border-color .18s,background .18s}
   .opt:hover{border-color:var(--volt-dk)}
-  .opt input{position:absolute;opacity:0;pointer-events:none}
+  /* Visually hidden, and genuinely zero-sized. Without left/top/width this is
+     an absolutely positioned box at its static position that still occupies
+     real estate, which is what made the page scroll sideways on desktop. */
+  .opt input{position:absolute;left:0;top:0;width:1px;height:1px;margin:0;opacity:0;pointer-events:none}
+  .opt{position:relative}
   .opt .tick{width:20px;height:20px;border-radius:50%;border:1.6px solid var(--edge);flex:none;transition:border-color .18s,box-shadow .18s}
   .opt.sel{border-color:var(--volt);background:rgba(50,187,241,.08)}
   .opt.sel .tick{border-color:var(--volt);box-shadow:inset 0 0 0 5px var(--volt)}
@@ -297,6 +303,15 @@
   .opt .nm{display:block;font-family:var(--disp);font-weight:700;text-transform:uppercase;font-size:20px;letter-spacing:.02em;line-height:1.1}
   .opt .ds{display:block;color:var(--ash);font-size:13.5px;margin-top:4px}
   .opt .pr{margin-left:auto;text-align:right;flex:none}
+  .opt .nm,.opt .ds{overflow-wrap:break-word}
+  @media(max-width:560px){
+    /* Give the name and description the full row rather than the sliver left
+       over beside a pinned price. */
+    .opt{flex-wrap:wrap}
+    .opt .txt{flex:1 1 100%;order:2}
+    .opt .pr{margin-left:0;order:3;flex:1 1 100%;text-align:left}
+    .opt .nm{font-size:17px}
+  }
   .opt .pr .amt{font-family:var(--disp);font-weight:800;font-size:23px;color:var(--volt);line-height:1}
   .opt .pr .tbd{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);
     border:1px dashed var(--line2);border-radius:6px;padding:5px 9px;display:inline-block}
@@ -342,11 +357,15 @@
   /* visit */
   .visit{background:var(--pit);border-top:1px solid var(--line)}
   .visit .split{display:grid;grid-template-columns:1fr 1fr;gap:52px;align-items:start}
+  .split>*{min-width:0}
+  .split{overflow-wrap:break-word}
   @media(max-width:900px){.visit .split{grid-template-columns:1fr;gap:36px}}
   .mapwrap{border-radius:14px;overflow:hidden;border:1px solid var(--edge);margin-top:22px;height:290px;background:var(--card)}
   .mapwrap iframe{width:100%;height:100%;border:0;filter:invert(.92) hue-rotate(180deg) saturate(.7) brightness(.94)}
   .info{display:flex;flex-direction:column;gap:19px;margin-top:24px}
   .info .row{display:flex;gap:14px;align-items:flex-start}
+  .info .row>*{min-width:0}
+  .info .row a,.info .row span,.info .row div{overflow-wrap:anywhere}
   .info .ic{width:40px;height:40px;border-radius:10px;background:var(--card);border:1px solid var(--edge);display:grid;place-items:center;color:var(--volt);flex:none}
   .info dt{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim)}
   .info dd{font-size:15.5px;margin-top:4px}
