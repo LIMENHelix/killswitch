@@ -15,8 +15,8 @@ import fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 
-const { renderSite } = await import('file:///C:/Users/Chris/killswitch/lib/site-template.js');
-const { SITE_DEFAULT } = await import('file:///C:/Users/Chris/killswitch/lib/sites.js');
+const { renderSite } = await import('../lib/site-template.js');
+const { SITE_DEFAULT } = await import('../lib/sites.js');
 
 const BASE = {
   ...SITE_DEFAULT, slug: 'free-shop', business: "Jo's Garage", phone: '816-555-0101',

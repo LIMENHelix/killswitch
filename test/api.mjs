@@ -1,3 +1,8 @@
+
+import path from 'node:path';
+// Repo root, derived from this file's own location so the suite runs
+// from any checkout rather than only from C:/Users/Chris/killswitch.
+const ROOT = path.join(import.meta.dirname, '..');
 // Exercises the REAL handlers (api/support.js, api/switch.js) against a stubbed
 // Upstash KV and Stripe, so the fixes are tested rather than asserted.
 // Run: node ks-gate-test.mjs
@@ -134,9 +139,9 @@ const lobCards = [];
 const anthropicCalls = [];
 let siteWriterReply = null;
 
-const { panelToken } = await import('file:///C:/Users/Chris/killswitch/lib/panel-auth.js');
-const support = (await import('file:///C:/Users/Chris/killswitch/api/support.js')).default;
-const switchApi = (await import('file:///C:/Users/Chris/killswitch/api/switch.js')).default;
+const { panelToken } = await import('../lib/panel-auth.js');
+const support = (await import('../api/support.js')).default;
+const switchApi = (await import('../api/switch.js')).default;
 
 function mkres() {
   const r = { code: 0, body: null };
@@ -240,7 +245,7 @@ check('their site is caught up too', site().modules.includes('P3'), 'modules=' +
 // ---------------------------------------------------------------------------
 console.log('\n4. The website editor stops deleting the customer');
 process.env.ADMIN_KEY = 'testadminkey';
-const master = (await import('file:///C:/Users/Chris/killswitch/api/master.js')).default;
+const master = (await import('../api/master.js')).default;
 const asAdmin = (body) => call(master, { token: 'testadminkey', ...body });
 
 KV.clear();
@@ -277,8 +282,8 @@ check('modules survive a partial save', site().modules.includes('P3'), JSON.stri
 // ---------------------------------------------------------------------------
 console.log('\n5. A rep key is not the owner key');
 process.env.REP_KEYS = 'dana:r_dana_key,mike:r_mike_key';
-const admin = (await import('file:///C:/Users/Chris/killswitch/api/admin.js')).default;
-const signup = (await import('file:///C:/Users/Chris/killswitch/api/signup.js')).default;
+const admin = (await import('../api/admin.js')).default;
+const signup = (await import('../api/signup.js')).default;
 
 KV.clear();
 KV.set('ks:leads', JSON.stringify([
@@ -329,9 +334,9 @@ console.log('\n6. Sites for everyone: draft, deliver, claim');
 process.env.LOB_API_KEY = 'test_stub';
 process.env.KS_FROM_NAME = 'Killswitch'; process.env.KS_FROM_LINE1 = '1 Main St';
 process.env.KS_FROM_CITY = 'KC'; process.env.KS_FROM_STATE = 'MO'; process.env.KS_FROM_ZIP = '64111';
-const siteApi = (await import('file:///C:/Users/Chris/killswitch/api/site.js')).default;
-const { renderSite } = await import('file:///C:/Users/Chris/killswitch/lib/site-template.js');
-const { getSite, upsertSite: upsertSiteFn } = await import('file:///C:/Users/Chris/killswitch/lib/sites.js');
+const siteApi = (await import('../api/site.js')).default;
+const { renderSite } = await import('../lib/site-template.js');
+const { getSite, upsertSite: upsertSiteFn } = await import('../lib/sites.js');
 
 KV.clear(); lobCards.length = 0;
 // a legacy blob site, to prove the migration path
@@ -378,7 +383,7 @@ check('a rep still cannot edit site content', r.code === 400 || r.code === 403, 
 
 // the postcard carries the address of a site that exists
 KV.set('ks:leadmeta', KV.get('ks:leadmeta') || {});
-const { lobSend } = await import('file:///C:/Users/Chris/killswitch/lib/mailer.js');
+const { lobSend } = await import('../lib/mailer.js');
 const meta = (KV.get('ks:leadmeta') || {});
 const slugB = JSON.parse(meta.B).siteSlug;
 await lobSend({ id: 'B', name: 'Downtown Dental', trade: 'dentist', street: '5 Elm St', city: 'Kansas City', state: 'MO', zip: '64111', siteSlug: slugB });
@@ -406,7 +411,7 @@ check('search finds a shop by city', r.body.total === 1 && r.body.sites[0].slug 
 console.log('\n7. The voice agent on 913-933-1687');
 process.env.AGENT_TOKEN = 'agent_test_tok';
 process.env.KS_HUMAN_PHONE = '913-948-3747';
-const agent = (await import('file:///C:/Users/Chris/killswitch/api/agent.js')).default;
+const agent = (await import('../api/agent.js')).default;
 const ag = (b) => call(agent, { token: 'agent_test_tok', ...b });
 
 KV.clear(); stripeSubs = []; stripeCustomers = [];
@@ -543,8 +548,8 @@ check('dropping it falls back to the shared template', rs.code === 200 && !rs.bo
 
 // ---------------------------------------------------------------------------
 console.log('\n10. Placeholder sites are the target, not a disqualification');
-const { classify, hookLine, segment: segmentFn } = await import('file:///C:/Users/Chris/killswitch/lib/web-presence.js');
-const { draftFromLead } = await import('file:///C:/Users/Chris/killswitch/lib/draft-site.js');
+const { classify, hookLine, segment: segmentFn } = await import('../lib/web-presence.js');
+const { draftFromLead } = await import('../lib/draft-site.js');
 
 check('no website at all is still a target', classify('').status === 'none' && classify('').isTarget);
 check('a Yelp page is a target', classify('https://www.yelp.com/biz/daves-auto').status === 'directory_only');
@@ -603,8 +608,8 @@ check('and it says whose words they are', d2.proposedNote.includes('not the owne
 // set for the duration of these checks and taking it straight back out.
 console.log('\n11. The retirement gate still works, and confiscates nothing');
 
-const checkout = (await import('file:///C:/Users/Chris/killswitch/api/checkout.js')).default;
-const { RETIRED, isSellable } = await import('file:///C:/Users/Chris/killswitch/lib/prices.js');
+const checkout = (await import('../api/checkout.js')).default;
+const { RETIRED, isSellable } = await import('../lib/prices.js');
 const P5 = 'price_1ToXluPmxnF3rtBMEleF5u3D';  // CRM
 const P6 = 'price_1ToXlvPmxnF3rtBM7aDkUq1Y';  // Marketing Automation
 
@@ -675,7 +680,7 @@ r = await call(checkout, { phases: ['P5', 'P6'], email: 'buyer@example.com' });
 check('CRM and automation can be bought again, now that they exist',
   r.code === 200 && !!r.body.url, 'got ' + r.code + ' ' + JSON.stringify(r.body));
 
-const chatSrc = await (await import('node:fs/promises')).readFile('C:/Users/Chris/killswitch/api/chat.js', 'utf8');
+const chatSrc = await (await import('node:fs/promises')).readFile(path.join(ROOT, 'api/chat.js'), 'utf8');
 check('the bot sells them again', /P5 CRM/.test(chatSrc) && /P6 Marketing Automation/.test(chatSrc));
 check('but is told how narrow they are', /not a pipeline/.test(chatSrc) && /no texts/i.test(chatSrc));
 
@@ -741,8 +746,8 @@ try {
 console.log('\n13. The free site can actually be contacted');
 
 // renderSite is already imported above; only these two are new here.
-const siteAction = (await import('file:///C:/Users/Chris/killswitch/api/site-action.js')).default;
-const { SITE_DEFAULT } = await import('file:///C:/Users/Chris/killswitch/lib/sites.js');
+const siteAction = (await import('../api/site-action.js')).default;
+const { SITE_DEFAULT } = await import('../lib/sites.js');
 
 const freeSite = {
   ...SITE_DEFAULT, slug: 'free-shop', business: 'Free Shop', phone: '816-555-0101',
@@ -790,8 +795,8 @@ check('an unpublished site cannot be messaged', r.code === 404, 'got ' + r.code)
 // whose data went to OUR dashboard. The customer had no screen and no number.
 console.log('\n14. Analytics shows the customer their own number');
 
-const { recordView, getStats } = await import('file:///C:/Users/Chris/killswitch/lib/stats.js');
-const sitemapSites = (await import('file:///C:/Users/Chris/killswitch/api/sitemap-sites.js')).default;
+const { recordView, getStats } = await import('../lib/stats.js');
+const sitemapSites = (await import('../api/sitemap-sites.js')).default;
 
 const P8 = 'price_1ToXlyPmxnF3rtBMendZWgMs';
 const paidSite = { ...freeSite, email: EMAIL, modules: ['P0', 'P8'] };
@@ -872,8 +877,8 @@ check('no customers yet still yields a valid empty sitemap',
 // P5 and P6, the two that were sold with nothing behind them. Built, not cut.
 console.log('\n16. The CRM keeps people, and the automation follows them up');
 
-const { recordContact, listContacts, updateContact, summarise } = await import('file:///C:/Users/Chris/killswitch/lib/crm.js');
-const { queueFollowUps, dueItems, retire, bodyFor, statsFor } = await import('file:///C:/Users/Chris/killswitch/lib/automation.js');
+const { recordContact, listContacts, updateContact, summarise } = await import('../lib/crm.js');
+const { queueFollowUps, dueItems, retire, bodyFor, statsFor } = await import('../lib/automation.js');
 const P5P = 'price_1ToXluPmxnF3rtBMEleF5u3D';
 
 const crmSite = { ...freeSite, email: EMAIL, modules: ['P0', 'P5', 'P6'] };
@@ -985,8 +990,8 @@ check('no follow-ups queued without P6', (await statsFor('free-shop')).pending =
 console.log('\n17. A payment through ANY door now sets the customer up');
 
 const crypto2 = await import('node:crypto');
-const { verifySignature } = await import('file:///C:/Users/Chris/killswitch/api/stripe-webhook.js');
-const webhook = (await import('file:///C:/Users/Chris/killswitch/api/stripe-webhook.js')).default;
+const { verifySignature } = await import('../api/stripe-webhook.js');
+const webhook = (await import('../api/stripe-webhook.js')).default;
 
 const WHSEC = 'whsec_test_secret';
 function signed(payload, secret = WHSEC, t = Math.floor(Date.now() / 1000)) {
@@ -1089,7 +1094,7 @@ check('an event we do not care about is acknowledged quietly', w.code === 200);
 console.log('\n18. Daily backups and around-the-clock watching');
 
 const { runBackup, listBackups, restorePreview, checkUptime, lastUptime, stamp } =
-  await import('file:///C:/Users/Chris/killswitch/lib/backup.js');
+  await import('../lib/backup.js');
 
 const DAY0 = new Date('2026-08-10T03:30:00Z');
 seed();
@@ -1141,9 +1146,9 @@ check('and recovery is visible', up.failures.length === 0);
 // they had paid for were not delivered, while the panel promised the opposite.
 console.log('\n19. Switch off keeps working until the cycle they paid for ends');
 
-const { sweepExpired } = await import('file:///C:/Users/Chris/killswitch/lib/backup.js');
-const { removeModules } = await import('file:///C:/Users/Chris/killswitch/lib/sites.js');
-const { getAccounts, saveAccounts } = await import('file:///C:/Users/Chris/killswitch/lib/store.js');
+const { sweepExpired } = await import('../lib/backup.js');
+const { removeModules } = await import('../lib/sites.js');
+const { getAccounts, saveAccounts } = await import('../lib/store.js');
 
 const P1PRICE = 'price_1ToXlLPmxnF3rtBM5NRurfkt';   // Get Found on Google
 const P3PRICE = 'price_1ToXlsPmxnF3rtBM9Dc9mDul';   // Online Booking
@@ -1221,8 +1226,8 @@ check('switching off never asks Stripe for a refund or a proration',
 // sends TWO emails.
 console.log('\n20. The endpoints that spend money have a ceiling');
 
-const { hit, callerIp, LIMITS } = await import('file:///C:/Users/Chris/killswitch/lib/ratelimit.js');
-const chatApi = (await import('file:///C:/Users/Chris/killswitch/api/chat.js')).default;
+const { hit, callerIp, LIMITS } = await import('../lib/ratelimit.js');
+const chatApi = (await import('../api/chat.js')).default;
 
 const ipReq = (ip, body) => ({ method: 'POST', body, headers: { host: 'test.local', 'x-forwarded-for': ip } });
 const callIp = async (h, ip, body) => { const r = mkres(); await h(ipReq(ip, body), r); return r; };

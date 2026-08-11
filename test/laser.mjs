@@ -2,7 +2,7 @@
 // guardrails survived the move. A port that "parses fine" and quietly ranks
 // differently would be worse than no port at all: the whole point of the engine
 // is that it does not let a small-sample fluke outrank a proven play.
-import * as L from 'file:///C:/Users/Chris/killswitch/lib/laser.js';
+import * as L from '../lib/laser.js';
 
 let pass = 0, fail = 0;
 const check = (n, c, d) => { if (c) { console.log('  PASS  ' + n); pass++; } else { console.log('  FAIL  ' + n + (d ? '  <- ' + d : '')); fail++; } };

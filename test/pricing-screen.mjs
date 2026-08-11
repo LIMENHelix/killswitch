@@ -12,7 +12,11 @@ import fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 
-const PRICING = 'C:/Users/Chris/killswitch/pricing.html';
+// Repo root, derived from this file's own location so the suite runs
+// from any checkout rather than only from C:/Users/Chris/killswitch.
+const ROOT = path.join(import.meta.dirname, '..');
+
+const PRICING = path.join(ROOT, 'pricing.html');
 let posted = null;
 
 const server = http.createServer((req, res) => {
@@ -28,7 +32,7 @@ const server = http.createServer((req, res) => {
   }
   if (req.url.endsWith('.css')) {
     res.setHeader('content-type', 'text/css');
-    res.end(fs.existsSync('C:/Users/Chris/killswitch/ks.css') ? fs.readFileSync('C:/Users/Chris/killswitch/ks.css') : '');
+    res.end(fs.existsSync(path.join(ROOT, 'ks.css')) ? fs.readFileSync(path.join(ROOT, 'ks.css')) : '');
     return;
   }
   if (req.url.endsWith('.js')) { res.setHeader('content-type', 'application/javascript'); res.end(''); return; }

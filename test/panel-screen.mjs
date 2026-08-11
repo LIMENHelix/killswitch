@@ -17,7 +17,11 @@ import fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 
-const PANEL = 'C:/Users/Chris/killswitch/panel.html';
+// Repo root, derived from this file's own location so the suite runs
+// from any checkout rather than only from C:/Users/Chris/killswitch.
+const ROOT = path.join(import.meta.dirname, '..');
+
+const PANEL = path.join(ROOT, 'panel.html');
 
 // What the fake /api/switch reports as this customer's live subscriptions.
 let MODULES_LIVE = {};

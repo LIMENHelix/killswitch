@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 
-const ROOT = 'C:/Users/Chris/killswitch';
+const ROOT = path.join(import.meta.dirname, '..');
 let web3 = 0, checkout = 0;
 
 const server = http.createServer((req, res) => {

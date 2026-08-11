@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 
-const ROOT = 'C:/Users/Chris/killswitch';
+const ROOT = path.join(import.meta.dirname, '..');
 const WIDTHS = (process.env.KS_WIDTHS || "320,375,768,1440").split(",").map(Number);
 
 const PAGES = process.argv[2] ? [process.argv[2]] : [
@@ -46,8 +46,8 @@ const PAGES = process.argv[2] ? [process.argv[2]] : [
 ];
 
 // The rendered customer site is a product surface too.
-const { renderSite } = await import('file:///C:/Users/Chris/killswitch/lib/site-template.js');
-const { SITE_DEFAULT } = await import('file:///C:/Users/Chris/killswitch/lib/sites.js');
+const { renderSite } = await import('../lib/site-template.js');
+const { SITE_DEFAULT } = await import('../lib/sites.js');
 const DEMO_SITE = {
   ...SITE_DEFAULT, slug: 'demo', business: "Gonzalez & Sons Automotive Repair Specialists",
   tagline: 'Brakes, transmissions, diagnostics and fleet servicing across the Kansas City metropolitan area.',

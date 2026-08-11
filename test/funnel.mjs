@@ -21,8 +21,8 @@ globalThis.fetch = async (url, opts = {}) => {
   return json({ result: run(args) });
 };
 
-const F = await import('file:///C:/Users/Chris/killswitch/lib/funnel.js');
-const { wilsonLower, allocate } = await import('file:///C:/Users/Chris/killswitch/lib/laser.js');
+const F = await import('../lib/funnel.js');
+const { wilsonLower, allocate } = await import('../lib/laser.js');
 
 let pass = 0, fail = 0;
 const check = (n, c, d) => { if (c) { console.log('  PASS  ' + n); pass++; } else { console.log('  FAIL  ' + n + (d ? '  <- ' + d : '')); fail++; } };

@@ -5,6 +5,10 @@ import fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 
+// Repo root, derived from this file's own location so the suite runs
+// from any checkout rather than only from C:/Users/Chris/killswitch.
+const ROOT = path.join(import.meta.dirname, '..');
+
 const FULL = {
   slug: 'test-shop', business: 'Test Shop', email: 'shop@example.com', trade: 'auto repair',
   phone: '816-555-0101', street: '123 Main St', city: 'Lenexa', state: 'KS', zip: '66215',
@@ -41,7 +45,7 @@ const server = http.createServer((req, res) => {
     return;
   }
   res.setHeader('content-type', 'text/html');
-  res.end(fs.readFileSync('C:/Users/Chris/killswitch/master.html'));
+  res.end(fs.readFileSync(path.join(ROOT, 'master.html')));
 });
 await new Promise((r) => server.listen(0, r));
 const PORT = server.address().port;
