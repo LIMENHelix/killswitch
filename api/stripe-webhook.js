@@ -28,7 +28,9 @@ import { sendPanelLink } from '../lib/onboard.js';
 import { notifyOperator, labelPhases } from '../lib/notify.js';
 import { PRICE_TO_PHASE } from '../lib/prices.js';
 import { liveSubs } from '../lib/entitle.js';
-import { syncModules } from '../lib/sites.js';
+// syncModulesLoud, not syncModules: this is the money path, and a null return
+// here meant Stripe charged the card and nothing rendered. See lib/site-link.js.
+import { syncModulesLoud } from '../lib/site-link.js';
 import { stripeGet } from '../lib/stripe.js';
 
 // Stripe signs the RAW bytes. Any re-serialisation changes them and the
@@ -174,7 +176,7 @@ async function onCheckout(session) {
 
   const phases = customer ? await phasesFor(customer) : [];
   if (phases.length) {
-    try { await syncModules(email, phases); }
+    try { await syncModulesLoud(email, phases, 'stripe-webhook-checkout-completed'); }
     catch (e) { console.error('[stripe-webhook] site sync', e); }
   }
 
@@ -214,7 +216,7 @@ async function onSubscriptionChange(sub) {
   if (!account) return;
 
   const phases = await phasesFor(customer);
-  try { await syncModules(email, phases); }
+  try { await syncModulesLoud(email, phases, 'stripe-webhook-subscription-changed'); }
   catch (e) { console.error('[stripe-webhook] sync', e); }
 }
 

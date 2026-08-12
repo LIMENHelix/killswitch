@@ -6,6 +6,8 @@
 //
 // Env: ANTHROPIC_API_KEY + SWITCH_TOKEN. Optional: RESEND_API_KEY.
 
+import { recordUsage } from '../lib/ai-usage.js';
+
 const SYSTEM = `You are "Switch," the cold-outreach writer for Killswitch Websites. Write strictly in the voice and framework of the Killswitch Websites Outbound Playbook below. Personalize everything to the one business you are given.
 
 OFFER: A real website, built by a human, FREE. The business owns it (their domain, content, code), handed over on day one, no contract. Add-ons (getting found on Google, online booking, card payments, a 24/7 AI assistant) are $19 to $29 a month each, optional, and off until they turn them on. Built by a real person. Serving Kansas City and nationwide. killswitchwebsites.com.
@@ -174,6 +176,9 @@ Write the full sequence: 3 emails (day 1, 3, 10) and 3 texts (day 1, 3, 10), plu
     });
 
     const data = await r.json().catch(() => ({}));
+    // Cost of acquiring a customer, not of serving one. Kept in the same ledger
+    // so the two can be told apart rather than averaged into one AI bill.
+    await recordUsage({ model: 'claude-sonnet-5', usage: data.usage, where: 'outbound-writer' });
     if (!r.ok) {
       console.error('[switch-brain] anthropic error', r.status, data);
       res.status(502).json({ error: 'upstream', detail: (data && data.error) || null });

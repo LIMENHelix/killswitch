@@ -16,6 +16,7 @@ import { verifyPanel } from '../lib/panel-auth.js';
 import { entitlements, canRequestChanges, CHANGE_PHASES } from '../lib/entitle.js';
 import { notifyOperator } from '../lib/notify.js';
 import { limited, LIMITS } from '../lib/ratelimit.js';
+import { recordUsage } from '../lib/ai-usage.js';
 
 const SYSTEM = `You are the Killswitch Websites site-support assistant, helping an existing customer request changes to the website Killswitch Websites built and runs for them. They are on a plan that covers changes, so you never need to sell them anything.
 
@@ -126,6 +127,7 @@ export default async function handler(req, res) {
     });
 
     const data = await r.json().catch(() => ({}));
+    await recordUsage({ model: 'claude-haiku-4-5', usage: data.usage, where: 'P4-P11-support' });
     if (!r.ok) {
       console.error('[killswitch support] anthropic error', r.status, data);
       res.status(502).json({ error: 'upstream' });

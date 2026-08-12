@@ -5,9 +5,13 @@
 // FAILS CLOSED on CRON_SECRET, same pattern as the other two crons, because an
 // open endpoint that walks every customer site is a free denial-of-service lever.
 import { runBackup, checkUptime, lastUptime, sweepExpired } from '../lib/backup.js';
-import { listSites, removeModules } from '../lib/sites.js';
+import { listSites } from '../lib/sites.js';
 import { getAccounts, saveAccounts } from '../lib/store.js';
 import { notifyOperator, labelPhases } from '../lib/notify.js';
+// The loud version, so a module that expires against a customer with no site
+// record reports itself instead of returning null into the sweep's tally and
+// being counted as done. See lib/site-link.js.
+import { removeModulesLoud } from '../lib/site-link.js';
 
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
@@ -21,7 +25,11 @@ export default async function handler(req, res) {
   // customer switched something off, kept it for the cycle they paid for, and
   // this is the day it stops.
   try {
-    out.expired = await sweepExpired({ getAccounts, saveAccounts, removeModules });
+    out.expired = await sweepExpired({
+      getAccounts,
+      saveAccounts,
+      removeModules: (email, phases) => removeModulesLoud(email, phases, 'paid-cycle-ended'),
+    });
     for (const e of out.expired.expired) {
       await notifyOperator({
         subject: `Module ended - ${e.email}`,

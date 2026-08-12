@@ -11,7 +11,10 @@ import { verifyPanel, panelToken } from '../lib/panel-auth.js';
 import { MONTHLY, PRICE_TO_PHASE, isSellable } from '../lib/prices.js';
 import { stripeGet, stripePost, stripeDelete } from '../lib/stripe.js';
 import { notifyOperator, labelPhases } from '../lib/notify.js';
-import { syncModules, siteForEmail } from '../lib/sites.js';
+import { siteForEmail } from '../lib/sites.js';
+// syncModulesLoud, not syncModules: a paid switch that renders nowhere used to
+// return null into a catch that only ever saw thrown errors. See lib/site-link.js.
+import { syncModulesLoud } from '../lib/site-link.js';
 import { getStats } from '../lib/stats.js';
 import { listContacts, updateContact, summarise } from '../lib/crm.js';
 import { statsFor } from '../lib/automation.js';
@@ -44,7 +47,7 @@ export default async function handler(req, res) {
   // If that repaired the link, the site never got told what they bought either.
   // Catch it up here, once, on the first panel load after the lost payment.
   if (account.stripeCustomerId && account.stripeCustomerId !== found.stripeCustomerId) {
-    try { await syncModules(email, Object.keys(itemsByPhase(await liveSubs(account.stripeCustomerId)))); }
+    try { await syncModulesLoud(email, Object.keys(itemsByPhase(await liveSubs(account.stripeCustomerId))), 'panel-load-repair'); }
     catch (err) { console.error('[switch] repair site sync', err); }
   }
   const action = body.action || 'state';
@@ -247,7 +250,7 @@ async function applyChanges(account, on, host, email) {
       ...[...desired].filter((p) => !turnedOff.includes(p) && !pending.has(p) && (held.has(p) || toAdd.includes(p))),
       ...stillPaidFor,
     ])];
-    await syncModules(email, liveNow);
+    await syncModulesLoud(email, liveNow, 'customer-flipped-a-switch');
   } catch (err) { console.error('[switch] site sync', err); }
 
   // Tell the operator. Awaited so it actually runs before the serverless function
@@ -290,7 +293,7 @@ async function link(account, sessionId, host) {
   try {
     const subs = await liveSubs(customer);
     const live = Object.keys(itemsByPhase(subs));
-    await syncModules(account.email, live);
+    await syncModulesLoud(account.email, live, 'checkout-returned-paid');
   } catch (err) { console.error('[switch] link site sync', err); }
 
   // This is the moment money actually starts: checkout came back paid.

@@ -8,6 +8,7 @@ import { recordView } from '../lib/stats.js';
 import { recordContact } from '../lib/crm.js';
 import { queueFollowUps } from '../lib/automation.js';
 import { limited, LIMITS } from '../lib/ratelimit.js';
+import { recordUsage } from '../lib/ai-usage.js';
 
 const clean = (v, n = 120) => String(v == null ? '' : v).trim().slice(0, n);
 
@@ -194,6 +195,9 @@ RULES:
         body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 260, system: SYSTEM, messages }),
       });
       const data = await r.json().catch(() => ({}));
+      // P9, the module a customer pays $29/mo for. This is the one AI cost that
+      // scales with how popular their site is, so it is the one worth watching.
+      await recordUsage({ model: 'claude-haiku-4-5', usage: data.usage, where: 'P9-site-assistant' });
       if (!r.ok) { console.error('[site-action] anthropic', r.status, data); res.status(502).json({ error: 'upstream' }); return; }
       const text = (data.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
       res.status(200).json({ reply: text || `I am not sure about that one. Give us a call${site.phone ? ' on ' + site.phone : ''} and we will help.` });
