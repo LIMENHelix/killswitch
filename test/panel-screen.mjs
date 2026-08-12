@@ -28,6 +28,7 @@ let MODULES_LIVE = {};
 let applied = null;
 let STATS = { entitled: false };
 let CRM = { entitled: false };
+let DENY = false;   // make the stubbed /api/switch answer 'unauthorized'
 
 const server = http.createServer((req, res) => {
   if (req.url.startsWith('/api/switch')) {
@@ -36,6 +37,7 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       const body = JSON.parse(b || '{}');
       res.setHeader('content-type', 'application/json');
+      if (DENY) { res.end(JSON.stringify({ error: 'unauthorized' })); return; }
       if (body.action === 'stats') { res.end(JSON.stringify(STATS)); return; }
       if (body.action === 'crm') { res.end(JSON.stringify(CRM)); return; }
       if (body.action === 'crm-update') { res.end(JSON.stringify({ ok: true })); return; }
@@ -93,8 +95,8 @@ const { result: t } = await send('Target.createTarget', { url: 'about:blank' }, 
 await send('Runtime.enable');
 await send('Page.enable');
 
-async function load(live, stats = { entitled: false }, crm = { entitled: false }) {
-  MODULES_LIVE = live; applied = null; STATS = stats; CRM = crm; consoleErrors.length = 0;
+async function load(live, stats = { entitled: false }, crm = { entitled: false }, deny = false) {
+  MODULES_LIVE = live; applied = null; STATS = stats; CRM = crm; DENY = deny; consoleErrors.length = 0;
   await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/panel?e=shop%40example.com&t=tok` });
   await new Promise((r) => setTimeout(r, 1400));
 }
@@ -218,6 +220,30 @@ check('an empty list explains itself',
   await evaluate(`document.getElementById('crmNote').textContent`));
 check('and the automation counts hide when P6 is off',
   await evaluate(`document.getElementById('autoStat').hidden === true`));
+
+console.log('\nA PANEL THAT CANNOT LOAD MUST NOT SHOW SWITCHES');
+// The reported bug: switches read ON, would not stay off, and were back on
+// after a reload. Cause was two PAID modules hardcoded active as a preview,
+// which became the whole screen whenever the real state could not be fetched.
+// Saving failed the same way loading had, so switching them off did nothing.
+await load({}, { entitled: false }, { entitled: false }, true);
+check('no javascript errors', consoleErrors.length === 0, consoleErrors.join(' | '));
+check('NO switches are rendered at all',
+  (await evaluate(offered)).length === 0, JSON.stringify(await evaluate(offered)));
+check('it says the link is the problem',
+  (await evaluate(`document.getElementById('mlist').textContent`)).toLowerCase().includes('expired'),
+  await evaluate(`document.getElementById('mlist').textContent`));
+check('and the running total is hidden, so no price is implied',
+  await evaluate(`document.getElementById('totalbar').hidden === true`));
+
+// A link carrying no access code at all, which /master had started emitting for
+// accounts predating token nonces. This is the exact URL shape reported.
+await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/panel?e=v%40example.com` });
+await new Promise((r) => setTimeout(r, 900));
+check('a link with no access code shows no switches either',
+  (await evaluate(offered)).length === 0, JSON.stringify(await evaluate(offered)));
+check('and nothing on the page reads as switched on',
+  !(await evaluate(`document.getElementById('mlist').innerHTML`)).includes('aria-checked="true"'));
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 try { chrome.kill(); } catch { /* already gone */ }

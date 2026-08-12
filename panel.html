@@ -244,7 +244,7 @@
     <div class="s-lbl">Your modules</div>
     <div class="mlist" id="mlist"></div>
 
-    <div class="totalbar">
+    <div class="totalbar" id="totalbar">
       <div class="t-l">This billing cycle<br><b id="tCount">1 module on</b></div>
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <div class="t-amt" id="tAmt">$0<small>/mo</small></div>
@@ -294,13 +294,17 @@
 
   // ---- modules ----
   // state: 'active' (on, billed) | 'ending' (on until billDate, then off) | 'off'
-  // A real customer panel loads THIS from their account/Stripe; here it starts
-  // with the free site + the Starter set so the operator can preview the UX.
+  //
+  // EVERYTHING PAID STARTS OFF. Two of these used to start 'active' so the
+  // screen looked populated before the server answered. Whenever the real state
+  // could not be loaded, that preview WAS the screen: two paid switches reading
+  // ON that nobody was paying for, and switching them off did nothing because
+  // saving failed exactly the way loading had. Only Stripe may turn one on.
   var MODULES = [
     { id:'P0', name:'Website & Domain', desc:'Your live website, yours to keep.', price:0, locked:true, state:'active' },
-    { id:'P1', name:'Get Found on Google', desc:'Your details in the structure Google reads, and your Business Profile set up with you.', price:19, state:'active' },
+    { id:'P1', name:'Get Found on Google', desc:'Your details in the structure Google reads, and your Business Profile set up with you.', price:19, state:'off' },
     { id:'P2', name:'Content & Updates', desc:'We write posts and publish them to your site. You approve first.', price:29, state:'off' },
-    { id:'P3', name:'Online Booking & Scheduling', desc:'Customers self-book, day or night.', price:19, state:'active' },
+    { id:'P3', name:'Online Booking & Scheduling', desc:'Customers self-book, day or night.', price:19, state:'off' },
     { id:'P4', name:'Hosting & Maintenance', desc:'Small changes made for you, usually the same day. Nightly backups and around-the-clock checks.', price:29, state:'off' },
     { id:'P11', name:'Care Plan', desc:'Website management: request changes anytime (hours, text, photos, new pages), and we keep it running.', price:99, state:'off' },
     // The `retired:true` flag still exists (render() hides a retired module
@@ -539,11 +543,29 @@
   function isDirty(){ if(!LIVE) return false; for(var i=0;i<MODULES.length;i++){ var m=MODULES[i]; if(m.custom||m.id==='P0') continue; if(committedState[m.id]!==m.state) return true; } return false; }
   function loadState(){
     return sw('state').then(function(d){
-      if(d && !d.error){ applyState(d); LIVE=true; baselineOn = paidOn(); committedState = snapshot(); }
-      render();
-      loadStats();
-      loadCrm();
+      if(d && !d.error){
+        applyState(d); LIVE=true; baselineOn = paidOn(); committedState = snapshot();
+        render(); loadStats(); loadCrm();
+      } else {
+        // Could not confirm what they actually have. Showing a switchboard here
+        // would be showing switches that cannot save, which is exactly how a
+        // module appears to "turn back on" after being switched off.
+        deadPanel(d && d.error === 'unauthorized'
+          ? 'This link has expired or been replaced. Ask for a new one and it will open straight away.'
+          : 'We could not load your account just now. Nothing has changed. Please refresh in a moment.');
+      }
+    }).catch(function(){
+      deadPanel('We could not reach your account just now. Nothing has changed. Please refresh in a moment.');
     });
+  }
+
+  function deadPanel(msg){
+    LIVE = false;
+    var safe = String(msg).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    listEl.innerHTML = '<div class="mrow"><div></div><div class="m-main">'
+      + '<h3>Your switches are not shown</h3><p>' + safe + '</p></div><div></div></div>';
+    var t = document.getElementById('totalbar'); if(t) t.hidden = true;
+    ['statsWrap','crmWrap'].forEach(function(id){ var el = document.getElementById(id); if(el) el.hidden = true; });
   }
 
   // ---- P5: their customer list, and P6's queue alongside it ----
@@ -647,7 +669,7 @@
     if(sessionId){ sw('link',{session_id:sessionId}).then(loadState); }
     else { loadState(); }
   } else {
-    render();
+    deadPanel('This link is missing its access code. Ask for a fresh link and it will open straight away.');
   }
   window.addEventListener('beforeunload', function(e){ if(isDirty()){ e.preventDefault(); e.returnValue=''; } });
 

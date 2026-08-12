@@ -5,7 +5,8 @@
 //
 // MRR/switch data is read live from Stripe on each load, so it is always
 // accurate with no sync to maintain. Free accounts (no Stripe) show plan P0.
-import { getAccounts, upsertAccount, getLeads, setLeadMetaMany } from '../lib/store.js';
+import crypto from 'node:crypto';
+import { getAccounts, saveAccounts, upsertAccount, getLeads, setLeadMetaMany } from '../lib/store.js';
 import { draftFromLead } from '../lib/draft-site.js';
 import { writeSite } from '../lib/site-writer.js';
 
@@ -299,12 +300,25 @@ export default async function handler(req, res) {
       console.log('[master] linked', repaired.length, 'account(s) whose payment was never recorded');
     }
 
+    // Accounts created before token nonces existed have none, and my first pass
+    // simply emitted no token for them. That produced a /panel URL with no
+    // access code, which the panel could not authenticate, so it fell back to
+    // its built-in defaults and showed paid switches as ON for accounts that
+    // were paying for nothing. Mint the missing nonces instead. A write is
+    // legitimate here because this route is owner-authenticated; the public
+    // verify path still never writes. One save for the whole batch.
+    const needNonce = Object.keys(map).filter((k) => !map[k].tokenNonce);
+    if (needNonce.length) {
+      for (const k of needNonce) map[k].tokenNonce = crypto.randomBytes(9).toString('hex');
+      await saveAccounts(map);
+      console.log('[master] minted portal nonces for', needNonce.length, 'account(s)');
+    }
+
     const accounts = Object.keys(map).map((k) => {
       const a = map[k];
       const s = (a.stripeCustomerId && byCust[a.stripeCustomerId]) || null;
-      // Sync, because this runs inside a .map over every account. Accounts
-      // that predate nonces get no link rather than a write from a read path.
-      const tok = a.tokenNonce ? signPanel(a.email, a.tokenNonce, Date.now() + 90 * 86400000) : '';
+      // Sync, because this runs inside a .map over every account.
+      const tok = signPanel(a.email, a.tokenNonce, Date.now() + 90 * 86400000);
       return {
         email: a.email,
         name: a.name || '',
