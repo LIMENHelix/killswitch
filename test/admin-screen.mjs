@@ -20,6 +20,28 @@ const LEADS = [
 ];
 
 let ROLE = 'owner';
+
+// A funnel with a clear winner and a clear loser, so the ranking is visible.
+// The losing play still keeps an exploration share, which is the behaviour that
+// separates this from a plain leaderboard.
+const FUNNEL_FULL = {
+  ok: true,
+  byStage: { lead: 200, appointment: 50, show: 30, enrollment: 12, referral: 3, dead: 40 },
+  touches: 280, spendCents: 26320, plays: 3,
+  rates: {
+    'leads>appointments': { wins: 50, trials: 200, rate: 0.25 },
+    'shows>enrollments': { wins: 12, trials: 30, rate: 0.4 },
+  },
+  ranked: [
+    { id: 'A', transitionId: 'leads>appointments', unit: 'phone', dealSize: 'free', wins: 40, trials: 100, score: 0.31 },
+    { id: 'B', transitionId: 'shows>enrollments', unit: 'in-person', dealSize: 'small', wins: 1, trials: 1, score: 0.21 },
+    { id: 'C', transitionId: 'leads>appointments', unit: 'mailers', dealSize: 'free', wins: 2, trials: 90, score: 0.01 },
+  ],
+  weights: { A: 0.62, B: 0.27, C: 0.11 },
+  role: 'owner',
+};
+const FUNNEL_EMPTY = { ok: true, byStage: {}, touches: 0, spendCents: 0, plays: 0, rates: {}, ranked: [], weights: {}, role: 'owner' };
+let FUNNEL = FUNNEL_FULL;
 const server = http.createServer((req, res) => {
   if (req.url.startsWith('/api/admin')) {
     let b = '';
@@ -29,6 +51,9 @@ const server = http.createServer((req, res) => {
       res.setHeader('content-type', 'application/json');
       if (body.action === 'list') return res.end(JSON.stringify({ ok: true, leads: LEADS, role: ROLE, name: ROLE === 'rep' ? 'dana' : 'operator' }));
       if (body.action === 'config') return res.end(JSON.stringify({ ok: true, config: { enabled: false, dailyCap: 0, budgetCeiling: 0 } }));
+      // The shape /api/admin action:'funnel' really returns. FUNNEL is swapped
+      // per case so the populated and empty screens can both be driven.
+      if (body.action === 'funnel') return res.end(JSON.stringify(FUNNEL));
       if (body.action === 'update') return res.end(JSON.stringify({ ok: true, meta: { stage: body.stage, owner: 'dana' } }));
       if (body.action === 'site-publish') {
         const l = LEADS.find((x) => x.id === body.id);
@@ -167,6 +192,46 @@ check('and only NOW can the link be sent',
 check('the Publish button goes away once it is live', await evaluate(`document.getElementById('scPublish').hidden === true`));
 check('the row label catches up',
   (await evaluate(`${row('Downtown Dental')}.querySelector('.scriptbtn').textContent`)) === 'Script + live site');
+
+console.log('\nTHE FUNNEL SCREEN');
+// lib/laser.js and the funnel endpoint both existed and nothing rendered them,
+// so this is the first time any of it is visible.
+FUNNEL = FUNNEL_FULL;
+await load('owner');
+check('no javascript errors', consoleErrors.length === 0, consoleErrors.join(' | '));
+check('the funnel section is shown', await evaluate(`document.getElementById('laser').hidden === false`));
+check('every stage is drawn', (await evaluate(`document.querySelectorAll('#stages .stg').length`)) === 6);
+check('with the real counts', (await evaluate(`document.querySelector('#stages .stg b').textContent`)) === '200');
+check('and the conversion between stages',
+  (await evaluate(`[...document.querySelectorAll('#stages .conv')].map(e=>e.textContent).join(',')`)).startsWith('25%'),
+  await evaluate(`[...document.querySelectorAll('#stages .conv')].map(e=>e.textContent).join(',')`));
+check('spend is shown as money, not cents',
+  (await evaluate(`document.getElementById('laserSub').textContent`)).includes('$263.20'),
+  await evaluate(`document.getElementById('laserSub').textContent`));
+
+check('every ranked play is listed', (await evaluate(`document.querySelectorAll('.plays tbody tr').length`)) === 3);
+// The point of the whole engine: 1-of-1 must not outrank 40-of-100.
+const rows = await evaluate(`[...document.querySelectorAll('.plays tbody tr')].map(r=>r.textContent)`);
+check('a 100% rate from one try ranks BELOW a 40% rate from a hundred',
+  rows[0].includes('40/100') && rows[1].includes('1/1'), JSON.stringify(rows.map((r) => r.slice(0, 40))));
+check('both the raw rate and the confidence are shown, so the gap is visible',
+  rows[1].includes('100%') && rows[1].includes('21%'), rows[1]);
+check('the losing play still keeps a share rather than being starved',
+  rows[2].includes('11%'), rows[2]);
+check('the transition is named in English, not as an id',
+  rows[0].includes('Getting a meeting'), rows[0].slice(0, 60));
+
+FUNNEL = FUNNEL_EMPTY;
+await load('owner');
+check('with no touches yet it explains itself instead of showing an empty table',
+  (await evaluate(`document.getElementById('playsWrap').textContent`)).includes('No touches recorded yet'),
+  await evaluate(`document.getElementById('playsWrap').textContent`));
+check('and no table is drawn', (await evaluate(`document.querySelectorAll('.plays').length`)) === 0);
+
+FUNNEL = FUNNEL_FULL;
+await load('rep');
+check('a rep sees the funnel too, since it is read-only',
+  await evaluate(`document.getElementById('laser').hidden === false`));
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 chrome.kill(); server.close();

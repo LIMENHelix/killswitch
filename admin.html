@@ -48,6 +48,38 @@
   .tile .l{font-size:.63rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mute2);margin-top:3px}
   .tile.go .k{color:var(--go)} .tile.amber .k{color:var(--amber)} .tile.red .k{color:var(--red)} .tile.blue .k{color:var(--blue)} .tile.gold .k{color:#ffd85c}
   /* autopilot panel */
+  /* ---- LASER funnel ---- */
+  .laser{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:18px}
+  .laser-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .laser-h h2{font-family:"Archivo",sans-serif;font-weight:900;font-size:1rem}
+  .laser-h .note{color:var(--mute2);font-size:.74rem}
+  .stages{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin-bottom:16px}
+  .stg{flex:1;min-width:96px;background:var(--metal);border:1px solid var(--line);padding:11px 12px;position:relative}
+  .stg:first-child{border-radius:8px 0 0 8px}
+  .stg:last-child{border-radius:0 8px 8px 0}
+  .stg+.stg{border-left:none}
+  .stg b{display:block;font-family:"IBM Plex Mono",monospace;font-size:1.35rem;line-height:1.1;font-variant-numeric:tabular-nums}
+  .stg span{display:block;font-size:.68rem;color:var(--mute2);text-transform:uppercase;letter-spacing:.09em;margin-top:3px}
+  .stg.dead b{color:var(--mute2)}
+  .stg .conv{position:absolute;top:-9px;right:-1px;font-family:"IBM Plex Mono",monospace;font-size:.58rem;
+    background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:1px 6px;color:var(--mute)}
+  .laser-sub{display:flex;gap:22px;flex-wrap:wrap;margin-bottom:14px;font-size:.8rem;color:var(--mute)}
+  .laser-sub b{color:var(--ink);font-family:"IBM Plex Mono",monospace}
+  .plays{width:100%;border-collapse:collapse;font-size:.8rem}
+  .plays th{text-align:left;font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--mute2);padding:7px 8px;border-bottom:1px solid var(--line);font-weight:600}
+  .plays td{padding:8px;border-bottom:1px solid #26262c;color:var(--mute);vertical-align:middle}
+  .plays tr:last-child td{border-bottom:none}
+  .plays td.k{color:var(--ink)}
+  .plays td.n{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .wbar{display:flex;align-items:center;gap:7px;min-width:104px}
+  .wbar i{flex:1;height:5px;background:#26262c;border-radius:3px;overflow:hidden;display:block}
+  .wbar i em{display:block;height:100%;background:var(--go);border-radius:3px}
+  .wbar span{font-family:"IBM Plex Mono",monospace;font-size:.68rem;color:var(--mute2);width:30px;text-align:right}
+  .chan{font-family:"IBM Plex Mono",monospace;font-size:.66rem;background:var(--metal);border:1px solid var(--line);
+    border-radius:3px;padding:2px 6px;color:var(--mute)}
+  .laser-empty{color:var(--mute2);font-size:.82rem;padding:8px 0}
+
   .autopanel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:18px}
   .ap-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
   .ap-title{font-family:"Archivo",sans-serif;font-weight:700;font-size:1.02rem;display:flex;align-items:center;gap:10px}
@@ -258,6 +290,18 @@
       <div class="tiles" id="tiles"></div>
     </section>
 
+    <!-- LASER FUNNEL. Read-only, so reps see it too: the endpoint allows it and
+         a caller who cannot see what is working cannot get better at it. -->
+    <section class="laser" id="laser" hidden>
+      <div class="laser-h">
+        <h2>Funnel</h2>
+        <span class="note">Ranked by lower-bound confidence, so one win from one try does not outrank forty from a hundred.</span>
+      </div>
+      <div class="stages" id="stages"></div>
+      <div class="laser-sub" id="laserSub"></div>
+      <div id="playsWrap"></div>
+    </section>
+
     <!-- AUTOPILOT CONTROL -->
     <section class="autopanel ownerOnly" id="autopanel">
       <div class="ap-head">
@@ -419,6 +463,69 @@ async function boot(){
   applyRole();
   fillFilters(); render();
   if(ROLE==='owner') loadCfg();
+  loadFunnel();
+}
+
+// ---- LASER funnel ----
+// The engine (lib/laser.js) and the endpoint both already existed. Nothing
+// rendered them, so the whole thing was invisible unless you POSTed by hand.
+const STAGE_LABEL={lead:'Leads',appointment:'Appointments',show:'Showed',enrollment:'Enrolled',referral:'Referrals',dead:'Dead'};
+const STAGE_ORDER=['lead','appointment','show','enrollment','referral'];
+const TRANS_LABEL={
+  'source>leads':'Finding them','leads>appointments':'Getting a meeting',
+  'appointments>shows':'They turn up','shows>enrollments':'They buy',
+  'enrollments>referrals':'They refer'
+};
+const fmoney=(c)=>'$'+((c||0)/100).toFixed((c||0)%100?2:0);
+
+async function loadFunnel(){
+  const el=$('laser'); if(!el) return;
+  const res=await api('funnel');
+  if(!res.ok){ el.hidden=true; return; }
+  el.hidden=false;
+  const d=res.d, by=d.byStage||{};
+
+  // Stage counts, with the conversion INTO each stage shown on the join.
+  $('stages').innerHTML=STAGE_ORDER.map(function(s,i){
+    const prev=i>0?(by[STAGE_ORDER[i-1]]||0):0, n=by[s]||0;
+    const conv=(i>0&&prev)?'<div class="conv">'+Math.round((n/prev)*100)+'%</div>':'';
+    return '<div class="stg">'+conv+'<b>'+n+'</b><span>'+STAGE_LABEL[s]+'</span></div>';
+  }).join('')+'<div class="stg dead"><b>'+(by.dead||0)+'</b><span>'+STAGE_LABEL.dead+'</span></div>';
+
+  const rates=d.rates||{};
+  const rateBits=Object.keys(rates).map(function(k){
+    const r=rates[k];
+    return '<span>'+esc(TRANS_LABEL[k]||k)+' <b>'+Math.round((r.rate||0)*100)+'%</b> '
+      +'<span style="color:var(--mute2)">('+r.wins+'/'+r.trials+')</span></span>';
+  });
+  $('laserSub').innerHTML=['<span>Touches <b>'+(d.touches||0)+'</b></span>',
+    '<span>Spent <b>'+fmoney(d.spendCents)+'</b></span>',
+    '<span>Plays <b>'+(d.plays||0)+'</b></span>'].concat(rateBits).join('');
+
+  // score is the Wilson lower bound; weight is the share of volume the
+  // optimiser would send next, which is why a losing play keeps a trickle.
+  const ranked=d.ranked||[], weights=d.weights||{};
+  if(!ranked.length){
+    $('playsWrap').innerHTML='<p class="laser-empty">No touches recorded yet. Every call, postcard and reply you log on the board feeds this, and it starts ranking as soon as there is something to compare.</p>';
+    return;
+  }
+  const maxW=Math.max.apply(null,ranked.map(function(p){return weights[p.id]||0}).concat([0.0001]));
+  $('playsWrap').innerHTML='<table class="plays"><thead><tr>'
+    +'<th>What</th><th>How</th><th>Deal</th><th>Won</th><th>Rate</th><th>Confidence</th><th>Send next</th>'
+    +'</tr></thead><tbody>'
+    +ranked.map(function(p){
+      const rate=p.trials?Math.round((p.wins/p.trials)*100):0, w=weights[p.id]||0;
+      return '<tr>'
+        +'<td class="k">'+esc(TRANS_LABEL[p.transitionId]||p.transitionId)+'</td>'
+        +'<td><span class="chan">'+esc(p.unit||'none')+'</span></td>'
+        +'<td>'+esc(p.dealSize||'')+'</td>'
+        +'<td class="n">'+p.wins+'/'+p.trials+'</td>'
+        +'<td class="n">'+rate+'%</td>'
+        +'<td class="n">'+Math.round((p.score||0)*100)+'%</td>'
+        +'<td><span class="wbar"><i><em style="width:'+Math.round((w/maxW)*100)+'%"></em></i>'
+        +'<span>'+Math.round(w*100)+'%</span></span></td>'
+        +'</tr>';
+    }).join('')+'</tbody></table>';
 }
 
 // ---- autopilot config ----
@@ -702,6 +809,7 @@ async function refresh(){
   if(res.ok){ LEADS=res.d.leads||[]; render();
     const t=new Date(); $('liveLabel').textContent='Live · updated '+t.toLocaleTimeString(); }
   if(ROLE==='owner') loadCfg();
+  loadFunnel();
 }
 setInterval(refresh,20000);
 
