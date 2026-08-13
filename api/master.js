@@ -28,6 +28,29 @@ const SITE_FIELDS = [
 ];
 const SITE_ARRAYS = ['hours', 'services', 'posts', 'modules'];
 
+/**
+ * Which of the things that fail QUIETLY are actually configured.
+ *
+ * Every one of these is read at the moment it is needed and, when missing,
+ * logs and returns rather than throwing: notify.js skips the mail, panel-auth
+ * returns no token. So a purchase alert that never arrives and a portal link
+ * that will not open look identical to nothing having happened. This is the
+ * only place that says so out loud.
+ *
+ * Reports PRESENCE, never a value. This response goes to a browser.
+ */
+function configReport() {
+  const need = {
+    RESEND_API_KEY: 'send the portal link and every purchase alert',
+    KS_NOTIFY_EMAIL: 'the address purchase alerts are sent to',
+    KS_PANEL_SECRET: 'sign panel links, without which no customer can open their panel',
+    STRIPE_SECRET_KEY: 'read subscriptions and start a checkout',
+    STRIPE_WEBHOOK_SECRET: 'trust what Stripe says about a payment',
+  };
+  const missing = Object.keys(need).filter((k) => !String(process.env[k] || '').trim());
+  return { ok: !missing.length, missing, why: need };
+}
+
 const PRICE_LABEL = {
   price_1ToXlLPmxnF3rtBM5NRurfkt: 'Get Found on Google',
   price_1ToXlrPmxnF3rtBMz3ybz47E: 'Content & Email',
@@ -258,6 +281,72 @@ export default async function handler(req, res) {
       }
       const saved = await upsertSite({ slug: s.slug, ...patch });
       res.status(200).json({ ok: true, applied, site: saved });
+      return;
+    }
+
+    // ---- hand a business their site, in one call ----
+    //
+    // Every step of this existed and none of them were joined up, which is why
+    // no customer site had ever gone live: the demo pages are static files that
+    // /s/<slug> knows nothing about, `html` was not a savable field, publishing
+    // and claiming were separate ticks, and onboarding was a different screen
+    // again. Four correct actions in the wrong order leaves a customer with a
+    // panel controlling a 404, so this does the whole chain or reports which
+    // part of it failed.
+    //
+    // The HTML is POSTED here rather than read from disk. /demos/*.html are
+    // static files Vercel serves directly and does not bundle into this
+    // function, so fs would find nothing at runtime; the browser fetches the
+    // page it can already see and sends it.
+    if (action === 'site-golive') {
+      const slug = slugify(body.slug || body.business || '');
+      if (!slug) { res.status(400).json({ error: 'slug_or_business_required' }); return; }
+      const html = String(body.html || '');
+      if (html && html.length > 900000) { res.status(400).json({ error: 'html_too_large' }); return; }
+
+      const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitchwebsites.com';
+      const out = { slug, url: host + '/s/' + slug, steps: {}, config: configReport() };
+
+      // 1. The page itself. Publishing a record with no content would put a
+      //    blank page up under a real business's name, so an empty html with no
+      //    existing page is refused rather than published.
+      const before = await getSite(slug);
+      if (!html && !(before && before.html)) { res.status(400).json({ error: 'no_html_to_publish' }); return; }
+      const patch = { slug, published: true, claimed: true };
+      if (html) patch.html = html;
+      if (body.email) patch.email = String(body.email).trim().toLowerCase();
+      if (body.business) patch.business = String(body.business).trim();
+      const saved = await upsertSite(patch);
+      out.steps.site = { ok: true, published: saved.published, claimed: saved.claimed, bytes: (saved.html || '').length };
+
+      // 2. The customer. onboardCustomer mints the panel token and mails them
+      //    the link, and linkAccountToSite joins the account to the record we
+      //    just wrote. Optional: publishing a site and handing it over are two
+      //    different decisions and this supports doing only the first.
+      if (body.email) {
+        try {
+          const on = await onboardCustomer({
+            email: body.email, site: saved.business || slug, name: body.name, host, source: 'master-golive',
+          });
+          out.steps.customer = on.error
+            ? { ok: false, error: on.error }
+            : { ok: true, email: on.email, portalUrl: on.portalUrl, emailed: on.emailed, tokenReady: on.tokenReady, link: on.link };
+        } catch (e) {
+          console.error('[master] golive onboard', e);
+          out.steps.customer = { ok: false, error: 'onboard_threw' };
+        }
+      }
+
+      res.status(200).json({ ok: true, ...out });
+      return;
+    }
+
+    // Which switches can actually be flipped, and whether the things that fail
+    // SILENTLY are configured. A missing RESEND_API_KEY does not throw anywhere:
+    // notify.js logs and returns, so purchase alerts and portal links simply
+    // never arrive and nothing on any screen says so.
+    if (action === 'preflight') {
+      res.status(200).json({ ok: true, config: configReport() });
       return;
     }
 

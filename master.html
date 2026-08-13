@@ -241,6 +241,29 @@
           <button class="btn ghost sm" type="button" id="sCancel">Cancel</button>
         </div>
         <div class="onres" id="sRes"></div>
+
+        <!-- HAND IT OVER. Publishing a record, loading its page, claiming it and
+             onboarding the owner were four separate actions on three screens, and
+             doing them in the wrong order gives a customer a panel that controls a
+             404. This is the whole chain in one button. -->
+        <div class="rl" style="margin-top:22px">Hand this business their website</div>
+        <div class="fine2">Loads a finished page into this record, publishes it, marks it claimed so search engines may index it, and emails the owner their panel link. Leave the email blank to publish without handing it over.</div>
+        <div class="row" style="margin-top:10px">
+          <label style="flex:2 1 320px">Page to load
+            <input id="gvSrc" placeholder="/demos/oouwees-barbershop-gladstone" />
+          </label>
+          <label style="flex:1 1 220px">Owner email
+            <input id="gvEmail" type="email" placeholder="owner@theirshop.com" />
+          </label>
+          <label style="flex:1 1 160px">Owner name
+            <input id="gvName" placeholder="First name" />
+          </label>
+        </div>
+        <div class="row" style="margin-top:10px;align-items:center">
+          <button class="btn" type="button" id="gvGo">Publish and hand over</button>
+          <button class="btn ghost sm" type="button" id="gvCheck">Check settings</button>
+        </div>
+        <div class="onres" id="gvRes"></div>
       </div>
     </div>
 
@@ -459,6 +482,64 @@ async function loadSites(append){
     };
   });
 }
+
+// The finished page is fetched HERE, in the browser, not read from disk in the
+// function: /demos/*.html are static files Vercel serves directly and does not
+// bundle into the API function, so fs would find nothing at runtime.
+function gvSay(msg,bad){ $('gvRes').style.color=bad?'var(--red)':'var(--mute)'; $('gvRes').innerHTML=msg; }
+function gvConfig(c){
+  if(!c) return '';
+  if(c.ok) return '<div style="color:var(--go);margin-top:6px">Settings look right: alerts, portal links and payments are all configured.</div>';
+  return '<div style="color:var(--red);margin-top:6px"><b>Not configured yet:</b><br>'
+    +c.missing.map(k=>esc(k)+' &mdash; without it we cannot '+esc(c.why[k])).join('<br>')+'</div>';
+}
+$('gvCheck').onclick=async()=>{
+  gvSay('Checking…');
+  const r=await api('preflight');
+  if(!r.ok){ gvSay('Could not check: '+esc(r.d.error||r.status),true); return; }
+  gvSay(gvConfig(r.d.config));
+};
+$('gvGo').onclick=async()=>{
+  const slug=($('f_slug')&&$('f_slug').value.trim())||slugify(($('f_business')&&$('f_business').value.trim())||'');
+  if(!slug){ gvSay('Open a website first, or type a business name.',true); return; }
+  const src=$('gvSrc').value.trim();
+  const email=$('gvEmail').value.trim();
+  $('gvGo').disabled=true;
+
+  let html='';
+  if(src){
+    gvSay('Loading '+esc(src)+'…');
+    try{
+      const p=await fetch(src,{credentials:'omit'});
+      if(!p.ok) throw new Error('HTTP '+p.status);
+      html=await p.text();
+      if(!/<\/html>/i.test(html)) throw new Error('that did not look like a web page');
+    }catch(e){ $('gvGo').disabled=false; gvSay('Could not load that page: '+esc(e.message)+'. Nothing was changed.',true); return; }
+  }
+
+  gvSay('Publishing…');
+  const r=await api('site-golive',{slug,html,email,name:$('gvName').value.trim(),business:($('f_business')&&$('f_business').value.trim())||''});
+  $('gvGo').disabled=false;
+  if(!r.ok){ gvSay('Could not publish: '+esc(r.d.error||r.status),true); return; }
+
+  const s=r.d.steps||{}, c=s.customer;
+  let out='<div style="color:var(--go)"><b>Live:</b> <a href="'+esc(r.d.url)+'" target="_blank" rel="noopener">'+esc(r.d.url)+'</a>'
+    +(s.site&&s.site.bytes?' ('+Math.round(s.site.bytes/1024)+'KB page)':'')+'</div>';
+  if(c){
+    out+=c.ok
+      ? '<div style="margin-top:6px">'+(c.emailed?'Panel link emailed to ':'Account made for ')+esc(c.email)
+        +(c.emailed?'':' <span style="color:var(--red)">but the email did NOT send</span>')
+        +'.<br><a href="'+esc(c.portalUrl)+'" target="_blank" rel="noopener">Open their panel</a>'
+        +(c.link&&!c.link.linked?' <span style="color:var(--red)">Their account is not joined to this website ('+esc(c.link.reason)+'), so their switches will do nothing.</span>':'')
+        +'</div>'
+      : '<div style="color:var(--red);margin-top:6px">The site is live but the owner was not set up: '+esc(c.error)+'</div>';
+  } else {
+    out+='<div style="margin-top:6px;color:var(--mute2)">Published only. No owner email given, so nobody was handed anything.</div>';
+  }
+  out+=gvConfig(r.d.config);
+  gvSay(out);
+  loadSites();
+};
 
 $('sSave').onclick=async()=>{
   const site={};

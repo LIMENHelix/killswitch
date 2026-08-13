@@ -1395,5 +1395,80 @@ check('the panel still loads with a new-format token', r.code === 200, JSON.stri
 r = await call(switchApi, { action: 'state', e: EMAIL, t: 'not-a-token' });
 check('and refuses a junk one', r.code === 401);
 
+// ---------------------------------------------------------------------------
+// HANDING A BUSINESS THEIR WEBSITE, IN ONE ACTION.
+//
+// Not one customer site had ever been published: the demo pages are static
+// files /s/<slug> knows nothing about, `html` was not a savable field, and
+// publishing, claiming and onboarding were separate steps on different screens.
+// Four correct actions in the wrong order leaves a customer with a panel
+// controlling a 404, so these check the chain and, more importantly, the two
+// ways it is allowed to refuse.
+console.log('\nHanding a business their website');
+
+// THE REFUSAL THAT MATTERS. Publishing a record with nothing in it puts a blank
+// page up under a real business's name, and marks it indexable while doing so.
+putSite({ slug: 'empty-shop', business: 'Empty Shop', published: false, claimed: false, modules: ['P0'] });
+r = await asAdmin({ action: 'site-golive', slug: 'empty-shop' });
+check('it refuses to publish a record with no page in it', r.code === 400 && r.body.error === 'no_html_to_publish', JSON.stringify(r.body));
+check('and the record is still a draft afterwards',
+  JSON.parse(KV.get('ks:site:empty-shop')).published === false);
+
+r = await asAdmin({ action: 'site-golive', slug: '' });
+check('a missing slug is refused', r.code === 400, JSON.stringify(r.body));
+
+const PAGE = '<html><head><title>Cut</title></head><body><h1>Fades</h1></body></html>';
+
+// Publish WITHOUT handing it over. These are two different decisions.
+putSite({ slug: 'draft-cuts', business: 'Draft Cuts', published: false, claimed: false, modules: ['P0'] });
+r = await asAdmin({ action: 'site-golive', slug: 'draft-cuts', html: PAGE });
+check('a page can be published without onboarding anyone', r.code === 200 && r.body.ok, JSON.stringify(r.body).slice(0, 120));
+check('and nobody was set up as a customer', !r.body.steps.customer, JSON.stringify(r.body.steps));
+let rec = JSON.parse(KV.get('ks:site:draft-cuts'));
+check('the page is stored on the record', rec.html === PAGE, String(rec.html).slice(0, 40));
+check('it is published', rec.published === true);
+check('and claimed, which is what lets it be indexed', rec.claimed === true);
+
+// The whole chain.
+putSite({ slug: 'fade-house', business: 'Fade House', published: false, claimed: false, modules: ['P0'] });
+r = await asAdmin({ action: 'site-golive', slug: 'fade-house', html: PAGE, email: 'owner@fadehouse.com', name: 'Ray' });
+check('the whole chain runs in one call', r.code === 200 && r.body.ok, JSON.stringify(r.body).slice(0, 140));
+check('the owner gets an account', r.body.steps.customer && r.body.steps.customer.ok, JSON.stringify(r.body.steps.customer));
+check('with a panel link that carries a token',
+  /\/panel\?e=.*&t=./.test((r.body.steps.customer || {}).portalUrl || ''), (r.body.steps.customer || {}).portalUrl);
+check('and the account is JOINED to the website, so their switches do something',
+  (r.body.steps.customer.link || {}).linked === true, JSON.stringify(r.body.steps.customer.link));
+rec = JSON.parse(KV.get('ks:site:fade-house'));
+check('the record carries their email, which is what the join reads',
+  rec.email === 'owner@fadehouse.com', rec.email);
+check('the site is live', rec.published === true && rec.claimed === true);
+
+// RESEND_API_KEY is deleted at the top of this file, so the mail cannot send.
+// That must be reported, not swallowed: a portal link that never arrives looks
+// exactly like nothing having happened.
+check('it says out loud that the email did not send',
+  r.body.steps.customer.emailed === false, JSON.stringify(r.body.steps.customer.emailed));
+check('and preflight names what is missing rather than failing quietly',
+  r.body.config && r.body.config.ok === false && r.body.config.missing.includes('RESEND_API_KEY'),
+  JSON.stringify(r.body.config));
+check('preflight explains what each missing setting costs you',
+  typeof r.body.config.why.RESEND_API_KEY === 'string' && r.body.config.why.RESEND_API_KEY.length > 10);
+check('preflight never returns a secret VALUE, only whether it is set',
+  !JSON.stringify(r.body.config).includes('testadminkey') && !JSON.stringify(r.body.config).includes('panelsecret'));
+
+r = await asAdmin({ action: 'preflight' });
+check('preflight also stands alone, so settings can be checked any time',
+  r.code === 200 && Array.isArray(r.body.config.missing), JSON.stringify(r.body).slice(0, 120));
+check('and it knows the settings that ARE present', !r.body.config.missing.includes('STRIPE_SECRET_KEY'),
+  JSON.stringify(r.body.config.missing));
+
+// A re-publish must not wipe the page when only the owner is being changed.
+r = await asAdmin({ action: 'site-golive', slug: 'fade-house', email: 'newowner@fadehouse.com' });
+check('re-running it without a page keeps the page it already had',
+  r.code === 200 && JSON.parse(KV.get('ks:site:fade-house')).html === PAGE);
+
+r = await call(master, { action: 'site-golive', slug: 'fade-house', html: PAGE, token: 'nope' });
+check('and none of this is reachable without the operator key', r.code === 401, JSON.stringify(r.body));
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
