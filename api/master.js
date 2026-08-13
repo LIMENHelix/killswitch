@@ -12,10 +12,11 @@ import { writeSite } from '../lib/site-writer.js';
 
 // Bulk draft generation writes hundreds of records per call.
 export const config = { maxDuration: 60 };
-import { onboardCustomer } from '../lib/onboard.js';
-import { signPanel } from '../lib/panel-auth.js';
+import { onboardCustomer, sendPanelLink } from '../lib/onboard.js';
+import { signPanel, panelToken } from '../lib/panel-auth.js';
 import { identify, isOwner } from '../lib/roles.js';
-import { listSites, getSite, upsertSite, bulkUpsert, migrateAll, slugify } from '../lib/sites.js';
+import { listSites, getSite, upsertSite, bulkUpsert, migrateAll, slugify, siteForEmail, siteSlugsByEmail } from '../lib/sites.js';
+import { linkAccountToSite } from '../lib/site-link.js';
 
 // Everything the website editor is allowed to write. A save applies ONLY the
 // keys it was actually sent, so a partial save is a partial update. This used to
@@ -345,6 +346,56 @@ export default async function handler(req, res) {
     // SILENTLY are configured. A missing RESEND_API_KEY does not throw anywhere:
     // notify.js logs and returns, so purchase alerts and portal links simply
     // never arrive and nothing on any screen says so.
+    // ---- send someone their panel link again, and PROVE it will work ----
+    //
+    // "Resend" on its own is the easy half and the useless half. A link that
+    // opens a panel whose switches drive nothing is worse than no link, because
+    // the customer now believes they have control. So this does not report what
+    // it thinks is true: it READS the join, and if the join is missing it tries
+    // to make it and then reads it AGAIN to see whether that worked.
+    //
+    // Two separate things have to hold before their switches do anything, and
+    // they fail independently, so both are reported rather than collapsed into
+    // one green tick: the account has to be joined to a site record, and that
+    // record has to be published, or /s/<slug> is a 404 by design.
+    if (action === 'resend-portal') {
+      const email = String(body.email || '').trim().toLowerCase();
+      if (!email || email.indexOf('@') < 1) { res.status(400).json({ error: 'valid_email_required' }); return; }
+      const map = await getAccounts();
+      const acct = map[email];
+      if (!acct) { res.status(404).json({ error: 'no_such_account' }); return; }
+
+      const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitchwebsites.com';
+      const out = { email, repaired: false, reason: '' };
+
+      let site = await siteForEmail(email);
+      if (!site) {
+        // Not attached. Try to attach it from what the account already knows,
+        // then look again rather than trusting the attempt's own word for it.
+        const link = await linkAccountToSite({ email, site: acct.site, name: acct.name });
+        out.reason = link.reason;
+        if (link.linked) { site = await siteForEmail(email); out.repaired = !!site; }
+      }
+
+      out.attached = !!site;
+      out.site = site
+        ? { slug: site.slug, published: !!site.published, claimed: !!site.claimed, modules: site.modules || [] }
+        : null;
+      // The one thing worth reading: will a switch they flip change anything.
+      out.working = !!(site && site.published);
+
+      const tok = await panelToken(email);
+      out.tokenReady = !!tok;
+      out.portalUrl = host + '/panel?e=' + encodeURIComponent(email) + (tok ? '&t=' + tok : '');
+      // Re-minting reuses the account's existing nonce, so every link already
+      // sent keeps working until its own expiry. A resend adds a link, it does
+      // not revoke one, which matters when they may be mid-signup on the old.
+      out.sent = tok ? await sendPanelLink({ email, portalUrl: out.portalUrl, phases: acct.plan || [] }) : false;
+
+      res.status(200).json({ ok: true, ...out, config: configReport() });
+      return;
+    }
+
     if (action === 'preflight') {
       res.status(200).json({ ok: true, config: configReport() });
       return;
@@ -403,9 +454,23 @@ export default async function handler(req, res) {
       console.log('[master] minted portal nonces for', needNonce.length, 'account(s)');
     }
 
+    // WHO IS ACTUALLY ATTACHED TO A WEBSITE. Two reads for the whole list
+    // rather than one per account: the join hash, and the site summaries that
+    // carry published/claimed. Without this the screen shows a portal link for
+    // every account and says nothing about whether that panel drives anything,
+    // which is exactly how a customer ends up holding a link to a 404.
+    let joinByEmail = {};
+    let siteBySlug = {};
+    try {
+      joinByEmail = await siteSlugsByEmail();
+      for (const s of await listSites()) siteBySlug[s.slug] = s;
+    } catch (e) { console.error('[master] join lookup', e); }
+
     const accounts = Object.keys(map).map((k) => {
       const a = map[k];
       const s = (a.stripeCustomerId && byCust[a.stripeCustomerId]) || null;
+      const slug = joinByEmail[String(a.email || '').trim().toLowerCase()] || '';
+      const rec = slug ? siteBySlug[slug] : null;
       // Sync, because this runs inside a .map over every account.
       const tok = signPanel(a.email, a.tokenNonce, Date.now() + 90 * 86400000);
       return {
@@ -420,6 +485,12 @@ export default async function handler(req, res) {
         renewsAt: s ? s.renewsAt : null,   // unix seconds, next charge
         endsAt: s ? s.endsAt : null,       // unix seconds, winding down (cancel_at_period_end)
         portalUrl: host + '/panel?e=' + encodeURIComponent(a.email) + (tok ? '&t=' + tok : ''),
+        // Attached is the join; working is whether a switch they flip can
+        // change anything. A published:false record is a hard 404 in
+        // api/site.js, so attached-but-unpublished is still a dead panel.
+        siteSlug: slug,
+        attached: !!rec,
+        working: !!(rec && rec.published),
       };
     }).sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt)));
 

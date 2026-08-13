@@ -1470,5 +1470,94 @@ check('re-running it without a page keeps the page it already had',
 r = await call(master, { action: 'site-golive', slug: 'fade-house', html: PAGE, token: 'nope' });
 check('and none of this is reachable without the operator key', r.code === 401, JSON.stringify(r.body));
 
+// ---------------------------------------------------------------------------
+// RESENDING A PORTAL LINK, AND PROVING IT WILL ACTUALLY WORK.
+//
+// "Resend" on its own is the useless half: a link that opens a panel whose
+// switches drive nothing is worse than no link, because the customer now
+// believes they have control. So the action reads the join, repairs it when it
+// can, and reads it AGAIN. These check that it reports what it found rather
+// than what it attempted, and that attached and working stay separate, because
+// a published:false record is a hard 404 and an attached panel over it is still
+// a panel driving nothing.
+console.log('\nResending a portal link');
+
+// Accounts live in one blob, the way lib/store.js writes them.
+function putAccount(rec) {
+  const all = JSON.parse(KV.get('ks:accounts') || '{}');
+  all[rec.email] = rec;
+  KV.set('ks:accounts', JSON.stringify(all));
+}
+
+r = await asAdmin({ action: 'resend-portal', email: 'nobody@nowhere.com' });
+check('an account that does not exist is refused', r.code === 404 && r.body.error === 'no_such_account', JSON.stringify(r.body));
+r = await asAdmin({ action: 'resend-portal', email: 'not-an-email' });
+check('and so is junk in the email box', r.code === 400, JSON.stringify(r.body));
+
+// Attached to a site that is LIVE: the only state where their switches work.
+putSite({ slug: 'live-cuts', business: 'Live Cuts', email: 'live@cuts.com', published: true, claimed: true, modules: ['P0', 'P9'] });
+putAccount({ email: 'live@cuts.com', name: 'Lee', site: 'Live Cuts', plan: ['P0'], tokenNonce: NONCE });
+r = await asAdmin({ action: 'resend-portal', email: 'live@cuts.com' });
+check('a live customer comes back working', r.code === 200 && r.body.working === true, JSON.stringify(r.body).slice(0, 160));
+check('and attached, which is the separate half', r.body.attached === true);
+check('it names the site so the claim can be checked by eye', r.body.site.slug === 'live-cuts', JSON.stringify(r.body.site));
+check('and hands back a real panel link', /\/panel\?e=.*&t=./.test(r.body.portalUrl || ''), r.body.portalUrl);
+check('nothing was repaired, because nothing was broken', r.body.repaired === false);
+
+// ATTACHED BUT NOT PUBLISHED. The trap: the join is fine, so a naive check says
+// yes, but api/site.js 404s a published:false record and the panel drives air.
+putSite({ slug: 'draft-cuts2', business: 'Draft Cuts 2', email: 'draft@cuts.com', published: false, claimed: false, modules: ['P0'] });
+putAccount({ email: 'draft@cuts.com', name: 'Dee', site: 'Draft Cuts 2', plan: ['P0'], tokenNonce: NONCE });
+r = await asAdmin({ action: 'resend-portal', email: 'draft@cuts.com' });
+check('an unpublished site reports ATTACHED', r.body.attached === true, JSON.stringify(r.body).slice(0, 140));
+check('but NOT working, because a draft is a 404 and the switches do nothing',
+  r.body.working === false, JSON.stringify({ attached: r.body.attached, working: r.body.working }));
+
+// NOT ATTACHED, AND REPAIRABLE. The account names a business whose record
+// exists, so the action should make the join and then confirm it by re-reading.
+putSite({ slug: 'orphan-barbers', business: 'Orphan Barbers', published: true, claimed: true, modules: ['P0'] });
+putAccount({ email: 'orphan@barbers.com', name: 'Ori', site: 'Orphan Barbers', plan: ['P0'], tokenNonce: NONCE });
+r = await asAdmin({ action: 'resend-portal', email: 'orphan@barbers.com' });
+check('a missing join is repaired rather than merely reported', r.body.repaired === true, JSON.stringify(r.body).slice(0, 160));
+check('and the repair is confirmed by reading it back, not assumed', r.body.attached === true && r.body.working === true);
+check('the site record now carries their email, which is what the join reads',
+  JSON.parse(KV.get('ks:site:orphan-barbers')).email === 'orphan@barbers.com');
+
+// NOT ATTACHED AND NOT REPAIRABLE. It must say so plainly rather than sending a
+// link and calling it done.
+putAccount({ email: 'ghost@nowhere.com', name: 'Gus', site: 'No Such Business Anywhere', plan: ['P0'], tokenNonce: NONCE });
+r = await asAdmin({ action: 'resend-portal', email: 'ghost@nowhere.com' });
+check('an unattachable account is reported, not papered over',
+  r.body.attached === false && r.body.working === false, JSON.stringify(r.body).slice(0, 160));
+check('and it says WHY', typeof r.body.reason === 'string' && r.body.reason.length > 0, r.body.reason);
+check('the email still goes, because a panel link is useful even before the site is',
+  Object.prototype.hasOwnProperty.call(r.body, 'sent'), JSON.stringify(r.body.sent));
+
+// It must never steal a site that belongs to somebody else.
+putSite({ slug: 'taken-shop', business: 'Taken Shop', email: 'first@taken.com', published: true, claimed: true, modules: ['P0'] });
+putAccount({ email: 'second@taken.com', name: 'Sam', site: 'Taken Shop', plan: ['P0'], tokenNonce: NONCE });
+r = await asAdmin({ action: 'resend-portal', email: 'second@taken.com' });
+check('it will not attach a website that belongs to another customer',
+  r.body.attached === false && r.body.reason === 'owned_by_other', JSON.stringify(r.body).slice(0, 160));
+check('and the real owner still owns it', JSON.parse(KV.get('ks:site:taken-shop')).email === 'first@taken.com');
+
+r = await call(master, { action: 'resend-portal', email: 'live@cuts.com', token: 'nope' });
+check('and none of it is reachable without the operator key', r.code === 401);
+
+// The LIST has to carry the same truth, or the screen shows a portal link for
+// every account and says nothing about whether that panel drives anything.
+r = await asAdmin({ action: 'list' });
+const byEmail = Object.fromEntries((r.body.accounts || []).map((a) => [a.email, a]));
+check('the list marks a live customer as working', byEmail['live@cuts.com'] && byEmail['live@cuts.com'].working === true,
+  JSON.stringify(byEmail['live@cuts.com'] || null).slice(0, 140));
+check('the list marks an unpublished one as attached but not working',
+  byEmail['draft@cuts.com'] && byEmail['draft@cuts.com'].attached === true && byEmail['draft@cuts.com'].working === false,
+  JSON.stringify(byEmail['draft@cuts.com'] || null).slice(0, 140));
+check('and marks an unattached one as neither',
+  byEmail['ghost@nowhere.com'] && byEmail['ghost@nowhere.com'].attached === false,
+  JSON.stringify(byEmail['ghost@nowhere.com'] || null).slice(0, 140));
+check('the list names the slug so the claim can be checked by eye',
+  byEmail['live@cuts.com'].siteSlug === 'live-cuts', byEmail['live@cuts.com'].siteSlug);
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
