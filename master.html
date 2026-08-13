@@ -136,6 +136,34 @@
         <button class="btn ghost sm" id="sNew">+ New website</button>
       </div>
 
+      <!-- TAKE A PAGE THAT ALREADY EXISTS AND MAKE IT THEIRS.
+           This used to live inside the editor, which meant opening a record and
+           retyping a business name that is already in the page's own <title>,
+           to describe a site that is already built. Nothing here is a second
+           website: the record is the container that lets /s/<slug> serve the
+           page and lets their switches change it. Slug comes from the URL,
+           business name comes from the title, content comes from the page. -->
+      <div style="margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:14px">
+        <div class="rl">Publish a page that already exists</div>
+        <div class="fine2">Point it at a page we have already built. It reads the business name off the page, publishes it at its own address, and emails the owner their panel link. Nothing is retyped and nothing is duplicated.</div>
+        <div class="row" style="margin-top:10px">
+          <label style="flex:2 1 320px">Page
+            <input id="gvSrc" placeholder="/demos/oouwees-barbershop-gladstone" />
+          </label>
+          <label style="flex:1 1 220px">Owner email
+            <input id="gvEmail" type="email" placeholder="owner@theirshop.com" />
+          </label>
+          <label style="flex:1 1 150px">Owner name
+            <input id="gvName" placeholder="First name" />
+          </label>
+        </div>
+        <div class="row" style="margin-top:10px;align-items:center">
+          <button class="btn" type="button" id="gvGo">Publish and hand over</button>
+          <button class="btn ghost sm" type="button" id="gvCheck">Check settings</button>
+        </div>
+        <div class="onres" id="gvRes"></div>
+      </div>
+
       <!-- Bulk drafting. A draft is a hard 404 until someone publishes it, which
            is what makes it safe to build one for a business that has agreed to
            nothing. Published-but-unclaimed is reachable by its link and noindex.
@@ -242,28 +270,6 @@
         </div>
         <div class="onres" id="sRes"></div>
 
-        <!-- HAND IT OVER. Publishing a record, loading its page, claiming it and
-             onboarding the owner were four separate actions on three screens, and
-             doing them in the wrong order gives a customer a panel that controls a
-             404. This is the whole chain in one button. -->
-        <div class="rl" style="margin-top:22px">Hand this business their website</div>
-        <div class="fine2">Loads a finished page into this record, publishes it, marks it claimed so search engines may index it, and emails the owner their panel link. Leave the email blank to publish without handing it over.</div>
-        <div class="row" style="margin-top:10px">
-          <label style="flex:2 1 320px">Page to load
-            <input id="gvSrc" placeholder="/demos/oouwees-barbershop-gladstone" />
-          </label>
-          <label style="flex:1 1 220px">Owner email
-            <input id="gvEmail" type="email" placeholder="owner@theirshop.com" />
-          </label>
-          <label style="flex:1 1 160px">Owner name
-            <input id="gvName" placeholder="First name" />
-          </label>
-        </div>
-        <div class="row" style="margin-top:10px;align-items:center">
-          <button class="btn" type="button" id="gvGo">Publish and hand over</button>
-          <button class="btn ghost sm" type="button" id="gvCheck">Check settings</button>
-        </div>
-        <div class="onres" id="gvRes"></div>
       </div>
     </div>
 
@@ -499,26 +505,46 @@ $('gvCheck').onclick=async()=>{
   if(!r.ok){ gvSay('Could not check: '+esc(r.d.error||r.status),true); return; }
   gvSay(gvConfig(r.d.config));
 };
+// The page already knows what it is. Its address is the slug and its <title>
+// is the business name, so neither has to be typed again to publish it.
+function slugFromSrc(src){
+  const last=String(src||'').split(/[?#]/)[0].replace(/\/+$/,'').split('/').pop()||'';
+  return slugify(last.replace(/\.html?$/i,''));
+}
+function titleOf(html){
+  const m=String(html).match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  if(!m) return '';
+  const t=m[1].replace(/&amp;/g,'&').replace(/&#0?39;|&apos;|&#x27;/gi,"'").replace(/&quot;/g,'"').replace(/\s+/g,' ').trim();
+  // Titles are usually "Business — what they do in a place". Keep the business.
+  return t.split(/\s+[—–|·]\s+|\s+-\s+/)[0].trim();
+}
 $('gvGo').onclick=async()=>{
-  const slug=($('f_slug')&&$('f_slug').value.trim())||slugify(($('f_business')&&$('f_business').value.trim())||'');
-  if(!slug){ gvSay('Open a website first, or type a business name.',true); return; }
   const src=$('gvSrc').value.trim();
   const email=$('gvEmail').value.trim();
+  // Values from the editor win when one is open, because that is a deliberate
+  // choice someone made. Otherwise everything comes off the page itself.
+  const edSlug=($('f_slug')&&$('f_slug').value.trim())||'';
+  const edBiz=($('f_business')&&$('f_business').value.trim())||'';
+  if(!src && !edSlug && !edBiz){ gvSay('Give it a page to publish.',true); return; }
   $('gvGo').disabled=true;
 
   let html='';
   if(src){
-    gvSay('Loading '+esc(src)+'…');
+    gvSay('Reading '+esc(src)+'…');
     try{
       const p=await fetch(src,{credentials:'omit'});
       if(!p.ok) throw new Error('HTTP '+p.status);
       html=await p.text();
       if(!/<\/html>/i.test(html)) throw new Error('that did not look like a web page');
-    }catch(e){ $('gvGo').disabled=false; gvSay('Could not load that page: '+esc(e.message)+'. Nothing was changed.',true); return; }
+    }catch(e){ $('gvGo').disabled=false; gvSay('Could not read that page: '+esc(e.message)+'. Nothing was changed.',true); return; }
   }
 
-  gvSay('Publishing…');
-  const r=await api('site-golive',{slug,html,email,name:$('gvName').value.trim(),business:($('f_business')&&$('f_business').value.trim())||''});
+  const slug=edSlug||slugFromSrc(src);
+  const business=edBiz||titleOf(html);
+  if(!slug){ $('gvGo').disabled=false; gvSay('Could not work out an address from that page.',true); return; }
+
+  gvSay('Publishing '+esc(business||slug)+'…');
+  const r=await api('site-golive',{slug,html,email,name:$('gvName').value.trim(),business});
   $('gvGo').disabled=false;
   if(!r.ok){ gvSay('Could not publish: '+esc(r.d.error||r.status),true); return; }
 
