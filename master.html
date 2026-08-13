@@ -544,7 +544,7 @@ $('gvGo').onclick=async()=>{
   if(!slug){ $('gvGo').disabled=false; gvSay('Could not work out an address from that page.',true); return; }
 
   gvSay('Publishing '+esc(business||slug)+'…');
-  const r=await api('site-golive',{slug,html,email,name:$('gvName').value.trim(),business});
+  const r=await api('site-golive',{slug,html,src,email,name:$('gvName').value.trim(),business});
   $('gvGo').disabled=false;
   if(!r.ok){ gvSay('Could not publish: '+esc(r.d.error||r.status),true); return; }
 

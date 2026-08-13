@@ -17,6 +17,7 @@ import { signPanel, panelToken } from '../lib/panel-auth.js';
 import { identify, isOwner } from '../lib/roles.js';
 import { listSites, getSite, upsertSite, bulkUpsert, migrateAll, slugify, siteForEmail, siteSlugsByEmail } from '../lib/sites.js';
 import { linkAccountToSite } from '../lib/site-link.js';
+import { rerootRelativeUrls } from '../lib/site-modules.js';
 
 // Everything the website editor is allowed to write. A save applies ONLY the
 // keys it was actually sent, so a partial save is a partial update. This used to
@@ -302,8 +303,15 @@ export default async function handler(req, res) {
     if (action === 'site-golive') {
       const slug = slugify(body.slug || body.business || '');
       if (!slug) { res.status(400).json({ error: 'slug_or_business_required' }); return; }
-      const html = String(body.html || '');
+      let html = String(body.html || '');
       if (html && html.length > 900000) { res.status(400).json({ error: 'html_too_large' }); return; }
+
+      // THE SAME BYTES AT A NEW ADDRESS ARE NOT THE SAME PAGE. A page built at
+      // /demos/x can say src="assets/logo.jpg" and be correct; served from /s/x
+      // the browser resolves that against /s/ and the business's own logo 404s
+      // off their website with no error anywhere. Re-root it once, here, so
+      // what gets stored is right rather than right-only-where-it-came-from.
+      if (html && body.src) html = rerootRelativeUrls(html, String(body.src));
 
       const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitchwebsites.com';
       const out = { slug, url: host + '/s/' + slug, steps: {}, config: configReport() };
