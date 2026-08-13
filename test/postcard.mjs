@@ -1,9 +1,17 @@
 // WHAT IS ACTUALLY PRINTED ON THE CARD.
 //
-// KS_PHONE was empty in production and the card rendered the phone block only
-// when it was set, so every postcard mailed so far carried no number to call.
-// This is physical mail: a wrong card is a stamp, a print run and a week before
-// anyone notices. These read the rendered HTML rather than the code.
+// This is physical mail. A wrong card is a stamp, a print run, and a week before
+// anyone finds out. So these read the rendered HTML rather than the code.
+//
+// KS_PHONE is deliberately set here to a WRONG number before the module loads.
+// It is set in production to a single Google Voice line, and Vercel blanks
+// sensitive values on `env pull`, so there is no way to read it back and notice
+// it winning. The first version of this change used KS_PHONE as the override
+// and would therefore have printed one number after being told to print two,
+// silently, on paper. That is the regression this file exists to catch.
+process.env.KS_PHONE = '816-555-0000';
+delete process.env.KS_PHONES;
+
 const P = await import('../lib/postcard.js');
 
 let pass = 0, fail = 0;
@@ -24,9 +32,21 @@ for (const num of ['913-948-3747', '913-933-1687']) {
   check(num + ' is on the back of the delivery card', deliveredBack.includes(num));
 }
 
-// The env var was empty, which is exactly why this needs to hold with NOTHING set.
-check('the numbers survive an unset KS_PHONE, which is the state production was in',
-  !process.env.KS_PHONE && front.includes('913-948-3747'), 'KS_PHONE=' + String(process.env.KS_PHONE));
+// THE ONE THAT MATTERS. A stale KS_PHONE is set in production and cannot be
+// read back. If it can still win, the card goes to print with the wrong number.
+check('a set KS_PHONE does NOT override the numbers any more',
+  front.includes('913-948-3747') && front.includes('913-933-1687'), 'KS_PHONE=' + process.env.KS_PHONE);
+check('and its stale value appears nowhere on the card',
+  !front.includes('816-555-0000') && !back.includes('816-555-0000'));
+
+// The replacement override still has to work, or changing the numbers means a
+// deploy. Checked in a child process because the module reads env once at import.
+const { execFileSync } = await import('node:child_process');
+const overridden = execFileSync(process.execPath, ['-e',
+  "import('../lib/postcard.js').then(m=>console.log(m.frontHtml({name:'X'})))"],
+{ cwd: import.meta.dirname, env: { ...process.env, KS_PHONES: '816-555-1234' }, encoding: 'utf8' });
+check('KS_PHONES still overrides, so the numbers can change without a deploy',
+  overridden.includes('816-555-1234') && !overridden.includes('913-948-3747'), overridden.slice(0, 80));
 
 console.log('\nTHEY READ AS TWO NUMBERS, NOT ONE RUN-ON');
 
