@@ -94,7 +94,25 @@ async function readState(account) {
     if (modules[phase]) continue;
     if (ending[phase] && ending[phase] > now) modules[phase] = { state: 'ending', endsAt: ending[phase] };
   }
-  return { site: account.site || '', name: account.name || '', linked: !!account.stripeCustomerId, modules };
+  // THE SITE THEY ARE ACTUALLY PAYING US ABOUT. `account.site` is a string
+  // somebody typed at signup, so it can be a domain that does not resolve, a
+  // business name, or nothing. This is the record itself, which is the only
+  // thing that answers "where is my website" truthfully, and the same lookup
+  // that decides whether flipping a switch changes anything.
+  let live = null;
+  try {
+    const rec = await siteForEmail(account.email);
+    if (rec) live = { slug: rec.slug, path: '/s/' + rec.slug, published: !!rec.published };
+  } catch (e) { console.error('[switch] site lookup', e); }
+
+  return {
+    site: account.site || '', name: account.name || '', linked: !!account.stripeCustomerId, modules,
+    // Only a PUBLISHED record gets a path: api/site.js 404s a draft, and
+    // sending a customer to their own broken link is worse than saying nothing.
+    siteUrl: live && live.published ? live.path : '',
+    siteSlug: live ? live.slug : '',
+    sitePublished: !!(live && live.published),
+  };
 }
 
 // P8 is the only module the customer cannot see working from their own site, so

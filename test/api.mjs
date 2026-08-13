@@ -1559,5 +1559,42 @@ check('and marks an unattached one as neither',
 check('the list names the slug so the claim can be checked by eye',
   byEmail['live@cuts.com'].siteSlug === 'live-cuts', byEmail['live@cuts.com'].siteSlug);
 
+// ---------------------------------------------------------------------------
+// THE CUSTOMER'S OWN WEBSITE, LINKED FROM THEIR PANEL.
+//
+// The header line was `account.site`, a string typed at signup, which can be a
+// domain that does not resolve, a business name, or nothing. The panel could
+// therefore tell someone their website was somewhere it was not. This is the
+// record we actually serve, and it only appears once it is really published,
+// because api/site.js treats a draft as a hard 404 and a dead link in their own
+// panel is worse than no link.
+console.log('\nThe website link in their panel');
+
+seed();  // test-shop is published and claimed and joined to EMAIL
+r = await call(switchApi, { action: 'state', e: EMAIL, t: TOK });
+check('a published site gives them a link', r.body.siteUrl === '/s/test-shop', JSON.stringify(r.body.siteUrl));
+check('and names the slug', r.body.siteSlug === 'test-shop', r.body.siteSlug);
+check('and says it is published', r.body.sitePublished === true);
+check('the typed-at-signup string is still returned separately, not conflated',
+  Object.prototype.hasOwnProperty.call(r.body, 'site'), JSON.stringify(r.body.site));
+
+// A DRAFT MUST NOT BE LINKED. This is the case that would send a paying
+// customer to a 404 on their own website.
+putSite({ slug: 'test-shop', business: 'Test Shop', email: EMAIL, modules: ['P0'], published: false, claimed: false });
+r = await call(switchApi, { action: 'state', e: EMAIL, t: TOK });
+check('an unpublished site gives NO link, rather than one that 404s',
+  r.body.siteUrl === '', JSON.stringify(r.body.siteUrl));
+check('but the panel still knows it exists, so we can tell them why',
+  r.body.siteSlug === 'test-shop' && r.body.sitePublished === false, JSON.stringify({ slug: r.body.siteSlug, pub: r.body.sitePublished }));
+
+// No record joined at all: the state every account was in before today.
+KV.set('ks:siteemail', {});
+r = await call(switchApi, { action: 'state', e: EMAIL, t: TOK });
+check('an account with no website gets no link and no slug',
+  r.body.siteUrl === '' && r.body.siteSlug === '', JSON.stringify({ url: r.body.siteUrl, slug: r.body.siteSlug }));
+check('and the panel still loads rather than breaking', r.code === 200);
+
+seed();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

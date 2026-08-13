@@ -37,6 +37,9 @@
   .head h1{font-family:"Manrope",sans-serif;font-weight:900;font-size:clamp(1.5rem,4vw,2.1rem);letter-spacing:-.02em}
   .head .site{margin-top:6px;color:var(--mute);font-size:1rem}
   .head .site b{color:var(--amber);font-weight:600}
+  .head .site a{color:var(--go);font-weight:600;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.18)}
+  .head .site a:hover{border-bottom-color:var(--go)}
+  .head .site .livePath{color:var(--mute-2);font-size:.86rem;margin-left:8px;word-break:break-all}
   .head .rule{margin-top:18px;border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:2px;padding:14px 18px;background:var(--metal);color:var(--mute);font-size:.9rem;max-width:44em}
   .head .rule b{color:var(--ink)}
 
@@ -203,6 +206,10 @@
     <span class="mono">Your control panel</span>
     <h1>Flip on only what you need.</h1>
     <p class="site">Site: <b id="siteName">yourbusiness.com</b> · billing renews <b id="billDate">the 1st</b></p>
+    <!-- Their actual website. The line above is whatever was typed at signup and
+         may be a domain that does not resolve; this is the page we serve, and it
+         only appears once it is really published. -->
+    <p class="site" id="liveWrap" hidden><a id="liveLink" href="#" target="_blank" rel="noopener">View your website →</a> <span class="livePath" id="livePath"></span></p>
     <div class="rule">
       <b>How it works:</b> turn a module on and it's live right away. Each module runs a
       <b>minimum of one billing cycle</b>, so turning it off keeps it working until your next
@@ -528,6 +535,14 @@
   }
   function applyState(d){
     if(d && d.site) document.getElementById('siteName').textContent = d.site;
+    // Only shown when the site is really published, because api/site.js serves a
+    // draft as a 404 and a dead link in their own panel is worse than no link.
+    if(d && d.siteUrl){
+      var lw=document.getElementById('liveWrap'), ll=document.getElementById('liveLink');
+      ll.href=d.siteUrl;
+      document.getElementById('livePath').textContent=location.origin+d.siteUrl;
+      lw.hidden=false;
+    }
     var mods = (d && d.modules) || {};
     MODULES.forEach(function(m){
       if(m.id==='P0'){ m.state='active'; return; }
