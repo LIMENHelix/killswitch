@@ -7,6 +7,7 @@
 import { getSite } from '../lib/sites.js';
 import { renderSite } from '../lib/site-template.js';
 import { enforceRobots } from '../lib/site-writer.js';
+import { applyModules } from '../lib/site-modules.js';
 import { recordShow } from '../lib/funnel.js';
 
 export default async function handler(req, res) {
@@ -39,7 +40,12 @@ export default async function handler(req, res) {
   let html;
   if (site.html) {
     try {
-      html = enforceRobots(site.html, !!site.claimed);
+      // applyModules for the SAME reason enforceRobots is here: the switched-on
+      // set is read at serve time, not baked in at write time. Every module gate
+      // lives in the template, and this branch skips the template, so without
+      // this a customer with their own page could buy a module, flip it on,
+      // watch the switch go green, and never see anything appear on their site.
+      html = applyModules(enforceRobots(site.html, !!site.claimed), site);
     } catch (e) {
       console.error('[site] stored html', slug, e);
       html = '';
