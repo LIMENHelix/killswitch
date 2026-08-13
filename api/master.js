@@ -304,6 +304,7 @@ export default async function handler(req, res) {
       const slug = slugify(body.slug || body.business || '');
       if (!slug) { res.status(400).json({ error: 'slug_or_business_required' }); return; }
       let html = String(body.html || '');
+      let patchSrc = '';
       if (html && html.length > 900000) { res.status(400).json({ error: 'html_too_large' }); return; }
 
       // THE SAME BYTES AT A NEW ADDRESS ARE NOT THE SAME PAGE. A page built at
@@ -312,6 +313,7 @@ export default async function handler(req, res) {
       // off their website with no error anywhere. Re-root it once, here, so
       // what gets stored is right rather than right-only-where-it-came-from.
       if (html && body.src) html = rerootRelativeUrls(html, String(body.src));
+      if (body.src) patchSrc = String(body.src);
 
       const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitchwebsites.com';
       const out = { slug, url: host + '/s/' + slug, steps: {}, config: configReport() };
@@ -322,6 +324,7 @@ export default async function handler(req, res) {
       const before = await getSite(slug);
       if (!html && !(before && before.html)) { res.status(400).json({ error: 'no_html_to_publish' }); return; }
       const patch = { slug, published: true, claimed: true };
+      if (patchSrc) patch.htmlSrc = patchSrc;
       if (html) patch.html = html;
       if (body.email) patch.email = String(body.email).trim().toLowerCase();
       if (body.business) patch.business = String(body.business).trim();

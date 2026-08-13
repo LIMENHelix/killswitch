@@ -83,5 +83,27 @@ check('a query string on the source is ignored, not treated as a path',
 check('running it twice changes nothing the second time',
   rerootRelativeUrls(rerootRelativeUrls(page, '/demos/shop-page'), '/demos/shop-page') === out);
 
+console.log('\nSERVING A PAGE STORED BEFORE ANY OF THIS EXISTED');
+
+// The fix originally ran only at import, so a page already in the store kept its
+// broken paths until a human re-imported it by hand. That is not a fix. Serving
+// re-roots too, falling back to /demos/<slug> for records with no htmlSrc, which
+// is where every one of them actually came from because the slug was derived
+// from that path. This is the exact record that was live with a missing logo.
+const stored = { slug: 'oouwees-barbershop-gladstone', html: REAL, published: true, claimed: true, modules: ['P0'] };
+const base = stored.htmlSrc || ('/demos/' + stored.slug);
+const served = rerootRelativeUrls(stored.html, base);
+check('an old record with no htmlSrc still gets its logo back on serve',
+  served.includes('src="/demos/assets/oouwees-logo.jpg"'), (served.match(/src="[^"]*logo[^"]*"/) || [''])[0]);
+check('and the broken path is gone from what gets served',
+  !served.includes('src="assets/oouwees-logo.jpg"'));
+
+// Serving runs on every request, so it must be safe to run over an already
+// corrected page forever.
+const twice = rerootRelativeUrls(served, base);
+check('serving an already-corrected page a second time changes nothing', twice === served);
+const thrice = rerootRelativeUrls(twice, base);
+check('and a third time', thrice === served);
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

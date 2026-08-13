@@ -7,7 +7,7 @@
 import { getSite } from '../lib/sites.js';
 import { renderSite } from '../lib/site-template.js';
 import { enforceRobots } from '../lib/site-writer.js';
-import { applyModules } from '../lib/site-modules.js';
+import { applyModules, rerootRelativeUrls } from '../lib/site-modules.js';
 import { recordShow } from '../lib/funnel.js';
 
 export default async function handler(req, res) {
@@ -45,7 +45,18 @@ export default async function handler(req, res) {
       // lives in the template, and this branch skips the template, so without
       // this a customer with their own page could buy a module, flip it on,
       // watch the switch go green, and never see anything appear on their site.
-      html = applyModules(enforceRobots(site.html, !!site.claimed), site);
+      // RE-ROOTED ON EVERY SERVE, not only at import. Doing it only at import
+      // meant a page stored before the fix kept its broken relative paths until
+      // somebody re-imported it by hand, and the symptom was the customer's own
+      // logo missing from their own website. Fixing stored data by asking a
+      // human to press a button again is not a fix.
+      //
+      // htmlSrc is where the page was fetched from. Records written before it
+      // existed fall back to /demos/<slug>, which is where every one of them
+      // actually came from, because the slug was derived from that path. The
+      // rewrite is idempotent, so a page already corrected is left alone.
+      const base = site.htmlSrc || ('/demos/' + site.slug);
+      html = applyModules(rerootRelativeUrls(enforceRobots(site.html, !!site.claimed), base), site);
     } catch (e) {
       console.error('[site] stored html', slug, e);
       html = '';
