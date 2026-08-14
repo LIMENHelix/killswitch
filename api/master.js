@@ -498,6 +498,16 @@ export default async function handler(req, res) {
       for (const f of SITE_ARRAYS) if (Array.isArray(p[f])) patch[f] = p[f];
       if (p.published !== undefined) patch.published = !!p.published;
       if (p.claimed !== undefined) patch.claimed = !!p.claimed;
+      // THE PAGE ITSELF. Deliberately not in SITE_FIELDS: those are applied by
+      // presence, and one caller that forgot the key would blank a customer's
+      // entire website. This writes only when a string was actually sent, and
+      // an empty string is a real instruction meaning "go back to the template".
+      //
+      // Without this the editor was a lie on any site with its own page:
+      // api/site.js serves site.html verbatim and only falls back to the
+      // template when it is empty, so editing the business name, phone, hours
+      // or address changed the record and changed nothing anybody could see.
+      if (typeof p.html === 'string') patch.html = p.html;
 
       const saved = await upsertSite(patch);
       res.status(200).json({ ok: true, site: saved, url: '/s/' + saved.slug });

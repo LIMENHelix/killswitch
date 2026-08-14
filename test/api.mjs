@@ -1615,6 +1615,52 @@ seed();
 // states and site-golive collapsed two of them, putting a business's name on an
 // indexable page before they had agreed to anything. Claiming is now its own
 // deliberate act.
+// ---------------------------------------------------------------------------
+// THE EDITOR HAS TO ACTUALLY EDIT THE SITE.
+//
+// api/site.js serves site.html verbatim when a record has one and only falls
+// back to the template when it is empty. site-save could not write html at all,
+// so on any imported page every field in the editor was stored and none of it
+// reached a visitor. Changing a customer's phone number appeared to work and
+// did nothing.
+console.log('\nEditing a site that carries its own page');
+
+const OWNPAGE = '<html><head></head><body><h1>Their own page</h1></body></html>';
+putSite({ slug: 'own-page-shop', business: 'Own Page Shop', phone: '(816) 555-0000',
+  html: OWNPAGE, published: true, claimed: true, modules: ['P0'] });
+
+// The record has to come back WITH the page, or the editor cannot show it and
+// would blank it on the next save.
+r = await asAdmin({ action: 'site-get', slug: 'own-page-shop' });
+check('loading a site returns its page, so the editor can show it', r.body.site.html === OWNPAGE, String(r.body.site.html).slice(0, 40));
+
+const EDITED = '<html><head></head><body><h1>Edited by hand</h1></body></html>';
+r = await asAdmin({ action: 'site-save', site: { slug: 'own-page-shop', business: 'Own Page Shop', html: EDITED } });
+check('the page can be edited and saved', r.code === 200 && JSON.parse(KV.get('ks:site:own-page-shop')).html === EDITED,
+  String(JSON.parse(KV.get('ks:site:own-page-shop')).html).slice(0, 40));
+
+// The dangerous half. A save that does not mention html must never wipe the
+// customer's whole website, which is why html is not in SITE_FIELDS.
+r = await asAdmin({ action: 'site-save', site: { slug: 'own-page-shop', business: 'Own Page Shop', phone: '(816) 555-1111' } });
+check('a save that does not mention the page leaves it alone',
+  JSON.parse(KV.get('ks:site:own-page-shop')).html === EDITED);
+check('while still saving the field that was sent',
+  JSON.parse(KV.get('ks:site:own-page-shop')).phone === '(816) 555-1111');
+
+// An empty string is a real instruction, not a missing value: hand rendering
+// back to the template.
+r = await asAdmin({ action: 'site-save', site: { slug: 'own-page-shop', business: 'Own Page Shop', html: '' } });
+check('clearing the page hands the site back to the template',
+  r.code === 200 && JSON.parse(KV.get('ks:site:own-page-shop')).html === '');
+check('and the fields they typed are still there to render it',
+  JSON.parse(KV.get('ks:site:own-page-shop')).phone === '(816) 555-1111');
+
+// Editing must not depend on whether they accepted. That was the report.
+putSite({ slug: 'accepted-shop', business: 'Accepted Shop', html: OWNPAGE, published: true, claimed: true, modules: ['P0'] });
+r = await asAdmin({ action: 'site-save', site: { slug: 'accepted-shop', business: 'Accepted Shop', html: EDITED } });
+check('an ACCEPTED site is still editable', r.code === 200 && JSON.parse(KV.get('ks:site:accepted-shop')).html === EDITED);
+check('and stays accepted after the edit', JSON.parse(KV.get('ks:site:accepted-shop')).claimed === true);
+
 console.log('\nShowing them before Google sees it');
 
 const SHOWPAGE = '<html><head></head><body>their page</body></html>';

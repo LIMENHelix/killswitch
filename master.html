@@ -233,6 +233,12 @@
 
       <div id="sEd" style="display:none;margin-top:18px;border-top:1px solid var(--line);padding-top:16px">
         <h2 id="sEdT" style="margin-bottom:12px">New website</h2>
+        <!-- THE FIELDS BELOW DO NOT ALWAYS RENDER. api/site.js serves site.html
+             verbatim when the record has one and only falls back to the template
+             when it is empty, so on an imported page every field here is inert.
+             It said nothing about that, which made this whole screen a lie for
+             exactly the customers whose pages we care most about. -->
+        <div id="sHtmlWarn" hidden style="background:rgba(255,196,46,.12);border:1px solid rgba(255,196,46,.45);color:#ffe9a8;border-radius:10px;padding:10px 13px;font-size:.83rem;margin-bottom:12px"></div>
 
         <div class="grid2">
           <label class="f">Business name<input id="f_business" placeholder="Dave's Trusted Auto" /></label>
@@ -274,6 +280,18 @@
         <div class="rl" style="margin-top:18px">Modules switched on</div>
         <div class="mods" id="f_mods"></div>
         <div class="fine2">P4, P5, P6, P10 and P11 are real products but back-office, so they change nothing on the page. They are listed so this screen matches what the customer is billed for.</div>
+
+        <!-- Their page, editable. Whatever is in here IS the website when it is
+             not empty; clearing it hands rendering back to the fields above. -->
+        <div style="margin-top:18px">
+          <div class="rl">Their page <span id="sHtmlSize" style="text-transform:none;letter-spacing:0"></span></div>
+          <div class="fine2" id="sHtmlNote" style="margin-top:0;margin-bottom:8px"></div>
+          <textarea id="f_html" rows="12" spellcheck="false" style="font-family:'IBM Plex Mono',monospace;font-size:.78rem" placeholder="Empty, so the fields above render this site from the shared template."></textarea>
+          <div class="row" style="margin-top:8px;align-items:center">
+            <button class="btn ghost sm" type="button" id="sTemplate">Use the shared template instead</button>
+            <span class="fine2" style="margin:0">Clears their own page, so the fields above become the website again.</span>
+          </div>
+        </div>
 
         <div class="row" style="margin-top:18px;align-items:center">
           <label class="chk"><input type="checkbox" id="f_published" /> <span>Published (live to the public)</span></label>
@@ -374,6 +392,19 @@ function openEditor(site){
   editing=site||null;
   $('sEdT').textContent = site ? ('Editing '+site.business) : 'New website';
   FIELDS.forEach(f=>{ const el=$('f_'+f); if(el) el.value=(site&&site[f])||''; });
+  // Their own page, and an honest word about what it means for everything above.
+  const pg=(site&&site.html)||'';
+  $('f_html').value=pg;
+  $('sHtmlSize').textContent=pg?'· '+Math.round(pg.length/1024)+'KB':'· empty';
+  const warn=$('sHtmlWarn');
+  if(pg){
+    warn.hidden=false;
+    warn.innerHTML='<b>This site serves its own page.</b> The business name, phone, address, hours and services below are stored but <b>do not appear on it</b>. To change what visitors see, edit the page itself at the bottom of this form, re-import it with Step 1 above, or clear it to go back to the shared template.';
+    $('sHtmlNote').textContent='This is the website. Edit it here and save, and the change is live on the next page load.';
+  } else {
+    warn.hidden=true;
+    $('sHtmlNote').textContent='Empty, so the fields above are what renders. Paste a page here to override the template for this business only.';
+  }
   if(!site) $('f_accent').value='#12703C';
   Object.keys(REPS).forEach(k=>{
     $('r_'+k).innerHTML='';
@@ -480,6 +511,16 @@ $('gvClaim').onclick=async()=>{
   }
   say('<b>'+esc(r.d.business||slug)+'</b> is accepted and indexable at <a href="'+esc(r.d.url)+'" target="_blank" rel="noopener">'+esc(r.d.url)+'</a>.');
   loadSites();
+};
+
+// Throwing away a page somebody built is not something to do on a stray click.
+$('sTemplate').onclick=()=>{
+  if(!$('f_html').value.trim()){ $('sHtmlNote').textContent='There is no page to clear.'; return; }
+  if(!confirm('Clear their own page?\n\nThe fields above will render this site from the shared template instead. The page is not saved anywhere else, so copy it first if you might want it back.\n\nNothing changes until you press Save website.')) return;
+  $('f_html').value='';
+  $('sHtmlSize').textContent='· empty';
+  $('sHtmlWarn').hidden=true;
+  $('sHtmlNote').textContent='Cleared. Press Save website to make the fields above the live site.';
 };
 
 function curSlug(){ return ($('f_slug')&&$('f_slug').value.trim())||slugify(($('f_business')&&$('f_business').value.trim())||''); }
@@ -653,6 +694,9 @@ $('gvGo').onclick=async()=>{
 $('sSave').onclick=async()=>{
   const site={};
   FIELDS.forEach(f=>{ const el=$('f_'+f); if(el) site[f]=el.value.trim(); });
+  // NOT trimmed and always sent: this is a whole document, and an empty string
+  // is a real instruction meaning "go back to the template", not a missing value.
+  site.html=$('f_html').value;
   if(!site.business){ $('sRes').style.color='var(--red)'; $('sRes').textContent='Business name is required.'; return; }
   if(!site.slug) site.slug=slugify(site.business);
   Object.keys(REPS).forEach(k=>site[k]=readReps(k));
