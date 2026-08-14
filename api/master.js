@@ -323,7 +323,20 @@ export default async function handler(req, res) {
       //    existing page is refused rather than published.
       const before = await getSite(slug);
       if (!html && !(before && before.html)) { res.status(400).json({ error: 'no_html_to_publish' }); return; }
-      const patch = { slug, published: true, claimed: true };
+      // PUBLISHED IS NOT CLAIMED, AND THIS USED TO SET BOTH AT ONCE.
+      //
+      // The record has three states, not two, and the middle one is the whole
+      // point: published:true, claimed:false is reachable by its own link and
+      // carries noindex, so the owner can open what we built while Google never
+      // sees it. Setting both together skipped that and put a business's name
+      // on an indexable page before they had agreed to anything. An owner who
+      // then goes quiet for days leaves it there.
+      //
+      // So claim is now a separate, deliberate act: site-claim, after they say
+      // yes. An omitted `claim` leaves the existing value alone, so re-running
+      // this to fix a page never silently un-claims a customer who did accept.
+      const patch = { slug, published: true };
+      if (body.claim !== undefined) patch.claimed = !!body.claim;
       if (patchSrc) patch.htmlSrc = patchSrc;
       if (html) patch.html = html;
       if (body.email) patch.email = String(body.email).trim().toLowerCase();
@@ -418,6 +431,31 @@ export default async function handler(req, res) {
     // Unpublishing also drops claimed, because claimed is the flag that permits
     // indexing. A page taken down at the owner's request must not stay eligible
     // to be indexed if it is ever republished by accident.
+    // ---- they said yes: let it be indexed ----
+    //
+    // The second half of the split. Claiming is the only thing that removes
+    // noindex, so it is the one irreversible-in-public step and it gets its own
+    // action rather than riding along with publishing. Reversible: passing
+    // claimed:false puts the noindex back for a customer who changes their mind.
+    if (action === 'site-claim') {
+      const slug = slugify(body.slug || '');
+      if (!slug) { res.status(400).json({ error: 'slug_required' }); return; }
+      const before = await getSite(slug);
+      if (!before) { res.status(404).json({ error: 'not_found' }); return; }
+      const want = body.claimed === undefined ? true : !!body.claimed;
+      // Claiming something nobody can reach is meaningless, and would leave a
+      // record marked accepted that serves a 404.
+      if (want && !before.published) { res.status(400).json({ error: 'publish_it_first' }); return; }
+      const saved = await upsertSite({ slug, claimed: want });
+      res.status(200).json({
+        ok: true, slug, business: saved.business || '',
+        published: !!saved.published, claimed: !!saved.claimed,
+        indexable: !!(saved.published && saved.claimed),
+        url: '/s/' + slug,
+      });
+      return;
+    }
+
     if (action === 'site-unpublish') {
       const slug = slugify(body.slug || '');
       if (!slug) { res.status(400).json({ error: 'slug_required' }); return; }

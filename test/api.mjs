@@ -1427,7 +1427,10 @@ check('and nobody was set up as a customer', !r.body.steps.customer, JSON.string
 let rec = JSON.parse(KV.get('ks:site:draft-cuts'));
 check('the page is stored on the record', rec.html === PAGE, String(rec.html).slice(0, 40));
 check('it is published', rec.published === true);
-check('and claimed, which is what lets it be indexed', rec.claimed === true);
+// NOT claimed. This assertion used to demand the opposite, which is the bug:
+// publishing and accepting were one act, so a business became indexable before
+// they had agreed to anything.
+check('but NOT claimed, so the owner can see it and Google cannot', rec.claimed === false);
 
 // The whole chain.
 putSite({ slug: 'fade-house', business: 'Fade House', published: false, claimed: false, modules: ['P0'] });
@@ -1441,7 +1444,8 @@ check('and the account is JOINED to the website, so their switches do something'
 rec = JSON.parse(KV.get('ks:site:fade-house'));
 check('the record carries their email, which is what the join reads',
   rec.email === 'owner@fadehouse.com', rec.email);
-check('the site is live', rec.published === true && rec.claimed === true);
+check('the site is live but still unindexed, waiting on them to accept',
+  rec.published === true && rec.claimed === false, JSON.stringify({ published: rec.published, claimed: rec.claimed }));
 
 // RESEND_API_KEY is deleted at the top of this file, so the mail cannot send.
 // That must be reported, not swallowed: a portal link that never arrives looks
@@ -1603,6 +1607,49 @@ seed();
 // different asks and two different actions, because guessing between them is
 // how you either leave a page up that someone asked you to remove, or destroy
 // work that was only meant to be paused.
+// ---------------------------------------------------------------------------
+// PUBLISHED IS NOT CLAIMED.
+//
+// He saw it, took four or five days, and only answered to object. It should
+// never have been indexable in that window. The record has always had three
+// states and site-golive collapsed two of them, putting a business's name on an
+// indexable page before they had agreed to anything. Claiming is now its own
+// deliberate act.
+console.log('\nShowing them before Google sees it');
+
+const SHOWPAGE = '<html><head></head><body>their page</body></html>';
+r = await asAdmin({ action: 'site-golive', slug: 'shy-shop', html: SHOWPAGE, business: 'Shy Shop' });
+check('step 1 puts it live', r.code === 200 && r.body.steps.site.published === true, JSON.stringify(r.body.steps.site));
+check('but NOT claimed, so it carries noindex and Google never sees it',
+  r.body.steps.site.claimed === false, JSON.stringify(r.body.steps.site.claimed));
+check('and it is out of the sitemap, which only lists published AND claimed',
+  JSON.parse(KV.get('ks:site:shy-shop')).claimed === false);
+
+// Re-running step 1 to fix a page must never quietly un-accept a customer who
+// already said yes. That would drop a paying customer out of the index.
+r = await asAdmin({ action: 'site-claim', slug: 'shy-shop' });
+check('step 2 marks it accepted', r.code === 200 && r.body.claimed === true, JSON.stringify(r.body));
+check('and reports that it is now indexable in as many words', r.body.indexable === true);
+r = await asAdmin({ action: 'site-golive', slug: 'shy-shop', html: '<html><body>fixed page</body></html>' });
+check('re-running step 1 afterwards does NOT un-accept them',
+  r.body.steps.site.claimed === true, JSON.stringify(r.body.steps.site));
+check('while still updating the page', JSON.parse(KV.get('ks:site:shy-shop')).html.includes('fixed page'));
+
+// Claiming is reversible for a customer who changes their mind.
+r = await asAdmin({ action: 'site-claim', slug: 'shy-shop', claimed: false });
+check('claiming can be undone, putting the noindex back',
+  r.body.claimed === false && r.body.indexable === false, JSON.stringify(r.body));
+
+// Marking something accepted that nobody can reach would leave a record saying
+// yes while serving a 404.
+putSite({ slug: 'draft-only', business: 'Draft Only', published: false, claimed: false, html: SHOWPAGE, modules: ['P0'] });
+r = await asAdmin({ action: 'site-claim', slug: 'draft-only' });
+check('a draft cannot be marked accepted', r.code === 400 && r.body.error === 'publish_it_first', JSON.stringify(r.body));
+r = await asAdmin({ action: 'site-claim', slug: 'never-existed' });
+check('and neither can something that does not exist', r.code === 404);
+r = await call(master, { action: 'site-claim', slug: 'shy-shop', token: 'nope' });
+check('step 2 needs the operator key too', r.code === 401);
+
 console.log('\nTaking a site down');
 
 putSite({ slug: 'takedown-shop', business: 'Takedown Shop', email: 'owner@takedown.com',

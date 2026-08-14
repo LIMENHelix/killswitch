@@ -144,8 +144,8 @@
            page and lets their switches change it. Slug comes from the URL,
            business name comes from the title, content comes from the page. -->
       <div style="margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:14px">
-        <div class="rl">Publish a page that already exists</div>
-        <div class="fine2">Point it at a page we have already built. It reads the business name off the page, publishes it at its own address, and emails the owner their panel link. Nothing is retyped and nothing is duplicated.</div>
+        <div class="rl">Step 1 &middot; Show the owner what we built</div>
+        <div class="fine2">Point it at a page we have already built. It reads the business name off the page, puts it live at its own address, and emails the owner their panel link. <b>Google cannot see it yet</b>: the page carries noindex until you press Step 2, so if they go quiet, nothing of theirs was ever public. Nothing is retyped and nothing is duplicated.</div>
         <div class="row" style="margin-top:10px">
           <label style="flex:2 1 320px">Page
             <input id="gvSrc" placeholder="/demos/auto-tech-shawnee" />
@@ -158,10 +158,23 @@
           </label>
         </div>
         <div class="row" style="margin-top:10px;align-items:center">
-          <button class="btn" type="button" id="gvGo">Publish and hand over</button>
+          <button class="btn" type="button" id="gvGo">Send it to the owner</button>
           <button class="btn ghost sm" type="button" id="gvCheck">Check settings</button>
         </div>
         <div class="onres" id="gvRes"></div>
+
+        <!-- STEP 2, deliberately its own act. Claiming is the only thing that
+             removes noindex, so it is the moment a business's name becomes
+             public on a page they did not ask for if it is done too early. -->
+        <div class="rl" style="margin-top:18px">Step 2 &middot; They said yes</div>
+        <div class="fine2">Only press this once the owner has actually accepted. It removes the noindex, which is the point of no return: from here Google can find and keep their page. Everything before this is invisible to search.</div>
+        <div class="row" style="margin-top:10px;align-items:center">
+          <label style="flex:1 1 300px">Their web address (slug)
+            <input id="gvClaimSlug" placeholder="their-business-name" />
+          </label>
+          <button class="btn" type="button" id="gvClaim" style="background:var(--amber);border-color:var(--amber);color:#161311">Accepted, let Google see it</button>
+        </div>
+        <div class="onres" id="gvClaimRes"></div>
       </div>
 
       <!-- Bulk drafting. A draft is a hard 404 until someone publishes it, which
@@ -448,6 +461,27 @@ $('fdGo').onclick=async()=>{
 $('fdCity').onkeydown=e=>{ if(e.key==='Enter') $('fdGo').click(); };
 
 $('sNew').onclick=()=>openEditor(null);
+// Step 2. Separate from Step 1 on purpose: this is the only thing that removes
+// noindex, so it is the moment their business becomes findable. Confirmed,
+// because "they accepted" is a claim about a conversation, not about the data.
+$('gvClaim').onclick=async()=>{
+  const slug=slugify($('gvClaimSlug').value.trim());
+  const say=(m,bad)=>{ $('gvClaimRes').style.color=bad?'var(--red)':'var(--go)'; $('gvClaimRes').innerHTML=m; };
+  if(!slug){ say('Which site? Put their web address in the box.',true); return; }
+  if(!confirm('Has '+slug+' actually accepted?\n\nThis removes the noindex and lets Google find and keep their page. Until now nothing of theirs has been visible in search.')) return;
+  $('gvClaim').disabled=true; say('Marking accepted…');
+  const r=await api('site-claim',{slug,claimed:true});
+  $('gvClaim').disabled=false;
+  if(!r.ok){
+    say(r.d.error==='publish_it_first'
+      ? 'That site is not live yet, so there is nothing for Google to see. Do Step 1 first.'
+      : 'Could not do that: '+esc(r.d.error||r.status), true);
+    return;
+  }
+  say('<b>'+esc(r.d.business||slug)+'</b> is accepted and indexable at <a href="'+esc(r.d.url)+'" target="_blank" rel="noopener">'+esc(r.d.url)+'</a>.');
+  loadSites();
+};
+
 function curSlug(){ return ($('f_slug')&&$('f_slug').value.trim())||slugify(($('f_business')&&$('f_business').value.trim())||''); }
 function delSay(m,bad){ $('sDelRes').style.color=bad?'var(--red)':'var(--go)'; $('sDelRes').innerHTML=m; }
 
@@ -593,8 +627,13 @@ $('gvGo').onclick=async()=>{
   if(!r.ok){ gvSay('Could not publish: '+esc(r.d.error||r.status),true); return; }
 
   const s=r.d.steps||{}, c=s.customer;
-  let out='<div style="color:var(--go)"><b>Live:</b> <a href="'+esc(r.d.url)+'" target="_blank" rel="noopener">'+esc(r.d.url)+'</a>'
+  let out='<div style="color:var(--go)"><b>Live at their link:</b> <a href="'+esc(r.d.url)+'" target="_blank" rel="noopener">'+esc(r.d.url)+'</a>'
     +(s.site&&s.site.bytes?' ('+Math.round(s.site.bytes/1024)+'KB page)':'')+'</div>';
+  out+= (s.site&&s.site.claimed)
+    ? '<div class="sub" style="color:var(--amber)">Already accepted, so Google can index it.</div>'
+    : '<div class="sub">Invisible to Google. If they never reply, nothing of theirs was ever public. Press Step 2 when they accept.</div>';
+  // Save the slug so Step 2 is one press rather than retyping it from memory.
+  if($('gvClaimSlug') && !$('gvClaimSlug').value.trim()) $('gvClaimSlug').value=r.d.slug||'';
   if(c){
     out+=c.ok
       ? '<div style="margin-top:6px">'+(c.emailed?'Panel link emailed to ':'Account made for ')+esc(c.email)
