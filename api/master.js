@@ -15,7 +15,7 @@ export const config = { maxDuration: 60 };
 import { onboardCustomer, sendPanelLink } from '../lib/onboard.js';
 import { signPanel, panelToken } from '../lib/panel-auth.js';
 import { identify, isOwner } from '../lib/roles.js';
-import { listSites, getSite, upsertSite, bulkUpsert, migrateAll, slugify, siteForEmail, siteSlugsByEmail } from '../lib/sites.js';
+import { listSites, getSite, upsertSite, bulkUpsert, migrateAll, slugify, siteForEmail, siteSlugsByEmail, deleteSite } from '../lib/sites.js';
 import { linkAccountToSite } from '../lib/site-link.js';
 import { rerootRelativeUrls } from '../lib/site-modules.js';
 
@@ -404,6 +404,45 @@ export default async function handler(req, res) {
       out.sent = tok ? await sendPanelLink({ email, portalUrl: out.portalUrl, phases: acct.plan || [] }) : false;
 
       res.status(200).json({ ok: true, ...out, config: configReport() });
+      return;
+    }
+
+    // ---- take a site down, and prove it is down ----
+    //
+    // Two different asks, so two different actions rather than one that guesses.
+    // UNPUBLISH is the one you want when someone says "get it off the internet
+    // now": it is instant, it is a hard 404, and everything they said and every
+    // page we built is still there when the conversation goes the other way.
+    // DELETE is for when it is genuinely over.
+    //
+    // Unpublishing also drops claimed, because claimed is the flag that permits
+    // indexing. A page taken down at the owner's request must not stay eligible
+    // to be indexed if it is ever republished by accident.
+    if (action === 'site-unpublish') {
+      const slug = slugify(body.slug || '');
+      if (!slug) { res.status(400).json({ error: 'slug_required' }); return; }
+      const before = await getSite(slug);
+      if (!before) { res.status(404).json({ error: 'not_found' }); return; }
+      const saved = await upsertSite({ slug, published: false, claimed: false });
+      res.status(200).json({
+        ok: true, slug, business: saved.business || '',
+        published: !!saved.published, claimed: !!saved.claimed,
+        keptPage: !!(saved.html && saved.html.length),
+        url: '/s/' + slug,
+      });
+      return;
+    }
+
+    if (action === 'site-delete') {
+      const slug = slugify(body.slug || '');
+      if (!slug) { res.status(400).json({ error: 'slug_required' }); return; }
+      // Deleting a customer's website is not undoable from this screen, so it
+      // does not happen on a single mistyped field: the caller has to name the
+      // slug twice, the way the button in /master does after asking.
+      if (slugify(body.confirm || '') !== slug) { res.status(400).json({ error: 'confirm_must_match_slug' }); return; }
+      const out = await deleteSite(slug);
+      if (!out.deleted) { res.status(404).json(out); return; }
+      res.status(200).json({ ok: true, ...out });
       return;
     }
 

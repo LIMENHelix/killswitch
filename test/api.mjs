@@ -1596,5 +1596,49 @@ check('and the panel still loads rather than breaking', r.code === 200);
 
 seed();
 
+// ---------------------------------------------------------------------------
+// TAKING A SITE DOWN AT THE OWNER'S REQUEST.
+//
+// He never answered, we published, then he answered and asked for it off. Two
+// different asks and two different actions, because guessing between them is
+// how you either leave a page up that someone asked you to remove, or destroy
+// work that was only meant to be paused.
+console.log('\nTaking a site down');
+
+putSite({ slug: 'takedown-shop', business: 'Takedown Shop', email: 'owner@takedown.com',
+  html: '<html><body>their page</body></html>', published: true, claimed: true, modules: ['P0'] });
+
+r = await asAdmin({ action: 'site-unpublish', slug: 'takedown-shop' });
+check('unpublish takes it offline', r.code === 200 && r.body.published === false, JSON.stringify(r.body).slice(0, 140));
+check('and drops claimed, so it cannot be indexed if it goes back up by accident',
+  r.body.claimed === false, JSON.stringify(r.body.claimed));
+check('but KEEPS the page, because this is a pause not a deletion', r.body.keptPage === true);
+const kept = JSON.parse(KV.get('ks:site:takedown-shop'));
+check('the html really is still there', kept.html === '<html><body>their page</body></html>');
+
+// Deleting is not undoable, so one mistyped field must not do it.
+r = await asAdmin({ action: 'site-delete', slug: 'takedown-shop' });
+check('delete refuses without a matching confirmation', r.code === 400 && r.body.error === 'confirm_must_match_slug', JSON.stringify(r.body));
+r = await asAdmin({ action: 'site-delete', slug: 'takedown-shop', confirm: 'something-else' });
+check('and refuses a confirmation that does not match', r.code === 400, JSON.stringify(r.body));
+check('the site is still there after both refusals', !!KV.get('ks:site:takedown-shop'));
+
+r = await asAdmin({ action: 'site-delete', slug: 'takedown-shop', confirm: 'takedown-shop' });
+check('a matching confirmation deletes it', r.code === 200 && r.body.deleted === true, JSON.stringify(r.body).slice(0, 140));
+check('the record is gone', !KV.get('ks:site:takedown-shop'));
+check('the LIST entry is gone, so it stops showing in /master',
+  !(KV.get('ks:siteidx') || {})['takedown-shop'], JSON.stringify(Object.keys(KV.get('ks:siteidx') || {})));
+check('and the customer join is gone, so their panel stops syncing to a dead site',
+  !(KV.get('ks:siteemail') || {})['owner@takedown.com'], JSON.stringify(KV.get('ks:siteemail') || {}));
+check('it reports what it removed, so a takedown can be evidenced',
+  r.body.business === 'Takedown Shop' && r.body.wasPublished === false, JSON.stringify(r.body));
+
+r = await asAdmin({ action: 'site-delete', slug: 'takedown-shop', confirm: 'takedown-shop' });
+check('deleting it twice says not found rather than pretending', r.code === 404, JSON.stringify(r.body));
+r = await asAdmin({ action: 'site-unpublish', slug: 'never-existed' });
+check('unpublishing something that does not exist says so', r.code === 404, JSON.stringify(r.body));
+r = await call(master, { action: 'site-delete', slug: 'x', confirm: 'x', token: 'nope' });
+check('and neither is reachable without the operator key', r.code === 401);
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

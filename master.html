@@ -270,6 +270,18 @@
         </div>
         <div class="onres" id="sRes"></div>
 
+        <!-- TAKING IT DOWN. Two different asks. Unpublish is what you want when
+             an owner says "get it off the internet now": instant, a hard 404,
+             and everything we built is still here when the conversation turns.
+             Delete is for when it is over, and it asks first because it cannot
+             be undone from this screen. -->
+        <div class="row" style="margin-top:18px;align-items:center;gap:10px">
+          <button class="btn ghost sm" type="button" id="sDown" style="border-color:var(--gold);color:var(--gold)">Take offline</button>
+          <button class="btn ghost sm" type="button" id="sDel" style="border-color:var(--red);color:var(--red)">Delete permanently</button>
+          <span class="fine2" style="margin:0">Take offline makes it a 404 and keeps the page. Delete removes the record for good.</span>
+        </div>
+        <div class="onres" id="sDelRes"></div>
+
       </div>
     </div>
 
@@ -436,6 +448,38 @@ $('fdGo').onclick=async()=>{
 $('fdCity').onkeydown=e=>{ if(e.key==='Enter') $('fdGo').click(); };
 
 $('sNew').onclick=()=>openEditor(null);
+function curSlug(){ return ($('f_slug')&&$('f_slug').value.trim())||slugify(($('f_business')&&$('f_business').value.trim())||''); }
+function delSay(m,bad){ $('sDelRes').style.color=bad?'var(--red)':'var(--go)'; $('sDelRes').innerHTML=m; }
+
+// Instant. The owner asked for it off the internet, not for it to be discussed.
+$('sDown').onclick=async()=>{
+  const slug=curSlug(); if(!slug){ delSay('Open a website first.',true); return; }
+  $('sDown').disabled=true; delSay('Taking it offline…');
+  const r=await api('site-unpublish',{slug});
+  $('sDown').disabled=false;
+  if(!r.ok){ delSay('Could not take it down: '+esc(r.d.error||r.status),true); return; }
+  delSay('Offline. <b>/s/'+esc(slug)+'</b> is now a 404 and it is out of the sitemap.'
+    +(r.d.keptPage?' The page itself is kept, so putting it back is one click.':'')
+    +' It is also no longer marked claimed, so it cannot be indexed if it goes back up by accident.');
+  $('f_published').checked=false;
+  loadSites();
+};
+
+// Not undoable from here, so it asks, and the API makes the caller name the
+// slug twice rather than trusting one field on one screen.
+$('sDel').onclick=async()=>{
+  const slug=curSlug(); if(!slug){ delSay('Open a website first.',true); return; }
+  if(!confirm('Delete "'+slug+'" permanently?\n\nThe record, its page, its place in the list and its link to the customer all go. This cannot be undone from here.\n\nIf you only want it off the internet, press Take offline instead.')) return;
+  $('sDel').disabled=true; delSay('Deleting…');
+  const r=await api('site-delete',{slug,confirm:slug});
+  $('sDel').disabled=false;
+  if(!r.ok){ delSay('Could not delete: '+esc(r.d.error||r.status),true); return; }
+  delSay('Deleted <b>'+esc(r.d.business||slug)+'</b>. The record, the list entry and the customer link are all gone.'
+    +(r.d.wasPublished?' It was live, so it is now a 404.':''));
+  $('sEd').style.display='none'; editing=null;
+  loadSites();
+};
+
 $('sCancel').onclick=()=>{ $('sEd').style.display='none'; editing=null; };
 $('f_business').addEventListener('blur',()=>{ if(!$('f_slug').value.trim()) $('f_slug').value=slugify($('f_business').value); });
 

@@ -6,18 +6,19 @@
 // nothing would ever appear on their website. These use the real Oou Wee's demo
 // page, 31KB of hand-built HTML with none of our module markup in it, because a
 // synthetic "<html><body></body></html>" would not prove anything about a real
-// customer's layout.
+// customer's layout. It was Oou Wee's until that page was removed at the
+// owner's request, which is the reason a test never keeps the only copy.
 import fs from 'fs';
 import { applyModules, INJECTABLE } from '../lib/site-modules.js';
 
-const REAL = fs.readFileSync(new URL('../demos/oouwees-barbershop-gladstone.html', import.meta.url), 'utf8');
+const REAL = fs.readFileSync(new URL('../demos/kcs-sports-academy-olathe.html', import.meta.url), 'utf8');
 
 let pass = 0, fail = 0;
 const check = (n, c, d) => { if (c) { console.log('  PASS  ' + n); pass++; } else { console.log('  FAIL  ' + n + (d ? '  <- ' + d : '')); fail++; } };
 
 const site = (modules, extra = {}) => ({
-  slug: 'oouwees-barbershop-gladstone', business: "Oou Wee's Barbershop",
-  phone: '(816) 866-9003', street: '7113 N Locust St', city: 'Gladstone', state: 'MO', zip: '64118',
+  slug: 'kcs-sports-academy-olathe', business: "KC's Sports Academy",
+  phone: '(816) 679-1642', street: '1 Academy Way', city: 'Olathe', state: 'KS', zip: '66061',
   modules: ['P0', ...modules], ...extra,
 });
 
@@ -34,12 +35,12 @@ console.log('\nFLIPPING ONE ON PUTS IT ON THE PAGE');
 
 const ai = applyModules(REAL, site(['P9']));
 check('P9 puts the assistant on their page', ai.includes('ksmAiBtn') && ai.includes('ksm-ai-f'));
-check('and it is addressed to their business by name', ai.includes("Ask Oou Wee&#39;s Barbershop") || ai.includes('Ask Oou Wee'));
-check('and it talks to the right site', ai.includes('"oouwees-barbershop-gladstone"'));
+check('and it is addressed to their business by name', ai.includes('Ask KC'));
+check('and it talks to the right site', ai.includes('"kcs-sports-academy-olathe"'));
 check('P8 fires the view beacon', applyModules(REAL, site(['P8'])).includes("action:'view'"));
 check('P1 adds the listing markup', applyModules(REAL, site(['P1'])).includes('application/ld+json'));
 check('P1 carries the real address into it',
-  applyModules(REAL, site(['P1'])).includes('7113 N Locust St'));
+  applyModules(REAL, site(['P1'])).includes('1 Academy Way'));
 
 const book = applyModules(REAL, site(['P3'], { bookingUrl: 'https://booksy.com/x' }));
 check('P3 adds a booking action', book.includes('ksm-book') && book.includes('https://booksy.com/x'));
@@ -53,7 +54,7 @@ console.log('\nIT MUST NOT WRECK A LAYOUT WE DID NOT DESIGN');
 
 const all = applyModules(REAL, site(['P1', 'P3', 'P7', 'P8', 'P9'], { bookingUrl: 'https://booksy.com/x', payUrl: 'https://pay.example/x' }));
 check('every byte of their original page survives', all.includes(REAL.slice(0, 2000)) || all.length > REAL.length);
-check('their own content is still there', all.includes('7113 N Locust St') && all.includes('oouweesbarbershop'));
+check('their own content is still there', all.includes('kcsa-badge') && all.includes('tel:+18166791642'));
 check('nothing was spliced into the middle of their markup',
   all.indexOf('ksm-ai-btn') > all.lastIndexOf('</main>'), 'injected before their main closed');
 check('the head injection lands inside the head',

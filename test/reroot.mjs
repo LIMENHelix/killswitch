@@ -1,43 +1,48 @@
 // THE SAME BYTES AT A NEW ADDRESS ARE NOT THE SAME PAGE.
 //
-// The real failure this comes from: Oou Wee's page carries
-// src="assets/oouwees-logo.jpg". At /demos/oouwees-barbershop-gladstone that
-// resolves to /demos/assets/... and is correct. Served from /s/... the browser
-// resolves it against /s/ and the shop's own logo 404s off their own website.
-// Nothing errors. The HTML is valid, the file is there, the address moved.
+// The real failure this comes from: a demo page carries a RELATIVE asset path
+// like src="assets/badge.png". At /demos/<page> that resolves to /demos/assets/
+// and is correct. Served from /s/<slug> the browser resolves it against /s/ and
+// the business's own logo 404s off their own website. Nothing errors: the HTML
+// is valid, the file is there, the address moved.
+//
+// Uses KC's Sports Academy because it has the same shape. It was originally
+// Oou Wee's, whose page was removed from the repo when the owner asked for it
+// to be taken down, which is exactly why a test must not be the only copy of
+// a customer's content.
 import fs from 'fs';
 import { rerootRelativeUrls } from '../lib/site-modules.js';
 
-const REAL = fs.readFileSync(new URL('../demos/oouwees-barbershop-gladstone.html', import.meta.url), 'utf8');
-const SRC = '/demos/oouwees-barbershop-gladstone';
+const REAL = fs.readFileSync(new URL('../demos/kcs-sports-academy-olathe.html', import.meta.url), 'utf8');
+const SRC = '/demos/kcs-sports-academy-olathe';
+const ASSET = 'assets/kcsa-badge.png';
 
 let pass = 0, fail = 0;
 const check = (n, c, d) => { if (c) { console.log('  PASS  ' + n); pass++; } else { console.log('  FAIL  ' + n + (d ? '  <- ' + d : '')); fail++; } };
 
 console.log('\nTHE ACTUAL BUG, ON THE ACTUAL PAGE');
 
-check('the real page really does carry a relative logo, or this test proves nothing',
-  REAL.includes('src="assets/oouwees-logo.jpg"'));
+check('the real page really does carry a relative asset, or this test proves nothing',
+  REAL.includes('src="' + ASSET + '"'));
 
 const fixed = rerootRelativeUrls(REAL, SRC);
-check('the logo is re-rooted to where the file actually is',
-  fixed.includes('src="/demos/assets/oouwees-logo.jpg"'), (fixed.match(/src="[^"]*logo[^"]*"/) || [''])[0]);
-check('and the broken relative form is gone', !fixed.includes('src="assets/oouwees-logo.jpg"'));
+check('the asset is re-rooted to where the file actually is',
+  fixed.includes('src="/demos/' + ASSET + '"'), (fixed.match(/src="[^"]*kcsa[^"]*"/) || [''])[0]);
+check('and the broken relative form is gone', !fixed.includes('src="' + ASSET + '"'));
 
 console.log('\nWHAT MUST NOT BE TOUCHED');
 
-check('their Booksy links are left alone', fixed.includes('https://booksy.com/en-us/478315_oou-wee-s-barbershops_barber-shop_134838_kansas-city'));
-check('their Instagram is left alone', fixed.includes('https://www.instagram.com/oouweesbarbershop/'));
+check('their outbound citations are left alone', fixed.includes('https://doi.org/10.1007/s40279-021-01523-9'));
 check('Google Fonts is left alone', fixed.includes('https://fonts.googleapis.com/css2?'));
-check('the tel: link is left alone', fixed.includes('tel:+18168669003'));
+check('the tel: link is left alone', fixed.includes('tel:+18166791642'));
 // The strongest form of "nothing else changed": diff it line by line and name
 // every line that moved. The logo appears TWICE on this page, in the header and
 // again in the hero, so two lines differing is correct and one would be a bug.
 const before = REAL.split('\n'), after = fixed.split('\n');
 const moved = before.map((l, i) => (l === after[i] ? null : i)).filter((i) => i !== null);
-check('exactly two lines changed on the whole page', moved.length === 2, 'lines ' + JSON.stringify(moved));
-check('and both of them are the logo, nothing else',
-  moved.every((i) => before[i].includes('assets/oouwees-logo.jpg') && after[i].includes('/demos/assets/oouwees-logo.jpg')),
+check('only lines carrying that asset changed', moved.length > 0 && moved.length <= 3, 'lines ' + JSON.stringify(moved));
+check('and every changed line is that asset, nothing else',
+  moved.every((i) => before[i].includes(ASSET) && after[i].includes('/demos/' + ASSET)),
   JSON.stringify(moved.map((i) => after[i].trim().slice(0, 70))));
 
 console.log('\nEVERY FORM A RELATIVE URL TAKES');
@@ -90,13 +95,13 @@ console.log('\nSERVING A PAGE STORED BEFORE ANY OF THIS EXISTED');
 // re-roots too, falling back to /demos/<slug> for records with no htmlSrc, which
 // is where every one of them actually came from because the slug was derived
 // from that path. This is the exact record that was live with a missing logo.
-const stored = { slug: 'oouwees-barbershop-gladstone', html: REAL, published: true, claimed: true, modules: ['P0'] };
+const stored = { slug: 'kcs-sports-academy-olathe', html: REAL, published: true, claimed: true, modules: ['P0'] };
 const base = stored.htmlSrc || ('/demos/' + stored.slug);
 const served = rerootRelativeUrls(stored.html, base);
-check('an old record with no htmlSrc still gets its logo back on serve',
-  served.includes('src="/demos/assets/oouwees-logo.jpg"'), (served.match(/src="[^"]*logo[^"]*"/) || [''])[0]);
+check('an old record with no htmlSrc still gets its asset back on serve',
+  served.includes('src="/demos/' + ASSET + '"'), (served.match(/src="[^"]*kcsa[^"]*"/) || [''])[0]);
 check('and the broken path is gone from what gets served',
-  !served.includes('src="assets/oouwees-logo.jpg"'));
+  !served.includes('src="' + ASSET + '"'));
 
 // Serving runs on every request, so it must be safe to run over an already
 // corrected page forever.

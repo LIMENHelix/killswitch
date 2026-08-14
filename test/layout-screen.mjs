@@ -37,7 +37,7 @@ const PAGES = process.argv[2] ? [process.argv[2]] : [
   'free-website-for-cleaning-services.html',
   'free-website-for-plumbers-in-kansas-city.html',
   // every demo, because these get handed out on live calls
-  'demos/oouwees-barbershop-gladstone.html', 'demos/auto-tech-shawnee.html',
+  'demos/auto-tech-shawnee.html',
   'demos/amilcars-auto-repair-independence.html', 'demos/autobots-overland-park.html',
   'demos/charlies-brake-muffler-lenexa.html', 'demos/daves-trusted-auto-grandview.html',
   'demos/kcs-sports-academy-olathe.html', 'demos/lee-auto-repair-kansas-city.html',
