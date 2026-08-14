@@ -17,11 +17,11 @@ const P = await import('../lib/postcard.js');
 let pass = 0, fail = 0;
 const check = (n, c, d) => { if (c) { console.log('  PASS  ' + n); pass++; } else { console.log('  FAIL  ' + n + (d ? '  <- ' + d : '')); fail++; } };
 
-const LEAD = { name: "Oou Wee's Barbershop", trade: 'salon/barber' };
+const LEAD = { name: 'Lee Auto Repair', trade: 'auto repair' };
 const front = P.frontHtml(LEAD);
 const back = P.backHtml(LEAD);
-const delivered = P.frontHtml({ ...LEAD, siteUrl: 'killswitchwebsites.com/s/oouwees' });
-const deliveredBack = P.backHtml({ ...LEAD, siteUrl: 'killswitchwebsites.com/s/oouwees' });
+const delivered = P.frontHtml({ ...LEAD, siteUrl: 'killswitchwebsites.com/s/lee-auto' });
+const deliveredBack = P.backHtml({ ...LEAD, siteUrl: 'killswitchwebsites.com/s/lee-auto' });
 
 console.log('\nBOTH NUMBERS ARE ON THE CARD');
 
@@ -65,10 +65,10 @@ console.log('\nNOTHING THAT ALREADY WORKED WAS TAKEN AWAY');
 
 check('the offer card still leads with the free-website headline', /100% Free/.test(front));
 check('the delivery card still leads with "already built"', /already built/.test(delivered));
-check('the delivery card still prints where the site is', delivered.includes('killswitchwebsites.com/s/oouwees'));
-check('the trade is still pluralised for the audience', /Built for salons and barbershops/.test(back),
+check('the delivery card still prints where the site is', delivered.includes('killswitchwebsites.com/s/lee-auto'));
+check('the trade is still pluralised for the audience', /Built for auto shops/.test(back),
   (back.match(/Built for [^<]*/) || [''])[0]);
-check('the business name is still on the delivery card', delivered.includes("Oou Wee's Barbershop"));
+check('the business name is still on the delivery card', delivered.includes('Lee Auto Repair'));
 check('the card is still the right size for Lob', front.includes('9.25in') && front.includes('6.25in'));
 
 // A business name with an ampersand must not break the markup. Note this has to
