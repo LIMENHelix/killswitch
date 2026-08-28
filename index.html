@@ -361,30 +361,22 @@
     btn.disabled = true;
     btn.textContent = 'Sending…';
 
-    fetch('https://api.web3forms.com/submit', {
+    fetch('/api/inbound', {
       method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Accept':'application/json' },
+      headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({
-        access_key: WEB3FORMS_KEY,
-        subject: '🔔 FREE SITE request · Killswitch Websites',
-        from_name: 'Killswitch Websites Website',
-        name: business,
+        email: email,
         business: business,
         phone: phone,
-        contact: email,
-        source: 'free site · homepage form',
-        message: 'FREE SITE REQUEST (homepage form)\n' +
-                 'Business: ' + business + '\n' +
-                 'Phone: ' + phone + '\n' +
-                 'Email: ' + email
       })
     })
     .then(function(r){ return r.json().catch(function(){ return {}; }); })
     .then(function(d){
-      if(d && d.success){
+      if(d && d.ok){
         if(window.ksEvent) ksEvent('signup_submitted', { source: 'homepage' });
         form.style.display = 'none';
         done.classList.add('show');
+        done.innerHTML = '<h2>You\'re in.</h2><p>Panel link sent to <b>' + email + '</b>. Check your email—open it to switch your site on and add any modules.</p>';
         setSwitch(true, false);
         done.scrollIntoView({ behavior:'smooth', block:'center' });
       } else { fail(); }

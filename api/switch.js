@@ -11,7 +11,7 @@ import { verifyPanel, panelToken } from '../lib/panel-auth.js';
 import { MONTHLY, PRICE_TO_PHASE, isSellable } from '../lib/prices.js';
 import { stripeGet, stripePost, stripeDelete } from '../lib/stripe.js';
 import { notifyOperator, labelPhases } from '../lib/notify.js';
-import { siteForEmail } from '../lib/sites.js';
+import { siteForEmail, upsertSite } from '../lib/sites.js';
 // syncModulesLoud, not syncModules: a paid switch that renders nowhere used to
 // return null into a catch that only ever saw thrown errors. See lib/site-link.js.
 import { syncModulesLoud } from '../lib/site-link.js';
@@ -102,7 +102,18 @@ async function readState(account) {
   let live = null;
   try {
     const rec = await siteForEmail(account.email);
-    if (rec) live = { slug: rec.slug, path: '/s/' + rec.slug, published: !!rec.published };
+    if (rec) {
+      // AUTO-CLAIM on first panel load: customer opened their panel, so they own it.
+      // Published sites stay published and get indexed. Unpublished draft 404s until
+      // they claim it themselves (which this does), so nothing changes visibility.
+      if (!rec.claimed) {
+        try {
+          await upsertSite({ slug: rec.slug, claimed: true });
+          rec.claimed = true;
+        } catch (e) { console.error('[switch] auto-claim', rec.slug, e); }
+      }
+      live = { slug: rec.slug, path: '/s/' + rec.slug, published: !!rec.published, claimed: !!rec.claimed };
+    }
   } catch (e) { console.error('[switch] site lookup', e); }
 
   return {
