@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  if (await limited(req, res, { bucket: 'inbound', ...LIMITS.signup })) return;
+  if (await limited(req, res, { bucket: 'inbound', ...LIMITS.inbound })) return;
 
   let body = req.body;
   if (typeof body === 'string') {
