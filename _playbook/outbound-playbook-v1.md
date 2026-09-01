@@ -41,7 +41,7 @@ Trade swaps (replace paragraph 2):
 Subjects: `three sites you can click right now` / `you can go look at them (no mockups)` / `re: the catch`
 
 > {{FirstName}} — fair question after my last email: does this company actually build anything, or is it a pitch deck?
-> Go click them: allaccesskc.com (local guide, live chat) · recursivelove.com (resource hub, 24/7 AI helper) · limenhelix.com (our own intelligence platform).
+> Go click them: allaccesskc.com (local guide, live chat) · limenhelix.com (our own intelligence platform).
 > Live sites. Real businesses. Today.
 > Here's the part to sit with: doing nothing isn't free either. Every week without a site you're paying: the customer who searched "{{trade}} near me" at 8 p.m. and got your competitor; the caller who hung up because nobody picked up; the person who couldn't tell if you were still in business and moved on. You never see those. That's what makes them expensive.
 > The build costs you nothing and takes minutes. Reply with your business name and I'll start it today.
@@ -85,7 +85,7 @@ Subjects: `closing your file` / `should I stop?` / `last one from me, {{FirstNam
 **Postcard (6×9 oversized). FRONT:** "We'll build your website. Free." / "And no, we're not going to hold it hostage." / Killswitch Websites · killswitchwebsites.com
 **BACK:** The catch, since you're looking for it: the website is free and genuinely yours (domain, content, code, no contract). We bet you'll later want the machine around it (Google, 24/7 booking, payments, a 2 a.m. AI), $19–29/mo, nothing on unless you turn it on. That's how a free website pays for itself. Built for {{trade}}s. → killswitchwebsites.com/start (live in minutes, no call) or call/text {{Phone}} and say "free site."
 
-**The Letter (1 page, #10 window envelope, real stamp, blue-ink signature — beats the postcard 3:1 on trades):** opens "This is a sales letter. You knew that by the second line." States the free real site you own, no contract, keep it and walk if you want. Explains the model (add-ons $19–29/mo, optional, off). "We give away the thing you'd normally pay two thousand dollars for, and bet on being good enough that you choose to pay later." Proof (allaccesskc.com, recursivelove.com). "We take a handful of builds at a time." CTA: killswitchwebsites.com/start or call and say "free site." P.S. the paper letter proves we'll do the unscalable thing.
+**The Letter (1 page, #10 window envelope, real stamp, blue-ink signature — beats the postcard 3:1 on trades):** opens "This is a sales letter. You knew that by the second line." States the free real site you own, no contract, keep it and walk if you want. Explains the model (add-ons $19–29/mo, optional, off). "We give away the thing you'd normally pay two thousand dollars for, and bet on being good enough that you choose to pay later." Proof (allaccesskc.com). "We take a handful of builds at a time." CTA: killswitchwebsites.com/start or call and say "free site." P.S. the paper letter proves we'll do the unscalable thing.
 
 ---
 
