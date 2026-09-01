@@ -129,10 +129,16 @@ export default async function handler(req, res) {
       label: themeFor(saved.theme).label,
       // Only a published site gets a link. api/site.js 404s a draft, and sending
       // someone to their own broken link is worse than saying nothing.
-      siteUrl: (saved.published && !written) ? '/s/' + saved.slug : '',
-      // WHETHER THE PAGE THEY CAN VISIT ACTUALLY CHANGED. ok:true only means the
-      // choice was stored. The panel must not say "open it to see it" about a
-      // page that looks exactly as it did.
+      // ONE MEANING, THE SAME IN BOTH REPLIES: the address of their live site,
+      // or '' when there is no page anyone can visit. It used to be blanked here
+      // for a written site to stop the panel saying "open it to see it", which
+      // made the same field name mean two different things depending on which
+      // reply you were reading. `applied` carries that instead, which is the
+      // thing actually being asked.
+      siteUrl: saved.published ? '/s/' + saved.slug : '',
+      // WHETHER A VISITOR WOULD SEE ANY DIFFERENCE. ok:true only means the choice
+      // was stored. These are genuinely different questions and each now has its
+      // own field.
       applied: !written,
       written,
       message: written

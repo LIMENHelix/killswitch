@@ -797,10 +797,19 @@
     }
     function esc3(v){ return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-    // The label for a theme id, so redrawing the ON marker never has to read it
+    // The label for a theme id, so redrawing the marker never has to read it
     // back out of the DOM. Reading it back meant escaping it on the way in and
     // not on the way out, which is two different answers to the same question.
     var LABEL = {};
+    // Whether their page is one written specially for them. If it is, a theme is
+    // STORED and not in effect, and the marker has to say which of those it is.
+    var isWritten = false;
+
+    // ON means "this is what your site looks like". SAVED means "this is stored
+    // and would apply, but your page is a bespoke one so it is not in effect".
+    // Showing ON over a page that does not look like it is the same lie the
+    // endpoint was fixed for, one layer up.
+    function badge(on){ return on ? (isWritten ? ' <i>SAVED</i>' : ' <i>ON</i>') : ''; }
 
     function draw(themes, locked){
       themes.forEach(function(t){ LABEL[t.id] = t.label; });
@@ -811,7 +820,7 @@
           +   '<span class="dot" style="background:'+esc3(t.swatch.ac)+'"></span>'
           +   '<span class="bar" style="background:'+esc3(t.swatch.ink)+';opacity:.85"></span>'
           + '</span>'
-          + '<span class="meta"><span class="nm">'+esc3(t.label)+(on?' <i>ON</i>':'')+'</span>'
+          + '<span class="meta"><span class="nm">'+esc3(t.label)+badge(on)+'</span>'
           +   '<span class="ds">'+esc3(t.note)+'</span></span>'
           + '</button>';
       }).join('');
@@ -828,12 +837,16 @@
         busy = false;
         if(d && d.ok){
           current = d.current;
+          // Re-read it from THIS reply rather than trusting the one from page
+          // load. If a bespoke page was written in between, the badge would
+          // otherwise still say ON over a page that does not look like it.
+          if(typeof d.written === 'boolean') isWritten = d.written;
           Array.prototype.forEach.call(list.querySelectorAll('.th'), function(el){
             var id = el.getAttribute('data-id');
             var on = id === current;
             el.setAttribute('aria-pressed', on ? 'true' : 'false');
             var nm = el.querySelector('.nm');
-            if(nm) nm.innerHTML = esc3(LABEL[id] || id) + (on ? ' <i>ON</i>' : '');
+            if(nm) nm.innerHTML = esc3(LABEL[id] || id) + badge(on);
           });
           // `applied` is not `ok`. A site with a page written for it stores the
           // choice and looks exactly the same, so it must not be told to go and
@@ -855,11 +868,14 @@
     api('list').then(function(d){
       if(!d || !d.ok || !d.themes || !d.themes.length) return;   // stay hidden
       current = d.current || '';
-      // Locked for a site that does not exist yet (nothing to write onto) and
-      // for one with a page written specially for it (the look picker does not
-      // change that page). Both cases say why, rather than offering a button
-      // that would do nothing.
-      draw(d.themes, !!d.noSite || !!d.written);
+      // Locked ONLY when there is no site record yet, because then there is
+      // genuinely nowhere to store the choice and the endpoint refuses it with
+      // a 409. A site with a bespoke page stays PICKABLE: storing it is real and
+      // it decides what they go back to if the bespoke page is ever dropped.
+      // Disabling it there made the endpoint's written branch unreachable and
+      // took away a choice that does something.
+      isWritten = !!d.written;
+      draw(d.themes, !!d.noSite);
       if(d.message) note.textContent = d.message;
       wrap.hidden = false;
     }).catch(function(){ /* the picker is never worth breaking the panel over */ });

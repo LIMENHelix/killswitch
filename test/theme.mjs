@@ -196,7 +196,11 @@ const wSet = await call({ e: W, t: tokW, action: 'set', theme: 'midnight' });
 check('the choice is still accepted and stored', wSet.code === 200 && wSet.body.ok === true);
 check('it is written to the record, so site-unwrite would apply it', (await getSite('ana-custom')).theme === 'midnight');
 check('but it reports applied:false, because the page did not change', wSet.body.applied === false, JSON.stringify(wSet.body.applied));
-check('and it hands back NO link, so nobody is sent to look at nothing', wSet.body.siteUrl === '', JSON.stringify(wSet.body.siteUrl));
+check('siteUrl means the same thing in both replies: the address of their live site',
+  wSet.body.siteUrl === '/s/ana-custom' && wList.body.siteUrl === '/s/ana-custom',
+  JSON.stringify([wSet.body.siteUrl, wList.body.siteUrl]));
+check('and applied:false, not a blanked link, is what says the page did not change',
+  wSet.body.applied === false && wSet.body.written === true);
 const wPage = mkRes();
 await siteApi({ method: 'GET', query: { slug: 'ana-custom' }, headers: { host: 'killswitchwebsites.com' } }, wPage);
 check('the served page really is unchanged, which is what applied:false claims',
@@ -220,6 +224,34 @@ check('the ON marker is no longer rebuilt from unescaped DOM text',
   !/nm\.innerHTML = nm\.textContent/.test(panelSrc));
 check('it is redrawn from the label map through the same escaper',
   /nm\.innerHTML = esc3\(LABEL\[id\]/.test(panelSrc));
+
+console.log('\nTHE MARKER SAYS WHICH IT IS: IN EFFECT, OR ONLY STORED');
+// Showing "ON" against a theme over a bespoke page that does not look like it
+// is the same lie the endpoint was fixed for, one layer up. The panel now shows
+// SAVED there instead, and keeps the picker usable because storing the choice
+// is real: it decides what they go back to if the bespoke page is dropped.
+check('the panel distinguishes in-effect from stored', /function badge\(on\)/.test(panelSrc));
+check('SAVED is used when the page is a written one', /isWritten \? . <i>SAVED<\/i>. : . <i>ON<\/i>./.test(panelSrc), 'badge() body not found');
+check('both the first draw and the redraw go through the same badge()',
+  (panelSrc.match(/\+badge\(on\)|\+ badge\(on\)/g) || []).length === 2,
+  String((panelSrc.match(/badge\(on\)/g) || []).length));
+check('the picker is locked ONLY when there is no site record',
+  /draw\(d\.themes, !!d\.noSite\);/.test(panelSrc) && !/!!d\.noSite \|\| !!d\.written/.test(panelSrc));
+
+console.log('\nA BESPOKE-PAGE CUSTOMER CAN STILL CHOOSE WHAT THEY GO BACK TO');
+const wSet2 = await call({ e: W, t: tokW, action: 'set', theme: 'coastal' });
+check('the choice is accepted', wSet2.code === 200 && wSet2.body.ok === true);
+check('and stored on the record', (await getSite('ana-custom')).theme === 'coastal');
+check('still reported as not applied', wSet2.body.applied === false);
+// Drop the bespoke page the way api/master.js site-unwrite does, and the stored
+// choice must be the one that takes effect.
+await upsertSite({ slug: 'ana-custom', html: '', htmlAt: '' });
+const unwritten = mkRes();
+await siteApi({ method: 'GET', query: { slug: 'ana-custom' }, headers: { host: 'killswitchwebsites.com' } }, unwritten);
+check('once the bespoke page is dropped, the stored look is what renders',
+  unwritten.sent.includes('--bg:' + THEMES.coastal.bg), 'coastal bg not found');
+const afterUnwrite = await call({ e: W, t: tokW, action: 'list' });
+check('and it now reports as applied, not merely stored', afterUnwrite.body.written === false);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
