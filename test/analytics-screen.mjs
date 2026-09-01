@@ -14,12 +14,32 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 
 const ROOT = path.join(import.meta.dirname, '..');
-let web3 = 0, checkout = 0;
+// /w3f is still the stand-in for Web3Forms, which pricing.html, start.html,
+// script.js and the seven demo pages still post to. The HOMEPAGE stopped using
+// it when the capture form was rewired to /api/inbound, so counting the
+// homepage submission there counted nothing and this file had been failing ever
+// since. It is counted at its real endpoint now.
+let web3 = 0, checkout = 0, inbound = 0;
 
 const server = http.createServer((req, res) => {
   const url = req.url.split('?')[0];
   // Stand in for Web3Forms so a form can succeed without leaving the machine.
   if (url === '/w3f') { web3++; res.setHeader('content-type', 'application/json'); res.end('{"success":true}'); return; }
+  // THE HOMEPAGE SIGNUP, at the endpoint it actually posts to. This must sit
+  // ABOVE the /api/ catch-all below, or it never runs. Counting it specifically
+  // is also what makes the assertion mean something: the catch-all answers
+  // {"ok":true} to ANY /api/ path, so without this the test would still pass if
+  // the form were pointed at a mistyped endpoint that does not exist.
+  if (url === '/api/inbound') {
+    inbound++;
+    res.setHeader('content-type', 'application/json');
+    res.end(JSON.stringify({
+      ok: true, email: 'test@example.com',
+      portalUrl: 'http://127.0.0.1:' + PORT + '/panel?e=test%40example.com&t=tok',
+      message: 'Account created.',
+    }));
+    return;
+  }
   if (url === '/api/checkout') {
     checkout++;
     res.setHeader('content-type', 'application/json');
@@ -126,7 +146,7 @@ check('a pointer that never moves does NOT count',
 
 console.log('\nTHE CONVERSIONS');
 await open('/');
-const before = web3;
+const before = inbound;
 await evaluate(`
   document.getElementById('fBiz').value = 'Test Plumbing';
   document.getElementById('fPhone').value = '816-555-0101';
@@ -134,7 +154,8 @@ await evaluate(`
   document.getElementById('capForm').requestSubmit();
 `);
 await new Promise((r) => setTimeout(r, 900));
-check('the homepage form still actually submits', web3 === before + 1, `${before} -> ${web3}`);
+check('the homepage form still actually submits, and to /api/inbound',
+  inbound === before + 1, `${before} -> ${inbound}`);
 check('and a signup is recorded', (await evaluate(NAMES)).includes('signup_submitted'), JSON.stringify(await evaluate(NAMES)));
 check('tagged with where it came from',
   JSON.parse(await evaluate(EVENT('signup_submitted')) || 'null')?.source === 'homepage', await evaluate(EVENT('signup_submitted')));
