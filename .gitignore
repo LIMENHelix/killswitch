@@ -7,3 +7,6 @@ _outreach/CREDENTIALS.txt
 _outreach/leads.csv
 _outreach/call-sheet.csv
 _outreach/dashboard.html
+
+# `vercel env pull --environment=production` writes this; it holds VERCEL_OIDC_TOKEN.
+production

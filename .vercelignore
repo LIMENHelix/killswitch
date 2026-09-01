@@ -18,3 +18,16 @@ test/
 # They carry <meta name="robots" content="noindex, nofollow"> because they are
 # built for businesses that have not agreed to anything yet, so Google must not
 # index a site branded with a real business's name, address and phone.
+
+# `vercel env pull --environment=production` writes a file literally named
+# `production` holding VERCEL_OIDC_TOKEN and the production secrets. It does
+# NOT match the `.env*` lines above, so without this a whole-tree
+# `vercel --prod` would serve that token as a static file.
+production
+
+# Internal architecture notes and one-off operator scripts. Not part of the site.
+ARCHITECTURE_AUDIT.md
+ARCHITECTURE_FLOWS.md
+PANEL_CAPABILITIES.md
+SYSTEM_ARCHITECTURE_INDEX.md
+scripts/
