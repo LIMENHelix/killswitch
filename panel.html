@@ -797,10 +797,16 @@
     }
     function esc3(v){ return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-    function draw(themes, noSite){
+    // The label for a theme id, so redrawing the ON marker never has to read it
+    // back out of the DOM. Reading it back meant escaping it on the way in and
+    // not on the way out, which is two different answers to the same question.
+    var LABEL = {};
+
+    function draw(themes, locked){
+      themes.forEach(function(t){ LABEL[t.id] = t.label; });
       list.innerHTML = themes.map(function(t){
         var on = t.id === current;
-        return '<button class="th" type="button" data-id="'+esc3(t.id)+'" aria-pressed="'+(on?'true':'false')+'"'+(noSite?' disabled':'')+'>'
+        return '<button class="th" type="button" data-id="'+esc3(t.id)+'" aria-pressed="'+(on?'true':'false')+'"'+(locked?' disabled':'')+'>'
           + '<span class="prev" style="background:'+esc3(t.swatch.bg)+'">'
           +   '<span class="dot" style="background:'+esc3(t.swatch.ac)+'"></span>'
           +   '<span class="bar" style="background:'+esc3(t.swatch.ink)+';opacity:.85"></span>'
@@ -823,16 +829,22 @@
         if(d && d.ok){
           current = d.current;
           Array.prototype.forEach.call(list.querySelectorAll('.th'), function(el){
-            var on = el.getAttribute('data-id') === current;
+            var id = el.getAttribute('data-id');
+            var on = id === current;
             el.setAttribute('aria-pressed', on ? 'true' : 'false');
             var nm = el.querySelector('.nm');
-            if(nm) nm.innerHTML = nm.textContent.replace(/\s*ON$/,'') + (on ? ' <i>ON</i>' : '');
+            if(nm) nm.innerHTML = esc3(LABEL[id] || id) + (on ? ' <i>ON</i>' : '');
           });
-          note.textContent = d.siteUrl
-            ? 'Saved. Your site is now ' + (d.label || current) + '. Open it to see it.'
-            : 'Saved. Your site will use ' + (d.label || current) + ' the moment it goes live.';
+          // `applied` is not `ok`. A site with a page written for it stores the
+          // choice and looks exactly the same, so it must not be told to go and
+          // look at a change that is not there.
+          note.textContent = d.applied === false
+            ? (d.message || 'Saved, but your site looks the same.')
+            : d.siteUrl
+              ? 'Saved. Your site is now ' + (d.label || current) + '. Open it to see it.'
+              : 'Saved. Your site will use ' + (d.label || current) + ' the moment it goes live.';
         } else {
-          note.textContent = 'Could not change the look just then. Try again in a moment.';
+          note.textContent = (d && d.message) || 'Could not change the look just then. Try again in a moment.';
         }
       }).catch(function(){
         busy = false;
@@ -843,8 +855,12 @@
     api('list').then(function(d){
       if(!d || !d.ok || !d.themes || !d.themes.length) return;   // stay hidden
       current = d.current || '';
-      draw(d.themes, !!d.noSite);
-      if(d.noSite && d.message) note.textContent = d.message;
+      // Locked for a site that does not exist yet (nothing to write onto) and
+      // for one with a page written specially for it (the look picker does not
+      // change that page). Both cases say why, rather than offering a button
+      // that would do nothing.
+      draw(d.themes, !!d.noSite || !!d.written);
+      if(d.message) note.textContent = d.message;
       wrap.hidden = false;
     }).catch(function(){ /* the picker is never worth breaking the panel over */ });
   })();

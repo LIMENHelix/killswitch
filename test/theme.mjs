@@ -175,5 +175,51 @@ check('themeFor(undefined) is warm', themeFor(undefined) === THEMES.warm);
 check('themeFor(garbage) is warm', themeFor('../../etc/passwd') === THEMES.warm);
 check('theme names are matched case-insensitively', themeFor('MIDNIGHT') === THEMES.midnight);
 
+console.log('\nA PAGE WRITTEN FOR THIS BUSINESS IGNORES THE THEME, AND SAYS SO');
+// api/site.js serves site.html verbatim, and lib/site-writer.js is told to
+// return a complete document with all CSS inline and no external stylesheets,
+// so a written page carries its own colours and never reads our variables.
+// The endpoint used to report plain success here and the panel told the
+// customer to go and look at a change that was not there.
+const W = 'ana@customwrite.test';
+await upsertAccount({ email: W, name: 'Ana Custom', site: 'Ana Custom', plan: ['P0'] });
+await upsertSite({ business: 'Ana Custom', email: W, published: true, claimed: true,
+  html: '<!DOCTYPE html><html><head><style>body{background:#fff}</style></head><body><h1>Ana Custom</h1></body></html>',
+  htmlAt: new Date().toISOString() });
+const tokW = await panelToken(W);
+
+const wList = await call({ e: W, t: tokW, action: 'list' });
+check('list flags that this site has its own written page', wList.body.written === true, JSON.stringify(wList.body.written));
+check('and explains it in words the owner can act on', /written specially for it/.test(wList.body.message || ''), wList.body.message);
+
+const wSet = await call({ e: W, t: tokW, action: 'set', theme: 'midnight' });
+check('the choice is still accepted and stored', wSet.code === 200 && wSet.body.ok === true);
+check('it is written to the record, so site-unwrite would apply it', (await getSite('ana-custom')).theme === 'midnight');
+check('but it reports applied:false, because the page did not change', wSet.body.applied === false, JSON.stringify(wSet.body.applied));
+check('and it hands back NO link, so nobody is sent to look at nothing', wSet.body.siteUrl === '', JSON.stringify(wSet.body.siteUrl));
+const wPage = mkRes();
+await siteApi({ method: 'GET', query: { slug: 'ana-custom' }, headers: { host: 'killswitchwebsites.com' } }, wPage);
+check('the served page really is unchanged, which is what applied:false claims',
+  wPage.code === 200 && !wPage.sent.includes(THEMES.midnight.bg), String(wPage.code));
+
+console.log('\nWITH NO SITE YET A CHOICE CANNOT BE STORED, SO IT IS REFUSED');
+await upsertAccount({ email: 'newbie@nosite.test', name: 'Newbie', site: 'Newbie', plan: ['P0'] });
+const tokN = await panelToken('newbie@nosite.test');
+const nSet = await call({ e: 'newbie@nosite.test', t: tokN, action: 'set', theme: 'bold' });
+check('set is refused with 409 rather than a false success', nSet.code === 409, String(nSet.code));
+check('and names the reason', nSet.body.error === 'no_site_yet', JSON.stringify(nSet.body));
+check('nothing was written anywhere', (await getSite('newbie')) === null);
+const nList = await call({ e: 'newbie@nosite.test', t: tokN, action: 'list' });
+check('list still returns the catalogue so the picker can be drawn', nList.body.themes.length === THEME_NAMES.length);
+check('and no longer invites them to pick something they cannot pick',
+  !/You can pick a look now/.test(nList.body.message || ''), nList.body.message);
+
+console.log('\nTHE PANEL ESCAPES A LABEL THE SAME WAY IN BOTH PLACES');
+const panelSrc = fs.readFileSync(path.join(ROOT, 'panel.html'), 'utf8');
+check('the ON marker is no longer rebuilt from unescaped DOM text',
+  !/nm\.innerHTML = nm\.textContent/.test(panelSrc));
+check('it is redrawn from the label map through the same escaper',
+  /nm\.innerHTML = esc3\(LABEL\[id\]/.test(panelSrc));
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

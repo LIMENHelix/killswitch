@@ -57,18 +57,46 @@ export default async function handler(req, res) {
   try { rec = await siteForEmail(email); }
   catch (e) { console.error('[theme] site lookup', e); res.status(500).json({ error: 'server_error' }); return; }
 
+  const action = body.action || 'list';
+
   if (!rec) {
-    // No site joined yet is a real state (see lib/site-link.js). Say so plainly
-    // and still hand back the catalogue, so the panel can show the picker
-    // disabled with a reason rather than an empty box or a dead end.
+    // NO SITE JOINED YET IS A REAL STATE (see lib/site-link.js, which creates
+    // nothing on purpose). There is no record to write a theme onto, so the
+    // choice cannot be stored anywhere. This used to answer a 'set' with
+    // ok:true and throw the choice away, which is the same lie as a switch that
+    // goes green while nothing renders.
+    //
+    // The preference is NOT parked on the account instead. That would need a
+    // new field plus something to consume it at site-creation time, which is
+    // new machinery for a state that resolves itself the moment the site
+    // exists.
+    if (action === 'set') {
+      res.status(409).json({
+        error: 'no_site_yet',
+        message: 'Your website is being put together. You will be able to pick a look as soon as it is up.',
+      });
+      return;
+    }
     res.status(200).json({
       ok: true, current: DEFAULT_THEME, themes: catalogue(),
-      noSite: true, message: 'Your website is being put together. You can pick a look now and it will be applied.',
+      noSite: true,
+      // Says what is true AND matches the panel, which disables the buttons in
+      // this state. The previous wording invited them to pick and then gave
+      // them nothing to click.
+      message: 'Your website is being put together. You will be able to pick a look as soon as it is up.',
     });
     return;
   }
 
-  const action = body.action || 'list';
+  // A PAGE WRITTEN FOR THIS BUSINESS IGNORES THE THEME, AND THEY HAVE TO BE TOLD.
+  // api/site.js serves site.html verbatim and only falls back to renderSite when
+  // it is empty, and lib/site-writer.js is instructed to return a complete
+  // document with all CSS inline and no external stylesheets, so a written page
+  // carries its own colours and never reads the template's variables. Injecting
+  // them would change nothing. api/master.js already carries this same warning
+  // about its editor. The theme is still stored, because site-unwrite drops the
+  // written page and falls back to the template, at which point it does apply.
+  const written = !!(rec.html && rec.html.length);
 
   if (action === 'list') {
     res.status(200).json({
@@ -76,6 +104,10 @@ export default async function handler(req, res) {
       current: isTheme(rec.theme) ? String(rec.theme).toLowerCase() : DEFAULT_THEME,
       themes: catalogue(),
       siteUrl: rec.published ? '/s/' + rec.slug : '',
+      written,
+      message: written
+        ? 'Your site has a page written specially for it, so these looks do not change it. Ask us to switch it back to the standard layout if you want to use them.'
+        : '',
     });
     return;
   }
@@ -97,7 +129,15 @@ export default async function handler(req, res) {
       label: themeFor(saved.theme).label,
       // Only a published site gets a link. api/site.js 404s a draft, and sending
       // someone to their own broken link is worse than saying nothing.
-      siteUrl: saved.published ? '/s/' + saved.slug : '',
+      siteUrl: (saved.published && !written) ? '/s/' + saved.slug : '',
+      // WHETHER THE PAGE THEY CAN VISIT ACTUALLY CHANGED. ok:true only means the
+      // choice was stored. The panel must not say "open it to see it" about a
+      // page that looks exactly as it did.
+      applied: !written,
+      written,
+      message: written
+        ? 'Saved, but your site has a page written specially for it, so it still looks the same. Ask us to switch it back to the standard layout to use these.'
+        : '',
     });
     return;
   }
