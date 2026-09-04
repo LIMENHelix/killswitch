@@ -16,6 +16,7 @@ delete process.env.RESEND_API_KEY;   // notify becomes a no-op, must never throw
 const KV = new Map();
 let stripeSubs = [];        // subscriptions the fake Stripe knows about
 let stripeCustomers = [];   // customers by email
+let stripeCharges = {};     // charge lookup for refund/dispute webhooks
 let created = [];           // checkout sessions created
 
 globalThis.fetch = async (url, opts = {}) => {
@@ -85,6 +86,14 @@ globalThis.fetch = async (url, opts = {}) => {
     if (path.startsWith('/customers?')) {
       const email = decodeURIComponent((path.match(/email=([^&]+)/) || [])[1] || '');
       return json({ data: stripeCustomers.filter((c) => c.email === email) });
+    }
+    if (path.startsWith('/customers/')) {
+      const id = decodeURIComponent(path.slice('/customers/'.length).split('?')[0]);
+      return json(stripeCustomers.find((c) => c.id === id) || { id });
+    }
+    if (path.startsWith('/charges/')) {
+      const id = decodeURIComponent(path.slice('/charges/'.length).split('?')[0]);
+      return json(stripeCharges[id] || { id });
     }
     if (path === '/checkout/sessions' && opts.method === 'POST') {
       created.push(opts.body);
@@ -180,7 +189,7 @@ function putSite(rec) {
   if (rec.email) { const em = KV.get('ks:siteemail') || {}; em[rec.email.toLowerCase()] = rec.slug; KV.set('ks:siteemail', em); }
 }
 function seed() {
-  KV.clear(); stripeSubs = []; stripeCustomers = []; created = [];
+  KV.clear(); stripeSubs = []; stripeCustomers = []; stripeCharges = {}; created = [];
   seedAccounts({ [EMAIL]: { email: EMAIL, tokenNonce: NONCE, name: 'Test Shop', plan: ['P0'] } });
   putSite({ slug: 'test-shop', business: 'Test Shop', email: EMAIL, phone: '816-555-0101', modules: ['P0'], published: true, claimed: true });
 }
@@ -1025,6 +1034,8 @@ console.log('\n17. A payment through ANY door now sets the customer up');
 const crypto2 = await import('node:crypto');
 const { verifySignature } = await import('../api/stripe-webhook.js');
 const webhook = (await import('../api/stripe-webhook.js')).default;
+const { listBillingEvents } = await import('../lib/billing-events.js');
+const { getLifecycleEvents: billingLifecycleEvents, getLifecycleState: billingLifecycleState } = await import('../lib/lifecycle.js');
 
 const WHSEC = 'whsec_test_secret';
 function signed(payload, secret = WHSEC, t = Math.floor(Date.now() / 1000)) {
@@ -1104,6 +1115,7 @@ seed();
 w = await hook({ type: 'checkout.session.completed', id: 'evt_no_email', data: { object: { customer: 'cus_x', amount_total: 1900 } } });
 check('a payment with no email still returns 200 rather than retrying forever', w.code === 200);
 check('and creates no junk account', Object.keys(accts()).length === 1, Object.keys(accts()).join(','));
+check('but the money event is still durable for reconciliation', (await listBillingEvents({ limit: 20 })).some((e) => e.id === 'evt_no_email' && e.amountCents === 1900));
 
 // An existing customer must not be reset by a second purchase.
 seed();
@@ -1121,6 +1133,55 @@ check('a malformed but non-actionable event is acknowledged', w.code === 200, 'g
 seed();
 w = await hook({ type: 'customer.discount.created', id: 'evt_ignored', data: { object: {} } });
 check('an event we do not care about is acknowledged quietly', w.code === 200);
+
+// Refunds and disputes used to be acknowledged and silently dropped. They now
+// have an audit row even when no customer account exists yet, and a resolvable
+// customer also gets durable lifecycle history.
+const REFUNDED = 'refund@example.com';
+seed();
+const refundEvent = {
+  type: 'charge.refunded', id: 'evt_refunded', created: 1788541200,
+  data: { object: {
+    id: 'ch_refunded', customer: 'cus_refunded', amount_refunded: 1900, currency: 'usd',
+    billing_details: { email: REFUNDED },
+    refunds: { data: [{ id: 're_1', charge: 'ch_refunded', amount: 1900, currency: 'usd', status: 'succeeded' }] },
+  } },
+};
+w = await hook(refundEvent);
+check('a verified refund is accepted', w.code === 200, 'got ' + w.code);
+let moneyEvents = await listBillingEvents({ limit: 20 });
+check('the refund is durable and keeps its amount', moneyEvents.length === 1 && moneyEvents[0].type === 'payment.refunded' && moneyEvents[0].amountCents === 1900, JSON.stringify(moneyEvents));
+check('the customer lifecycle also records the refund', (await billingLifecycleEvents(REFUNDED)).some((e) => e.type === 'payment.refunded'));
+w = await hook(refundEvent);
+check('replaying the refund is idempotent', w.code === 200 && w.body.duplicate === true && (await listBillingEvents({ limit: 20 })).length === 1);
+w = await hook({
+  type: 'refund.created', id: 'evt_refund_created_too',
+  data: { object: { id: 're_1', charge: { id: 'ch_refunded', customer: 'cus_refunded', billing_details: { email: REFUNDED } }, amount: 1900, currency: 'usd', status: 'succeeded' } },
+});
+check('Stripe refund and charge notifications collapse into one money event', w.code === 200 && (await listBillingEvents({ limit: 20 })).length === 1);
+
+const DISPUTED = 'dispute@example.com';
+seed();
+stripeCharges.ch_disputed = {
+  id: 'ch_disputed', customer: 'cus_disputed', currency: 'usd',
+  billing_details: { email: DISPUTED },
+};
+w = await hook({
+  type: 'charge.dispute.created', id: 'evt_dispute_open',
+  data: { object: { id: 'dp_1', charge: 'ch_disputed', amount: 2900, currency: 'usd', status: 'needs_response', reason: 'fraudulent' } },
+});
+check('an opened dispute is accepted', w.code === 200, 'got ' + w.code);
+check('the dispute becomes an operator-visible lifecycle blocker', (await billingLifecycleState(DISPUTED)).blocker === 'payment_dispute_needs_response');
+moneyEvents = await listBillingEvents({ limit: 20 });
+check('the dispute is retained in the money ledger', moneyEvents.some((e) => e.type === 'payment.dispute.created' && e.sourceId === 'dp_1'));
+
+w = await hook({
+  type: 'charge.dispute.closed', id: 'evt_dispute_won',
+  data: { object: { id: 'dp_1', charge: 'ch_disputed', amount: 2900, currency: 'usd', status: 'won', reason: 'fraudulent' } },
+});
+check('a won dispute is accepted', w.code === 200, 'got ' + w.code);
+const wonState = await billingLifecycleState(DISPUTED);
+check('winning clears only the dispute blocker', wonState.status === 'active' && wonState.blocker === '');
 
 // One-time payment links do not appear in Stripe subscriptions. Their line item
 // becomes permanent ownership on the account and must still switch on the site.

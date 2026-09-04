@@ -15,7 +15,10 @@
 //   1. Developers > Webhooks > Add endpoint
 //      https://killswitchwebsites.com/api/stripe-webhook
 //      events: checkout.session.completed, customer.subscription.updated,
-//              customer.subscription.deleted, invoice.payment_failed
+//              customer.subscription.deleted, invoice.payment_failed,
+//              charge.refunded, refund.created, refund.updated, refund.failed,
+//              charge.dispute.created, charge.dispute.updated,
+//              charge.dispute.closed
 //   2. copy the signing secret (whsec_...) into Vercel as STRIPE_WEBHOOK_SECRET
 //      then redeploy, because Vercel bakes env vars into a deployment
 //
@@ -36,7 +39,8 @@ import { beginStripeEvent, completeStripeEvent, releaseStripeEvent } from '../li
 import { checkoutPhases } from '../lib/checkout-entitlements.js';
 import { ensureCustomerSite } from '../lib/autonomy.js';
 import { publicOrigin } from '../lib/origin.js';
-import { recordLifecycle, reconcileLifecycle } from '../lib/lifecycle.js';
+import { getLifecycleState, recordLifecycle, reconcileLifecycle } from '../lib/lifecycle.js';
+import { recordBillingEvent } from '../lib/billing-events.js';
 
 // Stripe signs the RAW bytes. Any re-serialisation changes them and the
 // signature will not match, so the parsed body is useless here.
@@ -143,11 +147,17 @@ async function handleEvent(event) {
   const type = event && event.type;
   const obj = (event && event.data && event.data.object) || {};
 
-  if (type === 'checkout.session.completed') return onCheckout(obj);
+  if (type === 'checkout.session.completed') return onCheckout(obj, event);
   if (type === 'customer.subscription.updated' || type === 'customer.subscription.deleted') {
-    return onSubscriptionChange(obj);
+    return onSubscriptionChange(obj, event);
   }
-  if (type === 'invoice.payment_failed') return onPaymentFailed(obj);
+  if (type === 'invoice.payment_failed') return onPaymentFailed(obj, event);
+  if (type === 'charge.refunded' || type === 'refund.created' || type === 'refund.updated' || type === 'refund.failed') {
+    return onRefund(obj, event);
+  }
+  if (type === 'charge.dispute.created' || type === 'charge.dispute.updated' || type === 'charge.dispute.closed') {
+    return onDispute(obj, event);
+  }
   // Anything else is acknowledged and ignored on purpose.
   return null;
 }
@@ -157,7 +167,7 @@ async function handleEvent(event) {
  * The panel path also calls switch.js link(), which is harmless: both do the
  * same upsert and the same module sync, so whichever lands second is a no-op.
  */
-async function onCheckout(session) {
+async function onCheckout(session, event) {
   const customer = typeof session.customer === 'string' ? session.customer : (session.customer && session.customer.id);
   const email = String(
     session.customer_email
@@ -166,6 +176,12 @@ async function onCheckout(session) {
   ).trim().toLowerCase();
 
   if (!email) {
+    await recordBillingEvent({
+      id: event.id, type: 'payment.completed', customerId: customer,
+      amountCents: session.amount_total || 0, currency: session.currency || '',
+      status: session.payment_status || 'completed', sourceId: session.id || '',
+      at: event.created ? new Date(event.created * 1000).toISOString() : '',
+    });
     // A payment link with no email collected. Nothing can be provisioned, so
     // hand it to the operator rather than dropping it.
     await notifyOperator({
@@ -216,6 +232,12 @@ async function onCheckout(session) {
     idempotencyKey: 'stripe:checkout:' + String(session.id || customer || email),
     data: { amountTotal: session.amount_total || 0, currency: session.currency || '', mode: session.mode || '', phases },
   });
+  await recordBillingEvent({
+    id: event.id, type: 'payment.completed', email, customerId: customer,
+    amountCents: session.amount_total || 0, currency: session.currency || '',
+    status: session.payment_status || 'completed', sourceId: session.id || '',
+    at: event.created ? new Date(event.created * 1000).toISOString() : '',
+  });
   await reconcileLifecycle({
     email, account, site: lifecycleSite, phases,
     idempotencyKey: 'stripe:checkout:' + String(session.id || customer || email),
@@ -244,14 +266,21 @@ async function onCheckout(session) {
 }
 
 /** Keeps a site in step when a subscription changes outside the panel. */
-async function onSubscriptionChange(sub) {
+async function onSubscriptionChange(sub, event) {
   const customer = typeof sub.customer === 'string' ? sub.customer : (sub.customer && sub.customer.id);
   if (!customer) return;
 
   let email = '';
   const cust = await stripeGet('/customers/' + encodeURIComponent(customer));
   if (cust && cust.email) email = String(cust.email).trim().toLowerCase();
-  if (!email) return;
+  if (!email) {
+    await recordBillingEvent({
+      id: event.id, type: event.type, customerId: customer,
+      status: sub.status || '', sourceId: sub.id || '',
+      at: event.created ? new Date(event.created * 1000).toISOString() : '',
+    });
+    return;
+  }
 
   const account = await getAccount(email);
   if (!account) return;
@@ -265,6 +294,11 @@ async function onSubscriptionChange(sub) {
       idempotencyKey: 'stripe:subscription:' + String(sub.id || customer) + ':' + String(sub.status || '') + ':' + String(sub.current_period_end || sub.cancel_at || ''),
       data: { subscriptionId: sub.id || '', status: sub.status || '', phases },
     });
+    await recordBillingEvent({
+      id: event.id, type: event.type, email, customerId: customer,
+      status: sub.status || '', sourceId: sub.id || '',
+      at: event.created ? new Date(event.created * 1000).toISOString() : '',
+    });
     await reconcileLifecycle({
       email, account, site, phases,
       idempotencyKey: 'stripe:subscription:' + String(sub.id || customer) + ':' + String(sub.status || ''),
@@ -272,8 +306,15 @@ async function onSubscriptionChange(sub) {
   }
 }
 
-async function onPaymentFailed(invoice) {
+async function onPaymentFailed(invoice, event) {
   const email = String(invoice.customer_email || '').trim().toLowerCase();
+  await recordBillingEvent({
+    id: event.id, type: 'payment.failed', email,
+    customerId: typeof invoice.customer === 'string' ? invoice.customer : invoice.customer && invoice.customer.id,
+    amountCents: invoice.amount_due || 0, currency: invoice.currency || '',
+    status: invoice.status || 'failed', sourceId: invoice.id || '',
+    at: event.created ? new Date(event.created * 1000).toISOString() : '',
+  });
   if (email) {
     await recordLifecycle(email, {
       type: 'payment.failed', blocked: true, blocker: 'payment_failed',
@@ -288,6 +329,106 @@ async function onPaymentFailed(invoice) {
       email ? `Email: ${email}` : `Stripe customer: ${invoice.customer || 'unknown'}`,
       invoice.amount_due ? `Amount: $${(invoice.amount_due / 100).toFixed(2)}` : '',
       'Stripe will retry on its own schedule. Their modules stay on in the meantime, because past_due still counts as a live customer.',
+    ].filter(Boolean),
+    url: publicOrigin() + '/master', urlText: 'Open Master Panel',
+  });
+}
+
+async function chargeFor(value) {
+  if (value && typeof value === 'object') return value;
+  const id = String(value || '').trim();
+  return id ? stripeGet('/charges/' + encodeURIComponent(id)) : null;
+}
+
+async function billingContact(primary, charge) {
+  const c = charge || primary || {};
+  const rawCustomer = primary.customer || c.customer;
+  const customerId = typeof rawCustomer === 'string' ? rawCustomer : rawCustomer && rawCustomer.id;
+  let email = String(
+    primary.customer_email || primary.receipt_email
+    || (primary.billing_details && primary.billing_details.email)
+    || c.customer_email || c.receipt_email
+    || (c.billing_details && c.billing_details.email)
+    || (rawCustomer && typeof rawCustomer === 'object' && rawCustomer.email)
+    || '',
+  ).trim().toLowerCase();
+  if (!email && customerId) {
+    const customer = await stripeGet('/customers/' + encodeURIComponent(customerId));
+    email = String(customer && customer.email || '').trim().toLowerCase();
+  }
+  return { email, customerId: String(customerId || '') };
+}
+
+async function onRefund(refund, event) {
+  const isCharge = event.type === 'charge.refunded';
+  const charge = isCharge ? refund : await chargeFor(refund.charge);
+  const listed = isCharge && refund.refunds && Array.isArray(refund.refunds.data) ? refund.refunds.data : [];
+  const detail = listed.length ? listed[listed.length - 1] : refund;
+  const who = await billingContact(detail, charge);
+  const failed = event.type === 'refund.failed' || detail.status === 'failed';
+  const amount = detail.amount || (isCharge ? refund.amount_refunded : refund.amount);
+  const type = failed ? 'payment.refund_failed' : 'payment.refunded';
+  const sourceId = detail.id || refund.id || '';
+  const saved = await recordBillingEvent({
+    id: event.id, type, email: who.email, customerId: who.customerId,
+    amountCents: amount || 0, currency: detail.currency || refund.currency || (charge && charge.currency) || '',
+    status: detail.status || (failed ? 'failed' : 'succeeded'), reason: detail.reason || detail.failure_reason || '',
+    sourceId, dedupeKey: 'refund:' + (sourceId || String((charge && charge.id) || '') + ':' + String(amount || 0)),
+    at: event.created ? new Date(event.created * 1000).toISOString() : '',
+  });
+  if (saved.duplicate) return;
+  if (who.email) {
+    await recordLifecycle(who.email, {
+      type, idempotencyKey: 'stripe:' + event.id,
+      data: { amount: amount || 0, currency: detail.currency || refund.currency || (charge && charge.currency) || '', refundId: sourceId, status: detail.status || '' },
+    });
+  }
+  await notifyOperator({
+    subject: `${failed ? 'REFUND FAILED' : 'REFUND'} - ${who.email || 'unknown customer'}`,
+    heading: failed ? 'Stripe could not complete a refund' : 'A Stripe payment was refunded',
+    lines: [
+      who.email ? `Customer: ${who.email}` : `Stripe customer: ${who.customerId || 'unknown'}`,
+      amount ? `Amount: $${(Number(amount) / 100).toFixed(2)} ${(detail.currency || refund.currency || (charge && charge.currency) || '').toUpperCase()}`.trim() : '',
+      detail.reason ? `Reason: ${detail.reason}` : '',
+      'No module was switched off automatically: a refund may be partial or separate from an active subscription. Review the customer in Stripe and Master.',
+    ].filter(Boolean),
+    url: publicOrigin() + '/master', urlText: 'Open Master Panel',
+  });
+}
+
+async function onDispute(dispute, event) {
+  const charge = await chargeFor(dispute.charge);
+  const who = await billingContact(dispute, charge);
+  const closed = event.type === 'charge.dispute.closed';
+  const won = closed && dispute.status === 'won';
+  const type = event.type.replace('charge.dispute.', 'payment.dispute.');
+  const saved = await recordBillingEvent({
+    id: event.id, type, email: who.email, customerId: who.customerId,
+    amountCents: dispute.amount || 0, currency: dispute.currency || (charge && charge.currency) || '',
+    status: dispute.status || '', reason: dispute.reason || '', sourceId: dispute.id || '',
+    dedupeKey: 'dispute:' + String(dispute.id || '') + ':' + type + ':' + String(dispute.status || ''),
+    at: event.created ? new Date(event.created * 1000).toISOString() : '',
+  });
+  if (saved.duplicate) return;
+  if (who.email) {
+    const current = won ? await getLifecycleState(who.email) : null;
+    const canClear = won && current && String(current.blocker || '').startsWith('payment_dispute');
+    await recordLifecycle(who.email, {
+      type, idempotencyKey: 'stripe:' + event.id,
+      blocked: canClear ? false : (won ? undefined : true),
+      blocker: won ? '' : ('payment_dispute_' + String(dispute.status || 'open')),
+      data: { disputeId: dispute.id || '', amount: dispute.amount || 0, currency: dispute.currency || '', status: dispute.status || '', reason: dispute.reason || '' },
+    });
+  }
+  await notifyOperator({
+    subject: `DISPUTE ${String(dispute.status || 'opened').toUpperCase()} - ${who.email || 'unknown customer'}`,
+    heading: won ? 'A payment dispute was won' : (closed ? 'A payment dispute closed' : 'A payment dispute needs attention'),
+    lines: [
+      who.email ? `Customer: ${who.email}` : `Stripe customer: ${who.customerId || 'unknown'}`,
+      dispute.amount ? `Amount: $${(Number(dispute.amount) / 100).toFixed(2)} ${String(dispute.currency || '').toUpperCase()}`.trim() : '',
+      dispute.reason ? `Reason: ${dispute.reason}` : '',
+      dispute.status ? `Status: ${dispute.status}` : '',
+      won ? 'The dispute blocker was cleared if this dispute was the active customer blocker.' : 'Review the evidence deadline and subscription in Stripe. Access was not changed automatically.',
     ].filter(Boolean),
     url: publicOrigin() + '/master', urlText: 'Open Master Panel',
   });

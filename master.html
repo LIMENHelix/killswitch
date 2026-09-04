@@ -139,6 +139,13 @@
       <div class="wrapt"><table><thead><tr><th>Customer</th><th>Requested</th><th>Work</th><th>Status</th><th></th></tr></thead><tbody id="wTb"></tbody></table></div>
     </div>
 
+    <div class="card" id="billingCard">
+      <h2>Billing exceptions</h2>
+      <div class="h-sub">Failed payments, refunds, and disputes from verified Stripe webhooks. These records remain here even after the issue is resolved.</div>
+      <div class="onres" id="bMsg"></div>
+      <div class="wrapt"><table><thead><tr><th>When</th><th>Event</th><th>Customer</th><th>Amount</th><th>Status / reason</th></tr></thead><tbody id="bTb"></tbody></table></div>
+    </div>
+
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
         <div>
@@ -736,7 +743,22 @@ async function boot(){
   $('login').style.display='none'; $('app').style.display='block';
   paint(res.d);
   loadWork();
+  loadBilling();
   loadSites();
+}
+
+async function loadBilling(){
+  const r=await api('billing-events',{limit:200});
+  if(!r.ok){ $('bMsg').textContent='Could not load billing events: '+(r.d.error||r.status); return; }
+  const events=r.d.events||[];
+  $('bTb').innerHTML=events.length?events.map(event=>{
+    const when=event.at?new Date(event.at).toLocaleString():'';
+    const amount=event.amountCents?('$'+(Number(event.amountCents)/100).toFixed(2)+' '+String(event.currency||'').toUpperCase()):'—';
+    const kind=String(event.type||'');
+    return `<tr><td class="dt">${esc(when)}</td><td class="life ${kind.includes('dispute')||kind.includes('failed')?'bad':'wait'}">${esc(kind.replace(/^payment\./,'').replace(/\./g,' '))}</td>`
+      +`<td class="email">${esc(event.email||event.customerId||'Unknown')}</td><td class="mrr">${esc(amount)}</td>`
+      +`<td>${esc(event.status||'')}${event.reason?'<div class="sub">'+esc(event.reason)+'</div>':''}</td></tr>`;
+  }).join(''):'<tr><td colspan="5" style="color:var(--mute2);text-align:center;padding:22px">No billing exceptions recorded.</td></tr>';
 }
 
 async function loadWork(){
