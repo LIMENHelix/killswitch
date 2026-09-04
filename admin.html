@@ -116,6 +116,7 @@
   .pill{font-size:.64rem;font-weight:700;padding:3px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
   .pill.queued{background:rgba(255,196,46,.14);color:var(--amber)}
   .pill.mailed{background:rgba(27,164,90,.16);color:var(--go)}
+  .pill.suppressed{background:rgba(255,85,70,.17);color:var(--red)}
   .pill.bad_address{background:rgba(255,85,70,.16);color:var(--red)}
   .pill.noaddr{background:rgba(150,150,160,.15);color:var(--mute2)}
   a{color:var(--amber)}
@@ -162,6 +163,8 @@
     border-radius:7px;padding:5px 10px;font:inherit;font-size:.76rem;cursor:pointer;white-space:nowrap}
   .scriptbtn:hover{border-color:var(--amber)}
   .scriptbtn.cold{color:var(--mute2)}
+  tr.suppressed-row{opacity:.68} tr.suppressed-row .name{color:var(--mute2)}
+  .supbtn{margin-top:6px;white-space:nowrap}.sup-reason{display:block;color:var(--red);font-size:.7rem;margin-top:3px;max-width:230px}
   .modal{position:fixed;inset:0;background:rgba(4,4,6,.78);display:none;z-index:50;
     align-items:flex-start;justify-content:center;padding:5vh 16px;overflow-y:auto}
   .modal.open{display:flex}
@@ -237,7 +240,7 @@
         <ol>
           <li>Check email for the two subjects above.</li>
           <li><b>Free site request:</b> build their site, then go to <a href="/master" target="_blank">/master</a> &rarr; Onboard a customer &rarr; enter their email. That emails them a $0 receipt and their private panel link.</li>
-          <li><b>Change request:</b> make the change, then reply to them yourself.</li>
+          <li><b>Change request:</b> make the change, then open <a href="/master" target="_blank">/master</a> and mark its work order complete. The lifecycle advances and the customer is emailed automatically.</li>
           <li>Work the call list below. Every row has a <b>Script</b> button: it opens the five-step call, that shop's own hook, and the follow-up text ready to copy. Rows that say <b>Script + demo</b> already have a site built, so that call is a delivery. Rows that say only <b>Script</b> do not, and the script says so at the top rather than letting you promise a site that does not exist. Filter the list by <b>Has a demo built</b> to work the deliveries first.</li>
           <li><b>Once a week</b>, open <a href="/master" target="_blank">/master</a> to see the whole picture: who is paying, monthly revenue, and the Renews / Ends column. A date in red means that customer is winding down and will stop at the end of their cycle.</li>
         </ol>
@@ -263,6 +266,7 @@
         <h3>How to stop things</h3>
         <table class="rbt">
           <tr><td>Stop the mail</td><td>Flip the autopilot switch off on this page. Nothing further is sent, and nothing is charged.</td></tr>
+          <tr><td>Stop one contact everywhere</td><td>Use <b>Suppress</b> on their row. It immediately blocks postcards, call scripts, copied texts, and AI-written email sequences that match their lead, email, phone, or address. Only the owner can lift it.</td></tr>
           <tr><td>Stop a customer's paid module</td><td>They can switch it off themselves in their panel. It keeps running until the end of the cycle they already paid for, then stops. You can also cancel it in Stripe.</td></tr>
           <tr><td>Stop everything at once</td><td>Autopilot off here, and pause the account in Stripe. The free websites stay online either way, and they belong to the customer.</td></tr>
         </table>
@@ -434,8 +438,9 @@ function addr(r){return [r.street,r.city,r.state,r.zip].filter(Boolean).join(' '
 function hasAddr(r){return !!(r.street&&r.state&&r.zip)}
 function isMailed(r){return r.status==='mailed'||!!r.lob_id}
 function isBad(r){return r.status==='bad_address'}
-function inQueue(r){return hasAddr(r)&&!isMailed(r)&&!isBad(r)}
-function mailState(r){return isMailed(r)?'mailed':isBad(r)?'bad_address':hasAddr(r)?'queued':'noaddr'}
+function isSuppressed(r){return !!r.suppressed}
+function inQueue(r){return hasAddr(r)&&!isMailed(r)&&!isBad(r)&&!isSuppressed(r)}
+function mailState(r){return isSuppressed(r)?'suppressed':isMailed(r)?'mailed':isBad(r)?'bad_address':hasAddr(r)?'queued':'noaddr'}
 
 function showLogin(m){ $('app').style.display='none'; $('login').style.display='block'; $('loginErr').textContent=m||''; }
 
@@ -573,7 +578,7 @@ function uniq(k){return [...new Set(LEADS.map(r=>r[k]).filter(Boolean))].sort()}
 function fillFilters(){
   uniq('trade').forEach(t=>$('fTrade').insertAdjacentHTML('beforeend',`<option>${esc(t)}</option>`));
   uniq('state').forEach(s=>$('fState').insertAdjacentHTML('beforeend',`<option>${esc(s)}</option>`));
-  [['queued','queued'],['mailed','mailed'],['bad_address','bad address'],['noaddr','no address']]
+  [['queued','queued'],['mailed','mailed'],['suppressed','do not contact'],['bad_address','bad address'],['noaddr','no address']]
     .forEach(([v,l])=>$('fStatus').insertAdjacentHTML('beforeend',`<option value="${v}">${l}</option>`));
   STAGES.slice(1).forEach(([v,l])=>$('fStage').insertAdjacentHTML('beforeend',`<option value="${v}">${l}</option>`));
 }
@@ -607,6 +612,7 @@ function board(){
   const mailed=LEADS.filter(isMailed).length;
   const queue=LEADS.filter(inQueue).length;
   const bad=LEADS.filter(isBad).length;
+  const suppressed=LEADS.filter(isSuppressed).length;
   const called=LEADS.filter(r=>['called','responded','won'].includes(r.stage)).length;
   const responded=LEADS.filter(r=>['responded','won'].includes(r.stage)).length;
   const won=LEADS.filter(r=>r.stage==='won').length;
@@ -617,7 +623,7 @@ function board(){
   $('queueN').textContent=queue.toLocaleString();
   $('spend').textContent='$'+(mailed*COST).toLocaleString(undefined,{maximumFractionDigits:0});
   $('tiles').innerHTML=[
-    ['go',mailed,'Mailed'],['amber',queue,'In queue'],['blue',called,'Called'],
+    ['go',mailed,'Mailed'],['amber',queue,'In queue'],['red',suppressed,'Suppressed'],['blue',called,'Called'],
     ['go',responded,'Responded'],['gold',won,'Won'],['red',bad,'Bad addr'],['',total,'Total leads']
   ].map(([c,k,l])=>`<div class="tile ${c}"><div class="k">${(k||0).toLocaleString()}</div><div class="l">${l}</div></div>`).join('');
   lastMailed=mailed;
@@ -630,21 +636,24 @@ function render(){
   $('tb').innerHTML=list.map(r=>{
     const ms=mailState(r), stg=r.stage||'';
     const canSel=inQueue(r);
-    const tel=r.phone?`<a href="tel:${esc(r.phone)}">${esc(r.phone)}</a>`:'';
+    const tel=r.phone?(isSuppressed(r)?esc(r.phone):`<a href="tel:${esc(r.phone)}">${esc(r.phone)}</a>`):'';
     const opts=STAGES.map(([v,l])=>`<option value="${v}" ${stg===v?'selected':''}>${l}</option>`).join('');
     const ci=callInfo(r);
     const own=r.owner||'';
     const at=r.attribution||{};
     const attr=[at.source,at.medium,at.campaign].filter(Boolean).join(' · ');
-    return `<tr>
+    const supControl=isSuppressed(r)
+      ? (ROLE==='owner'?`<button class="btn ghost sm supbtn" data-unsuppress="${esc(r.id)}">Lift suppression</button>`:'<span class="sup-reason">Owner must lift</span>')
+      : `<button class="btn ghost sm supbtn" data-suppress="${esc(r.id)}">Suppress</button>`;
+    return `<tr class="${isSuppressed(r)?'suppressed-row':''}">
       ${rep?'':`<td><input type="checkbox" class="rc" data-id="${esc(r.id)}" ${sel.has(r.id)?'checked':''} ${canSel?'':'disabled'}></td>`}
-      <td>${esc(r.trade)}</td><td class="name">${esc(r.name)}${attr?`<span class="attr">${esc(attr)}</span>`:''}</td><td>${tel}</td>
-      <td><button class="scriptbtn${(r.siteSlug||(ci&&ci.demo))?'':' cold'}" data-script="${esc(r.id)}">${r.siteSlug?(r.sitePublished?'Script + live site':'Script + site ready'):(ci&&ci.demo?'Script + demo':'Script')}</button></td>
+      <td>${esc(r.trade)}</td><td class="name">${esc(r.name)}${attr?`<span class="attr">${esc(attr)}</span>`:''}${isSuppressed(r)?`<span class="sup-reason">Do not contact: ${esc(r.suppressionReason||'suppressed')}</span>`:''}</td><td>${tel}</td>
+      <td><button class="scriptbtn${(r.siteSlug||(ci&&ci.demo))?'':' cold'}" data-script="${esc(r.id)}" ${isSuppressed(r)?'disabled':''}>${isSuppressed(r)?'Do not contact':r.siteSlug?(r.sitePublished?'Script + live site':'Script + site ready'):(ci&&ci.demo?'Script + demo':'Script')}</button></td>
       <td>${esc(addr(r))}</td>
       ${rep?'':`<td><span class="pill ${ms}">${ms==='bad_address'?'bad addr':ms==='noaddr'?'no addr':ms}</span></td>`}
-      <td><select class="stage s-${stg} " data-stage="${esc(r.id)}">${opts}</select></td>
+      <td><select class="stage s-${stg} " data-stage="${esc(r.id)}" ${isSuppressed(r)?'disabled':''}>${opts}</select></td>
       <td class="owner-c${own&&own===ME?' me':''}">${esc(own||'—')}</td>
-      <td class="notes-c"><input class="note" data-note="${esc(r.id)}" value="${esc(r.notes||'')}" placeholder="notes..."></td>
+      <td class="notes-c"><input class="note" data-note="${esc(r.id)}" value="${esc(r.notes||'')}" placeholder="notes...">${supControl}</td>
     </tr>`;
   }).join('');
   wt.scrollTop=sc;
@@ -684,7 +693,7 @@ $('mailBtn').onclick=async()=>{
   if(res.ok){
     const r2=await api('list'); if(r2.ok) LEADS=r2.d.leads;
     sel.clear();
-    $('msg').textContent=`Done: ${res.d.sent} mailed, ${res.d.bad} bad-address skipped`+(res.d.failed.length?`, ${res.d.failed.length} error(s)`:'')+'.';
+    $('msg').textContent=`Done: ${res.d.sent} mailed, ${res.d.bad} bad-address skipped, ${res.d.suppressed||0} suppressed`+(res.d.failed.length?`, ${res.d.failed.length} error(s)`:'')+'.';
     render();
   } else { $('msg').textContent='Error: '+(res.d.error||res.status); $('mailBtn').disabled=false; }
 };
@@ -707,7 +716,7 @@ $('apEnabled').onchange=async()=>{
 $('apRun').onclick=async()=>{
   $('msg').textContent='Running a batch now...';
   const r=await api('run-autopilot');
-  if(r.ok){ const R=r.d.result; $('msg').textContent=R.ran?`Batch done: ${R.mailed} mailed, ${R.bad||0} bad-address skipped.`:`Did not run: ${R.reason}.`;
+  if(r.ok){ const R=r.d.result; $('msg').textContent=R.ran?`Batch done: ${R.mailed} mailed, ${R.bad||0} bad-address skipped, ${R.suppressed||0} suppressed.`:`Did not run: ${R.reason}.`;
     await loadCfg(); await refresh(); }
   else $('msg').textContent='Error: '+(r.d.error||r.status);
 };
@@ -719,6 +728,7 @@ function stepHtml(n,label,body,say){
 }
 function openScript(id){
   const r=LEADS.find(x=>x.id===id); if(!r) return;
+  if(isSuppressed(r)){ $('msg').textContent='Do not contact '+r.name+'. The shared suppression list has disabled this script.'; return; }
   scLead=r;
   const ci=callInfo(r);
   const contact=(ci&&ci.who)||'the owner';
@@ -777,6 +787,25 @@ function openScript(id){
 }
 function closeScript(){ $('scriptModal').classList.remove('open'); scLead=null; }
 $('tb').addEventListener('click',e=>{ const id=e.target.dataset&&e.target.dataset.script; if(id) openScript(id); });
+$('tb').addEventListener('click',async e=>{
+  const sid=e.target.dataset&&e.target.dataset.suppress;
+  const uid=e.target.dataset&&e.target.dataset.unsuppress;
+  if(sid){
+    const lead=LEADS.find(x=>x.id===sid); if(!lead) return;
+    const reason=prompt('Why should every outreach channel stop for '+lead.name+'?','Customer asked not to be contacted.');
+    if(reason===null) return;
+    const res=await api('suppress',{id:sid,reason:reason||'Do not contact',channel:'manual'});
+    if(!res.ok){ $('msg').textContent='Could not suppress: '+(res.d.message||res.d.error||res.status); return; }
+    await refresh(); $('msg').textContent=lead.name+' is now blocked across postcards, calls, texts, and email drafts.';
+  }
+  if(uid){
+    const lead=LEADS.find(x=>x.id===uid); if(!lead) return;
+    if(!confirm('Lift the do-not-contact block for '+lead.name+'? This makes outreach controls available again.')) return;
+    const res=await api('unsuppress',{id:uid,suppressionId:lead.suppressionId});
+    if(!res.ok){ $('msg').textContent='Could not lift suppression: '+(res.d.error||res.status); return; }
+    await refresh(); $('msg').textContent='Suppression lifted. The lead stays at its current funnel stage until you deliberately reopen it.';
+  }
+});
 $('scClose').onclick=closeScript;
 $('scriptModal').addEventListener('click',e=>{ if(e.target===$('scriptModal')) closeScript(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeScript(); });
