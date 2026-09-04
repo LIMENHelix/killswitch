@@ -18,7 +18,8 @@ import { syncModulesLoud } from '../lib/site-link.js';
 import { getStats } from '../lib/stats.js';
 import { listContacts, updateContact, summarise } from '../lib/crm.js';
 import { statsFor } from '../lib/automation.js';
-import { ensureLinked, liveSubs } from '../lib/entitle.js';
+import { effectiveOwned, ensureLinked, liveSubs } from '../lib/entitle.js';
+import { publicOrigin } from '../lib/origin.js';
 
 const LIVE_STATUSES = ['active', 'trialing', 'past_due'];
 
@@ -36,7 +37,7 @@ export default async function handler(req, res) {
   const found = await getAccount(email);
   if (!found) { res.status(404).json({ error: 'not_found' }); return; }
 
-  const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitchwebsites.com';
+  const host = publicOrigin();
 
   // Repair a payment that never got recorded. A customer who paid on Stripe and
   // then closed the tab never hit success_url, so link() below never ran and this
@@ -47,7 +48,7 @@ export default async function handler(req, res) {
   // If that repaired the link, the site never got told what they bought either.
   // Catch it up here, once, on the first panel load after the lost payment.
   if (account.stripeCustomerId && account.stripeCustomerId !== found.stripeCustomerId) {
-    try { await syncModulesLoud(email, Object.keys(itemsByPhase(await liveSubs(account.stripeCustomerId))), 'panel-load-repair'); }
+    try { await syncModulesLoud(email, [...new Set([...Object.keys(itemsByPhase(await liveSubs(account.stripeCustomerId))), ...effectiveOwned(account)])], 'panel-load-repair'); }
     catch (err) { console.error('[switch] repair site sync', err); }
   }
   const action = body.action || 'state';
@@ -94,6 +95,7 @@ async function readState(account) {
     if (modules[phase]) continue;
     if (ending[phase] && ending[phase] > now) modules[phase] = { state: 'ending', endsAt: ending[phase] };
   }
+  for (const phase of effectiveOwned(account)) modules[phase] = { state: 'active', owned: true, endsAt: null };
   // THE SITE THEY ARE ACTUALLY PAYING US ABOUT. `account.site` is a string
   // somebody typed at signup, so it can be a domain that does not resolve, a
   // business name, or nothing. This is the record itself, which is the only
@@ -131,7 +133,7 @@ async function readState(account) {
 // the site record, so switching P8 off stops the numbers with the billing.
 async function readStats(account) {
   const subs = await liveSubs(account.stripeCustomerId);
-  const phases = new Set(Object.keys(itemsByPhase(subs)));
+  const phases = new Set([...Object.keys(itemsByPhase(subs)), ...effectiveOwned(account)]);
   if (!phases.has('P8')) return { entitled: false };
 
   const site = await siteForEmail(account.email);
@@ -141,7 +143,7 @@ async function readStats(account) {
 
 // ---- P5 CRM + P6 automation, both read from Stripe like everything else ----
 async function paidPhases(account) {
-  return new Set(Object.keys(itemsByPhase(await liveSubs(account.stripeCustomerId))));
+  return new Set([...Object.keys(itemsByPhase(await liveSubs(account.stripeCustomerId))), ...effectiveOwned(account)]);
 }
 
 async function readCrm(account) {
@@ -175,6 +177,12 @@ async function writeCrm(account, body) {
 
 async function applyChanges(account, on, host, email) {
   const desired = new Set((Array.isArray(on) ? on : []).filter((p) => MONTHLY[p]));
+  const owned = new Set(account.owned || []);
+  const ownedDisabled = new Set(account.ownedDisabled || []);
+  for (const phase of owned) {
+    if (desired.has(phase)) ownedDisabled.delete(phase);
+    else ownedDisabled.add(phase);
+  }
   let subs = await liveSubs(account.stripeCustomerId);
   let items = itemsByPhase(subs);
   const ending = { ...(account.ending || {}) };
@@ -217,7 +225,7 @@ async function applyChanges(account, on, host, email) {
   // The filter is on ADDITIONS alone, deliberately. Their existing item is left
   // untouched above, so it keeps billing and rendering exactly as before, and
   // removal still works normally the moment they switch it off.
-  const toAdd = [...desired].filter((p) => !items[p] && isSellable(p));
+  const toAdd = [...desired].filter((p) => !owned.has(p) && !items[p] && isSellable(p));
 
   // Clear the expiry for EVERYTHING they want on, not just the new additions.
   // Someone who switches a module off and then changes their mind before the
@@ -245,7 +253,7 @@ async function applyChanges(account, on, host, email) {
   }
 
   for (const p of Object.keys(ending)) if (!(ending[p] > now)) delete ending[p];
-  await upsertAccount({ email: account.email, ending });
+  await upsertAccount({ email: account.email, ending, ownedDisabled: [...ownedDisabled] });
 
   // THE POINT OF THE WHOLE THING: push the new on/off state onto their live site,
   // so flipping a switch here changes what renders at /s/<slug>. No rebuild, no
@@ -278,6 +286,7 @@ async function applyChanges(account, on, host, email) {
     const liveNow = [...new Set([
       ...[...desired].filter((p) => !turnedOff.includes(p) && !pending.has(p) && (held.has(p) || toAdd.includes(p))),
       ...stillPaidFor,
+      ...[...owned].filter((p) => !ownedDisabled.has(p)),
     ])];
     await syncModulesLoud(email, liveNow, 'customer-flipped-a-switch');
   } catch (err) { console.error('[switch] site sync', err); }
@@ -302,7 +311,7 @@ async function applyChanges(account, on, host, email) {
   }
 
   if (url) return { url };
-  const st = await readState({ ...account, ending });
+  const st = await readState({ ...account, ending, ownedDisabled: [...ownedDisabled] });
   return { ok: true, ...st };
 }
 
@@ -321,7 +330,7 @@ async function link(account, sessionId, host) {
   // had only reached the checkout page.
   try {
     const subs = await liveSubs(customer);
-    const live = Object.keys(itemsByPhase(subs));
+    const live = [...new Set([...Object.keys(itemsByPhase(subs)), ...effectiveOwned(account)])];
     await syncModulesLoud(account.email, live, 'checkout-returned-paid');
   } catch (err) { console.error('[switch] link site sync', err); }
 

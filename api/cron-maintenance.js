@@ -1,4 +1,4 @@
-// The P4 maintenance job: a daily backup and an uptime sweep.
+// The P4 maintenance job: an idempotent daily backup and an hourly uptime sweep.
 // PURELY ADDITIVE. It reads, snapshots and reports. It changes no site, no
 // account and no subscription, so the worst a bug here can do is a noisy email.
 //
@@ -12,6 +12,7 @@ import { notifyOperator, labelPhases } from '../lib/notify.js';
 // record reports itself instead of returning null into the sweep's tally and
 // being counted as done. See lib/site-link.js.
 import { removeModulesLoud } from '../lib/site-link.js';
+import { publicOrigin } from '../lib/origin.js';
 
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
@@ -60,7 +61,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const host = (req.headers && req.headers.host) ? 'https://' + req.headers.host : 'https://killswitchwebsites.com';
+    const host = publicOrigin();
     const sites = (await listSites()).filter((s) => s && s.published && s.slug);
     const before = await lastUptime();
     out.uptime = await checkUptime(host, sites);
@@ -96,5 +97,5 @@ export default async function handler(req, res) {
     out.errors.push('uptime');
   }
 
-  res.status(200).json({ ok: out.errors.length === 0, ...out });
+  res.status(out.errors.length ? 500 : 200).json({ ok: out.errors.length === 0, ...out });
 }

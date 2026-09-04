@@ -27,11 +27,15 @@ import { panelToken } from '../lib/panel-auth.js';
 import { sendPanelLink } from '../lib/onboard.js';
 import { notifyOperator, labelPhases } from '../lib/notify.js';
 import { PRICE_TO_PHASE } from '../lib/prices.js';
-import { liveSubs } from '../lib/entitle.js';
+import { effectiveOwned, liveSubs } from '../lib/entitle.js';
 // syncModulesLoud, not syncModules: this is the money path, and a null return
 // here meant Stripe charged the card and nothing rendered. See lib/site-link.js.
 import { syncModulesLoud } from '../lib/site-link.js';
 import { stripeGet } from '../lib/stripe.js';
+import { beginStripeEvent, completeStripeEvent, releaseStripeEvent } from '../lib/stripe-events.js';
+import { checkoutPhases } from '../lib/checkout-entitlements.js';
+import { ensureCustomerSite } from '../lib/autonomy.js';
+import { publicOrigin } from '../lib/origin.js';
 
 // Stripe signs the RAW bytes. Any re-serialisation changes them and the
 // signature will not match, so the parsed body is useless here.
@@ -108,20 +112,27 @@ export default async function handler(req, res) {
   try { event = JSON.parse(raw.toString('utf8')); }
   catch { res.status(400).json({ error: 'bad_json' }); return; }
 
-  // ALWAYS 200 from here on, even when our own handling fails. A non-2xx makes
-  // Stripe retry for days, and a bug on our side must not turn into a retry
-  // storm. Failures are logged and shown to the operator instead.
+  if (!event || !event.id) { res.status(400).json({ error: 'event_id_required' }); return; }
+
+  let claim;
   try {
+    claim = await beginStripeEvent(event.id);
+    if (claim.state === 'done') { res.status(200).json({ received: true, duplicate: true }); return; }
+    if (claim.state !== 'claimed') { res.status(503).json({ error: 'event_busy' }); return; }
     await handleEvent(event);
+    await completeStripeEvent(event.id);
   } catch (e) {
     console.error('[stripe-webhook] handling', event && event.type, e);
+    try { await releaseStripeEvent(event.id); } catch (releaseError) { console.error('[stripe-webhook] release', releaseError); }
     await notifyOperator({
       subject: 'Stripe webhook could not be processed',
       heading: 'A payment event arrived but we failed to act on it',
       lines: [`Event: ${(event && event.type) || 'unknown'}`, `Id: ${(event && event.id) || 'unknown'}`,
-        'The money is fine, this is our side. Check the customer in Stripe and set them up by hand.'],
-      url: 'https://killswitchwebsites.com/master', urlText: 'Open Master Panel',
+        'Stripe will retry this event automatically. Check Master if it remains unresolved.'],
+      url: publicOrigin() + '/master', urlText: 'Open Master Panel',
     });
+    res.status(500).json({ error: 'fulfillment_failed' });
+    return;
   }
 
   res.status(200).json({ received: true });
@@ -162,27 +173,44 @@ async function onCheckout(session) {
       lines: [`Stripe customer: ${customer || 'unknown'}`,
         session.amount_total ? `Amount: $${(session.amount_total / 100).toFixed(2)}` : '',
         'Nothing could be set up automatically. Find them in Stripe and onboard them by hand.'].filter(Boolean),
-      url: 'https://killswitchwebsites.com/master', urlText: 'Open Master Panel',
+      url: publicOrigin() + '/master', urlText: 'Open Master Panel',
     });
     return;
   }
 
   const existing = await getAccount(email);
-  const account = await upsertAccount({
+  const linePhases = await checkoutPhases(session);
+  const oneTime = session.mode === 'payment';
+  if (oneTime && !linePhases.length) throw new Error('one-time checkout has no resolvable entitlement');
+  const owned = new Set((existing && existing.owned) || []);
+  if (oneTime) linePhases.forEach((phase) => owned.add(phase));
+  const disabled = new Set((existing && existing.ownedDisabled) || []);
+  if (oneTime) linePhases.forEach((phase) => disabled.delete(phase));
+
+  let account = await upsertAccount({
     email,
     ...(existing ? {} : { plan: ['P0'], createdAt: new Date().toISOString(), source: 'stripe-webhook' }),
     ...(customer ? { stripeCustomerId: customer } : {}),
+    ...(oneTime ? { owned: [...owned], ownedDisabled: [...disabled] } : {}),
   });
 
-  const phases = customer ? await phasesFor(customer) : [];
+  // A payment-link buyer may never have used the homepage. Give them a real P0
+  // site immediately using Stripe's collected name as the best available fact.
+  let siteName = account.site || account.name || String(session.customer_details && session.customer_details.name || '').trim();
+  if (!siteName) siteName = email.split('@')[0].replace(/[._-]+/g, ' ');
+  const ensured = await ensureCustomerSite({ email, business: siteName, source: 'stripe-payment' });
+  if (!account.site || !account.name) account = await upsertAccount({ email, site: account.site || ensured.site.business, name: account.name || ensured.site.business });
+
+  const recurring = customer ? await phasesFor(customer) : [];
+  const phases = [...new Set([...recurring, ...effectiveOwned(account)])];
   if (phases.length) {
-    try { await syncModulesLoud(email, phases, 'stripe-webhook-checkout-completed'); }
-    catch (e) { console.error('[stripe-webhook] site sync', e); }
+    const synced = await syncModulesLoud(email, phases, 'stripe-webhook-checkout-completed');
+    if (!synced) throw new Error('paid modules could not be attached to a site');
   }
 
   // They may have bought through a link and never seen a panel, so send it.
   const tok = await panelToken(email);
-  const portalUrl = 'https://killswitchwebsites.com/panel?e=' + encodeURIComponent(email) + (tok ? '&t=' + tok : '');
+  const portalUrl = publicOrigin() + '/panel?e=' + encodeURIComponent(email) + (tok ? '&t=' + tok : '');
   if (!existing || !existing.stripeCustomerId) {
     try { await sendPanelLink({ email, portalUrl, phases }); }
     catch (e) { console.error('[stripe-webhook] panel link', e); }
@@ -195,10 +223,10 @@ async function onCheckout(session) {
       `Customer: ${account.name || account.site || email}`,
       `Email: ${email}`,
       session.amount_total ? `Amount: $${(session.amount_total / 100).toFixed(2)}` : '',
-      phases.length ? `Switched on: ${labelPhases(phases)}` : 'One-time payment, no modules to switch on.',
+      phases.length ? `Switched on: ${labelPhases(phases)}` : 'Payment recorded; no module was identified.',
       existing ? '' : 'This is a new account, created from the payment.',
     ].filter(Boolean),
-    url: 'https://killswitchwebsites.com/master', urlText: 'Open Master Panel',
+    url: publicOrigin() + '/master', urlText: 'Open Master Panel',
   });
 }
 
@@ -215,7 +243,7 @@ async function onSubscriptionChange(sub) {
   const account = await getAccount(email);
   if (!account) return;
 
-  const phases = await phasesFor(customer);
+  const phases = [...new Set([...(await phasesFor(customer)), ...effectiveOwned(account)])];
   try { await syncModulesLoud(email, phases, 'stripe-webhook-subscription-changed'); }
   catch (e) { console.error('[stripe-webhook] sync', e); }
 }
@@ -230,6 +258,6 @@ async function onPaymentFailed(invoice) {
       invoice.amount_due ? `Amount: $${(invoice.amount_due / 100).toFixed(2)}` : '',
       'Stripe will retry on its own schedule. Their modules stay on in the meantime, because past_due still counts as a live customer.',
     ].filter(Boolean),
-    url: 'https://killswitchwebsites.com/master', urlText: 'Open Master Panel',
+    url: publicOrigin() + '/master', urlText: 'Open Master Panel',
   });
 }

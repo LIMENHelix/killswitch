@@ -15,9 +15,10 @@
 // Generated per request rather than written to disk, because the set changes
 // whenever anyone is onboarded and a stale file is worse than none.
 import { listSites } from '../lib/sites.js';
+import { publicOrigin } from '../lib/origin.js';
 
 export default async function handler(req, res) {
-  const host = (req.headers && req.headers.host) ? 'https://' + req.headers.host : 'https://killswitchwebsites.com';
+  const host = publicOrigin();
 
   let sites = [];
   try {

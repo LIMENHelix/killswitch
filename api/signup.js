@@ -20,11 +20,9 @@ export default async function handler(req, res) {
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
   if (!body || typeof body !== 'object') body = {};
 
-  const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitchwebsites.com';
-
   let out;
   try {
-    out = await onboardCustomer({ email: body.email, site: body.site, name: body.name, host, source: 'operator-onboard' });
+    out = await onboardCustomer({ email: body.email, site: body.site, name: body.name, source: 'operator-onboard' });
   } catch (e) {
     console.error('[signup] error', e);
     res.status(500).json({ error: 'server_error' });

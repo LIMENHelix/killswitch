@@ -35,6 +35,8 @@ import { panelToken } from '../lib/panel-auth.js';
 import { sendPanelLink } from '../lib/onboard.js';
 import { notifyOperator, labelPhases } from '../lib/notify.js';
 import { limited, LIMITS } from '../lib/ratelimit.js';
+import { publicOrigin } from '../lib/origin.js';
+import { externalSideEffectsAllowed } from '../lib/environment.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -45,6 +47,10 @@ export default async function handler(req, res) {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) {
     res.status(503).json({ error: 'not_configured' });
+    return;
+  }
+  if (!externalSideEffectsAllowed()) {
+    res.status(503).json({ error: 'preview_side_effects_disabled' });
     return;
   }
 
@@ -90,7 +96,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitchwebsites.com';
+  const host = publicOrigin();
 
   // THE ACCOUNT COMES FIRST, before Stripe is touched, so there is somewhere for
   // the payment to land. An existing customer is left exactly as they are: an

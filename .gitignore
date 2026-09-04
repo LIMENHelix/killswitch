@@ -10,3 +10,4 @@ _outreach/dashboard.html
 
 # `vercel env pull --environment=production` writes this; it holds VERCEL_OIDC_TOKEN.
 production
+.vercel

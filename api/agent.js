@@ -24,6 +24,7 @@ import { getSite, upsertSite, listSites, slugify } from '../lib/sites.js';
 import { notifyOperator } from '../lib/notify.js';
 import { entitlements, CHANGE_PHASES } from '../lib/entitle.js';
 import { onboardCustomer } from '../lib/onboard.js';
+import { publicOrigin } from '../lib/origin.js';
 
 const CALENDLY = 'https://calendly.com/chrishubbel72/30min';
 
@@ -63,7 +64,7 @@ export default async function handler(req, res) {
   }
   if (req.method !== 'POST') { res.status(405).json({ error: 'method_not_allowed' }); return; }
 
-  const host = (req.headers && req.headers.host) ? 'https://' + req.headers.host : 'https://killswitchwebsites.com';
+  const host = publicOrigin();
 
   try {
     switch (body.action) {

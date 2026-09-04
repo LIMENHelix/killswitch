@@ -9,10 +9,12 @@ import { recordContact } from '../lib/crm.js';
 import { queueFollowUps } from '../lib/automation.js';
 import { limited, LIMITS } from '../lib/ratelimit.js';
 import { recordUsage } from '../lib/ai-usage.js';
+import { externalSideEffectsAllowed } from '../lib/environment.js';
 
 const clean = (v, n = 120) => String(v == null ? '' : v).trim().slice(0, n);
 
 async function emailBusiness(site, subject, lines) {
+  if (!externalSideEffectsAllowed()) return false;
   const key = process.env.RESEND_API_KEY;
   const to = site.email_public || site.email;
   if (!key || !to) return false;
@@ -152,6 +154,7 @@ export default async function handler(req, res) {
     // Anthropic on every call. Fails CLOSED: an unmetered loop here is pure
     // cost, and there is no lead to lose by refusing it.
     if (await limited(req, res, { bucket: 'ask:' + site.slug, ...LIMITS.siteAsk })) return;
+    if (!externalSideEffectsAllowed()) { res.status(503).json({ error: 'preview_side_effects_disabled' }); return; }
     const key = process.env.ANTHROPIC_API_KEY;
     if (!key) { res.status(503).json({ error: 'not_configured' }); return; }
 

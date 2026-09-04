@@ -345,6 +345,7 @@
   var done = document.getElementById('capDone');
 
   function showErr(msg){ err.innerHTML = msg; err.classList.add('show'); }
+  function safeText(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
   form.addEventListener('submit', function(e){
     e.preventDefault();
@@ -376,7 +377,8 @@
         if(window.ksEvent) ksEvent('signup_submitted', { source: 'homepage' });
         form.style.display = 'none';
         done.classList.add('show');
-        done.innerHTML = '<h2>You\'re in.</h2><p>Panel link sent to <b>' + email + '</b>. Check your email—open it to switch your site on and add any modules.</p>';
+        var siteLink = d.siteUrl ? '<p><a href="' + d.siteUrl.replace(/"/g, '&quot;') + '" style="color:var(--amber);font-weight:700">Open your live website →</a></p>' : '';
+        done.innerHTML = '<h2>Your website is live.</h2><p>Your private control-panel link is on its way to <b>' + safeText(email) + '</b>.</p>' + siteLink;
         setSwitch(true, false);
         done.scrollIntoView({ behavior:'smooth', block:'center' });
       } else { fail(); }

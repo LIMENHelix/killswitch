@@ -7,8 +7,11 @@
 // No operator step needed: fully autonomous signup.
 
 import { onboardCustomer } from '../lib/onboard.js';
-import { getLeads, saveLeads } from '../lib/store.js';
+import { appendInboundLead } from '../lib/store.js';
 import { limited, LIMITS } from '../lib/ratelimit.js';
+import { ensureCustomerSite } from '../lib/autonomy.js';
+import { publicOrigin } from '../lib/origin.js';
+import crypto from 'node:crypto';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -28,23 +31,28 @@ export default async function handler(req, res) {
   const business = String(body.business || '').trim();
   const phone = String(body.phone || '').trim();
 
-  if (!email || email.indexOf('@') < 1) {
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     res.status(400).json({ error: 'valid_email' });
     return;
   }
-  if (!business) {
+  if (business.length < 2 || business.length > 120) {
     res.status(400).json({ error: 'business_required' });
     return;
   }
 
-  const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitchwebsites.com';
+  if (phone.replace(/\D/g, '').length < 10 || phone.length > 40) {
+    res.status(400).json({ error: 'valid_phone' });
+    return;
+  }
 
   let out;
+  let provisioned;
   try {
-    // Onboard with the business name so account-to-site join can happen
+    // The shared template is immediately usable, so site creation belongs in
+    // the request transaction rather than in an operator queue.
+    provisioned = await ensureCustomerSite({ email, business, phone, source: 'inbound-homepage' });
     out = await onboardCustomer({
       email, site: business, name: business, phone,
-      host,
       source: 'inbound-homepage',
     });
   } catch (e) {
@@ -61,8 +69,8 @@ export default async function handler(req, res) {
   // Log the lead so reps can see it on their board (no assignment yet,
   // first rep to move it owns it). Fire-and-forget: logging must never block signup.
   try {
-    const leads = await getLeads();
-    leads.push({
+    await appendInboundLead({
+      id: crypto.randomUUID(),
       email,
       name: business,
       phone,
@@ -74,7 +82,6 @@ export default async function handler(req, res) {
       // Contact flow captures these at once, not later.
       owner: null,
     });
-    await saveLeads(leads);
   } catch (e) {
     console.error('[inbound] log lead', e);
     // Not fatal. Customer got their account.
@@ -83,7 +90,7 @@ export default async function handler(req, res) {
   res.status(200).json({
     ok: true,
     email: out.email,
-    portalUrl: out.portalUrl,
-    message: 'Account created. Panel link sent to ' + out.email + '.',
+    siteUrl: publicOrigin() + '/s/' + provisioned.site.slug,
+    message: 'Website created. Private panel link sent to ' + out.email + '.',
   });
 }

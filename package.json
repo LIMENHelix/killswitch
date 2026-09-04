@@ -1,0 +1,12 @@
+{
+  "name": "killswitch-websites",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node scripts/run-tests.mjs",
+    "check": "npm test"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

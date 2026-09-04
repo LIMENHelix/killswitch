@@ -326,7 +326,8 @@
 
 <script>
 const $=id=>document.getElementById(id);
-let KEY=localStorage.getItem('ks-admin-key')||'';
+localStorage.removeItem('ks-admin-key');
+let KEY='';
 
 async function api(action,extra){
   const r=await fetch('/api/master',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -815,7 +816,7 @@ $('oBtn').onclick=async()=>{
   } else { $('oRes').style.color='var(--red)'; $('oRes').textContent='Error: '+(r.d.error||r.status); }
 };
 
-$('loginBtn').onclick=()=>{ KEY=$('key').value.trim(); localStorage.setItem('ks-admin-key',KEY); boot(); };
+$('loginBtn').onclick=()=>{ KEY=$('key').value.trim(); boot(); };
 $('key').onkeydown=e=>{ if(e.key==='Enter') $('loginBtn').click(); };
 $('signout').onclick=()=>{ localStorage.removeItem('ks-admin-key'); KEY=''; showLogin(); };
 boot();

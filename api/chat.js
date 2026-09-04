@@ -44,12 +44,14 @@ STRICT RULES, follow these exactly every time:
 
 import { limited, LIMITS } from '../lib/ratelimit.js';
 import { recordUsage } from '../lib/ai-usage.js';
+import { externalSideEffectsAllowed } from '../lib/environment.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
+  if (!externalSideEffectsAllowed()) { res.status(503).json({ error: 'preview_side_effects_disabled' }); return; }
 
   // Anthropic on every call, from anyone, with no account needed.
   if (await limited(req, res, { bucket: 'chat', ...LIMITS.chat })) return;
