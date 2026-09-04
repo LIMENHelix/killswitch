@@ -53,6 +53,8 @@
   .mrr.zero{color:var(--mute2)}
   .dt{font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--mute)}
   .dt.end{color:var(--red);font-weight:600}
+  .life{font-family:"IBM Plex Mono",monospace;font-size:.68rem;text-transform:uppercase;letter-spacing:.04em}
+  .life.ok{color:var(--go)} .life.wait{color:var(--amber)} .life.bad{color:var(--red)}
   .trunc{background:rgba(255,85,70,.12);border:1px solid rgba(255,85,70,.45);color:#ffb3ab;border-radius:10px;padding:10px 13px;font-size:.83rem;margin-bottom:14px;display:none}
   .trunc.show{display:block}
   .msg{font-size:.85rem;color:var(--mute);min-height:18px;margin:8px 0}
@@ -319,7 +321,7 @@
     <div class="trunc" id="trunc"></div>
     <div class="msg" id="msg"></div>
     <div class="wrapt"><table><thead><tr>
-      <th>Customer</th><th>Site</th><th>Switches on</th><th>MRR</th><th>Renews / Ends</th><th>Joined</th><th>Portal</th><th>Website attached</th>
+      <th>Customer</th><th>Site</th><th>Switches on</th><th>MRR</th><th>Lifecycle</th><th>Renews / Ends</th><th>Joined</th><th>Portal</th><th>Website attached</th>
     </tr></thead><tbody id="tb"></tbody></table></div>
   </div>
 </div>
@@ -731,7 +733,8 @@ function paint(d){
     ['go',t.customers,'Customers'],
     ['gold',t.paying,'Paying'],
     ['go',money(t.mrr)+'/mo','Recurring revenue'],
-    ['blue',(t.customers-t.paying),'On free']
+    ['blue',(t.customers-t.paying),'On free'],
+    ['red',t.attention||0,'Needs setup']
   ].map(([c,k,l])=>`<div class="tile ${c}"><div class="k">${typeof k==='number'?k.toLocaleString():esc(k)}</div><div class="l">${l}</div></div>`).join('');
 
   // never let a truncated read look like a complete one
@@ -753,14 +756,24 @@ function paint(d){
       <td>${a.site?esc(a.site):'<span class="mrr zero">—</span>'}</td>
       <td><div class="chips">${chips}</div></td>
       <td class="mrr ${a.mrr>0?'':'zero'}">${a.mrr>0?money(a.mrr)+'/mo':'$0'}</td>
+      <td>${lifeCell(a.lifecycle)}</td>
       <td>${dcell}</td>
       <td class="mono" style="color:var(--mute2)">${esc(joined)}</td>
       <td><a href="${esc(a.portalUrl)}" target="_blank" rel="noopener">Open →</a>
           <button class="btn ghost sm rsnd" type="button" data-email="${esc(a.email)}" style="margin-left:8px">Resend</button></td>
       <td class="att">${attCell(a)}</td>
     </tr>`;
-  }).join('') : '<tr><td colspan="8" style="color:var(--mute2);text-align:center;padding:26px">No customers yet. Onboard your first above.</td></tr>';
+  }).join('') : '<tr><td colspan="9" style="color:var(--mute2);text-align:center;padding:26px">No customers yet. Onboard your first above.</td></tr>';
   document.querySelectorAll('.rsnd').forEach(b=>{ b.onclick=()=>resendPortal(b); });
+}
+
+function lifeCell(life){
+  if(!life) return '<span class="life wait">Pending scan</span>';
+  const label=String((life.status==='blocked'&&life.requiredStage)||life.stage||'unknown').replace(/_/g,' ');
+  if(life.status==='blocked') return '<span class="life bad">'+esc(label)+'</span>'
+    +(life.blocker?'<div class="sub">'+esc(life.blocker.replace(/,/g,', '))+'</div>':'');
+  const ok=['active','service_completed','review_requested'].includes(life.stage);
+  return '<span class="life '+(ok?'ok':'wait')+'">'+esc(label)+'</span>';
 }
 
 // ATTACHED and WORKING are different failures and are shown as different things.

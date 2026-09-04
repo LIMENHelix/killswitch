@@ -36,6 +36,7 @@ import { beginStripeEvent, completeStripeEvent, releaseStripeEvent } from '../li
 import { checkoutPhases } from '../lib/checkout-entitlements.js';
 import { ensureCustomerSite } from '../lib/autonomy.js';
 import { publicOrigin } from '../lib/origin.js';
+import { recordLifecycle, reconcileLifecycle } from '../lib/lifecycle.js';
 
 // Stripe signs the RAW bytes. Any re-serialisation changes them and the
 // signature will not match, so the parsed body is useless here.
@@ -203,10 +204,22 @@ async function onCheckout(session) {
 
   const recurring = customer ? await phasesFor(customer) : [];
   const phases = [...new Set([...recurring, ...effectiveOwned(account)])];
+  let lifecycleSite = ensured.site;
   if (phases.length) {
     const synced = await syncModulesLoud(email, phases, 'stripe-webhook-checkout-completed');
     if (!synced) throw new Error('paid modules could not be attached to a site');
+    lifecycleSite = synced;
   }
+
+  await recordLifecycle(email, {
+    type: 'payment.completed',
+    idempotencyKey: 'stripe:checkout:' + String(session.id || customer || email),
+    data: { amountTotal: session.amount_total || 0, currency: session.currency || '', mode: session.mode || '', phases },
+  });
+  await reconcileLifecycle({
+    email, account, site: lifecycleSite, phases,
+    idempotencyKey: 'stripe:checkout:' + String(session.id || customer || email),
+  });
 
   // They may have bought through a link and never seen a panel, so send it.
   const tok = await panelToken(email);
@@ -244,12 +257,30 @@ async function onSubscriptionChange(sub) {
   if (!account) return;
 
   const phases = [...new Set([...(await phasesFor(customer)), ...effectiveOwned(account)])];
-  try { await syncModulesLoud(email, phases, 'stripe-webhook-subscription-changed'); }
-  catch (e) { console.error('[stripe-webhook] sync', e); }
+  const site = await syncModulesLoud(email, phases, 'stripe-webhook-subscription-changed');
+  if (!site && phases.length) throw new Error('subscription modules could not be attached to a site');
+  if (site) {
+    await recordLifecycle(email, {
+      type: 'subscription.changed',
+      idempotencyKey: 'stripe:subscription:' + String(sub.id || customer) + ':' + String(sub.status || '') + ':' + String(sub.current_period_end || sub.cancel_at || ''),
+      data: { subscriptionId: sub.id || '', status: sub.status || '', phases },
+    });
+    await reconcileLifecycle({
+      email, account, site, phases,
+      idempotencyKey: 'stripe:subscription:' + String(sub.id || customer) + ':' + String(sub.status || ''),
+    });
+  }
 }
 
 async function onPaymentFailed(invoice) {
   const email = String(invoice.customer_email || '').trim().toLowerCase();
+  if (email) {
+    await recordLifecycle(email, {
+      type: 'payment.failed', blocked: true, blocker: 'payment_failed',
+      idempotencyKey: 'stripe:invoice-failed:' + String(invoice.id || invoice.number || email),
+      data: { invoiceId: invoice.id || '', amountDue: invoice.amount_due || 0, currency: invoice.currency || '' },
+    });
+  }
   await notifyOperator({
     subject: `Payment FAILED - ${email || 'a customer'}`,
     heading: 'A card was declined',

@@ -126,6 +126,7 @@ The campaign winner is the channel with the best cost per activated customer aft
 - [ ] Google Ads account and conversion action connected
 - [ ] Paid-search budget approved
 - [ ] Bing Webmaster Tools account connected
-- [ ] Lifecycle service-completion event implemented
+- [x] Durable customer lifecycle and event ledger implemented
+- [ ] Service-completion event connected to a real fulfillment action
 - [ ] Cross-channel suppression list implemented
 - [ ] Weekly scorecard owner and review time assigned

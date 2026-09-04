@@ -12,6 +12,7 @@ import { limited, LIMITS } from '../lib/ratelimit.js';
 import { ensureCustomerSite } from '../lib/autonomy.js';
 import { publicOrigin } from '../lib/origin.js';
 import { normalizeAttribution } from '../lib/attribution.js';
+import { recordLifecycle } from '../lib/lifecycle.js';
 import crypto from 'node:crypto';
 
 export default async function handler(req, res) {
@@ -49,13 +50,24 @@ export default async function handler(req, res) {
 
   let out;
   let provisioned;
+  // Stable across HTTP/Stripe retries so one real prospect is one lead and one
+  // lifecycle event, not a new row each time a response is retried.
+  const leadId = 'inbound-' + crypto.createHash('sha256').update(email).digest('hex').slice(0, 20);
   try {
+    await recordLifecycle(email, {
+      type: 'lead.received', stage: 'lead_received', idempotencyKey: 'inbound:lead',
+      data: { business, source: 'homepage-inbound', attribution },
+    });
     // The shared template is immediately usable, so site creation belongs in
     // the request transaction rather than in an operator queue.
     provisioned = await ensureCustomerSite({ email, business, phone, source: 'inbound-homepage' });
+    await recordLifecycle(email, {
+      type: 'site.published', stage: 'site_published', idempotencyKey: 'inbound:site-published',
+      data: { siteSlug: provisioned.site.slug, created: provisioned.created },
+    });
     out = await onboardCustomer({
       email, site: business, name: business, phone,
-      source: 'inbound-homepage',
+      source: 'inbound-homepage', leadId,
     });
   } catch (e) {
     console.error('[inbound] onboard', e);
@@ -72,7 +84,7 @@ export default async function handler(req, res) {
   // first rep to move it owns it). Fire-and-forget: logging must never block signup.
   try {
     await appendInboundLead({
-      id: crypto.randomUUID(),
+      id: leadId,
       email,
       name: business,
       phone,

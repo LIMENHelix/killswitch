@@ -114,7 +114,10 @@ async function open(p) {
   // Cleared BEFORE navigating, so events fired during page load are kept.
   await send('Runtime.evaluate', { expression: `try{sessionStorage.removeItem('__ksev')}catch(e){}` });
   await send('Page.navigate', { url: `http://127.0.0.1:${PORT}${p}` });
-  await new Promise((r) => setTimeout(r, 700));
+  // The Windows CI runner occasionally needs longer than 700 ms to execute
+  // deferred scripts after navigation. Wait for that work instead of sampling
+  // the page in the middle of startup and calling a healthy tracker absent.
+  await new Promise((r) => setTimeout(r, 1100));
 }
 
 let pass = 0, fail = 0;
