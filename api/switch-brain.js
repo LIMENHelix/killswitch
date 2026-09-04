@@ -8,6 +8,7 @@
 
 import { recordUsage } from '../lib/ai-usage.js';
 import { externalSideEffectsAllowed } from '../lib/environment.js';
+import { getSuppression } from '../lib/suppression.js';
 
 const SYSTEM = `You are "Switch," the cold-outreach writer for Killswitch Websites. Write strictly in the voice and framework of the Killswitch Websites Outbound Playbook below. Personalize everything to the one business you are given.
 
@@ -144,14 +145,33 @@ export default async function handler(req, res) {
   const site = String(body.site || '').slice(0, 200).trim();
   const url = String(body.url || '').slice(0, 200).trim();
   const email = String(body.email || '').slice(0, 200).trim();
+  const phone = String(body.phone || '').slice(0, 80).trim();
   const sender = String(body.sender || 'Chris').slice(0, 60).trim();
   if (!name) { res.status(400).json({ error: 'need a business name' }); return; }
+  if (!email && phone.replace(/\D/g, '').length < 7) {
+    res.status(400).json({ error: 'contact_identifier_required' }); return;
+  }
+
+  // Do this before the model call. A contact who opted out should not even have
+  // fresh outreach drafted for them, regardless of whether the operator meant
+  // to use email, SMS or a call.
+  let suppression;
+  try { suppression = await getSuppression({ email, phone }); }
+  catch (e) {
+    console.error('[switch-brain] suppression unavailable', e);
+    res.status(503).json({ error: 'suppression_unavailable' }); return;
+  }
+  if (suppression) {
+    res.status(409).json({ error: 'contact_suppressed', reason: suppression.reason, suppressedAt: suppression.suppressedAt });
+    return;
+  }
 
   const prompt = `Target business:
 - Name: ${name}
 - Area: ${area || 'Kansas City metro'}
 - Trade / category: ${trade || '(unspecified)'}
 - Website situation: ${site || '(unknown)'}${url ? `\n- URL: ${url}` : ''}
+- Phone: ${phone || '(not supplied)'}
 - Sender name (for the sign-off): ${sender}
 
 Write the full sequence: 3 emails (day 1, 3, 10) and 3 texts (day 1, 3, 10), plus the angle and why. Follow the playbook exactly.`;

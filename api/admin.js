@@ -12,8 +12,8 @@
 // Actions (POST {action, token, ...}):
 //   list    -> all leads, merged with per-lead stage/notes/owner  (both roles)
 //   config  -> autopilot settings, read only                      (both roles)
-//   update  -> {id, stage?, notes?} record a call outcome         (both roles)
-//   setconfig / run-autopilot / mail / seed                       (owner only)
+//   update / suppress -> record an outcome or do-not-contact      (both roles)
+//   setconfig / run-autopilot / mail / seed / unsuppress          (owner only)
 //
 // Nothing mails unless the OWNER posts action:mail with explicit ids.
 
@@ -23,8 +23,9 @@ import { identify, isOwner, anyKeyConfigured } from '../lib/roles.js';
 import { getSite, upsertSite } from '../lib/sites.js';
 import { getFunnel, setStage, summarize, toPlays, migrateFrom, migrateStage, STAGES } from '../lib/funnel.js';
 import { wilsonLower, allocate } from '../lib/laser.js';
+import { getSuppressionState, matchSuppression, suppressContact, liftSuppression, listSuppressions } from '../lib/suppression.js';
 
-const OWNER_ONLY = new Set(['setconfig', 'run-autopilot', 'mail', 'seed']);
+const OWNER_ONLY = new Set(['setconfig', 'run-autopilot', 'mail', 'seed', 'unsuppress', 'suppression-list']);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).json({ error: 'method' }); return; }
@@ -72,7 +73,7 @@ export default async function handler(req, res) {
     }
 
     if (action === 'list') {
-      const [leads, meta] = await Promise.all([getLeads(), getLeadMeta()]);
+      const [leads, meta, suppressionState] = await Promise.all([getLeads(), getLeadMeta(), getSuppressionState()]);
       // Per-lead notes live in their own hash now. Fall back to whatever is still
       // on the lead itself so nothing written before this change disappears.
       const funnel = await getFunnel();
@@ -82,10 +83,46 @@ export default async function handler(req, res) {
         const base = m ? { ...l, ...m } : l;
         // The funnel record is authoritative for stage; the old flat value is
         // migrated on read so nothing looks blank before migrate-funnel is run.
+        const suppression = matchSuppression(base, suppressionState);
         return { ...base, stage: f ? f.stage : migrateStage(base.stage), dealCents: f ? f.dealCents : 0,
-          touches: f ? f.touches.length : 0, apptAt: f ? f.apptAt : '' };
+          touches: f ? f.touches.length : 0, apptAt: f ? f.apptAt : '',
+          suppressed: !!suppression, suppressionId: suppression?.id || '',
+          suppressionReason: suppression?.reason || '', suppressionAt: suppression?.suppressedAt || '' };
       });
-      res.status(200).json({ ok: true, leads: merged, role: who.role, name: who.name }); return;
+      const suppressionCount = Object.entries(suppressionState)
+        .filter(([field, rec]) => field.startsWith('r:') && rec && rec.active !== false).length;
+      res.status(200).json({ ok: true, leads: merged, suppressionCount, role: who.role, name: who.name }); return;
+    }
+    if (action === 'suppression-list') {
+      res.status(200).json({ ok: true, suppressions: await listSuppressions() }); return;
+    }
+    if (action === 'suppress') {
+      const [leads, meta] = await Promise.all([getLeads(), getLeadMeta()]);
+      const lead = leads.find((l) => String(l.id) === String(body.id));
+      if (!lead) { res.status(404).json({ error: 'lead_not_found' }); return; }
+      const rec = await suppressContact({ ...lead, ...(meta[lead.id] || {}) }, {
+        reason: body.reason, actor: who.name, source: body.channel || 'manual',
+      });
+      await setLeadMeta(lead.id, {
+        suppressed: true, suppressionId: rec.id, suppressionReason: rec.reason, suppressionAt: rec.suppressedAt,
+      });
+      try { await setStage(lead.id, 'dead', { channel: body.channel || 'call', note: rec.reason }); }
+      catch (e) { console.error('[admin] suppress funnel', e); }
+      res.status(200).json({ ok: true, suppression: rec }); return;
+    }
+    if (action === 'unsuppress') {
+      let suppressionId = String(body.suppressionId || '');
+      let lead = null;
+      if (!suppressionId && body.id) {
+        const [leads, meta, state] = await Promise.all([getLeads(), getLeadMeta(), getSuppressionState()]);
+        lead = leads.find((l) => String(l.id) === String(body.id));
+        const rec = lead && matchSuppression({ ...lead, ...(meta[lead.id] || {}) }, state);
+        suppressionId = rec?.id || '';
+      }
+      const lifted = await liftSuppression(suppressionId, who.name);
+      if (!lifted) { res.status(404).json({ error: 'suppression_not_found' }); return; }
+      if (body.id) await setLeadMeta(body.id, { suppressed: false, suppressionId: '', suppressionReason: '' });
+      res.status(200).json({ ok: true, ...lifted }); return;
     }
     // Deliberately does NOT read the lead list. /admin polls this every minute and
     // the leads blob is ~600 KB, so reading it here would double Upstash egress for
@@ -127,6 +164,16 @@ export default async function handler(req, res) {
       res.status(200).json({ ok: true, count: leads.length }); return;
     }
     if (action === 'update') {
+      let existingMeta = null;
+      if (body.stage !== undefined && body.stage !== 'dead') {
+        const [leads, meta, state] = await Promise.all([getLeads(), getLeadMeta(), getSuppressionState()]);
+        existingMeta = meta[body.id];
+        const lead = leads.find((l) => String(l.id) === String(body.id));
+        if (lead && matchSuppression({ ...lead, ...(existingMeta || {}) }, state)) {
+          res.status(409).json({ error: 'contact_suppressed', message: 'Lift the do-not-contact suppression before reopening this lead.' });
+          return;
+        }
+      }
       // A stage change is a funnel event, not just a label. Recording it through
       // setStage writes the transition and channel the optimizer learns from;
       // writing the word alone would leave laser.js with nothing to rank.
@@ -149,7 +196,7 @@ export default async function handler(req, res) {
       // Whoever moves a lead owns it. This is what makes commission a number
       // instead of an argument. First toucher keeps it unless the owner reassigns.
       if (body.stage !== undefined) {
-        const existing = (await getLeadMeta())[body.id];
+        const existing = existingMeta || (await getLeadMeta())[body.id];
         if (!existing || !existing.owner) patch.owner = who.name;
       }
       if (isOwner(who) && body.owner !== undefined) patch.owner = body.owner;
@@ -171,11 +218,19 @@ export default async function handler(req, res) {
     // out until they actually become a customer (owner-only, via onboarding).
     // A rep cannot edit content, cannot unpublish, and cannot make it indexable.
     if (action === 'site-publish') {
-      const meta = await getLeadMeta();
+      const [leads, meta, state] = await Promise.all([getLeads(), getLeadMeta(), getSuppressionState()]);
+      const directLead = leads.find((l) => String(l.id) === String(body.id));
+      if (directLead && matchSuppression({ ...directLead, ...(meta[directLead.id] || {}) }, state)) {
+        res.status(409).json({ error: 'contact_suppressed', message: 'This contact is on the do-not-contact list.' }); return;
+      }
       const slug = body.slug || (meta[body.id] && meta[body.id].siteSlug);
       if (!slug) { res.status(404).json({ error: 'no_site', message: 'No website has been drafted for this lead yet.' }); return; }
       const site = await getSite(slug);
       if (!site) { res.status(404).json({ error: 'no_site' }); return; }
+      const lead = directLead || leads.find((l) => String(l.id) === String(site.leadId));
+      if (lead && matchSuppression({ ...lead, ...(meta[lead.id] || {}) }, state)) {
+        res.status(409).json({ error: 'contact_suppressed', message: 'This contact is on the do-not-contact list.' }); return;
+      }
       if (!site.published) await upsertSite({ slug, published: true });
       if (body.id) await setLeadMeta(body.id, { siteSlug: slug, sitePublished: true, publishedBy: who.name });
       res.status(200).json({ ok: true, slug, url: '/s/' + slug, alreadyLive: !!site.published });
@@ -188,20 +243,21 @@ export default async function handler(req, res) {
       const leads = await getLeads();
       // Read the per-lead notes separately rather than merging them into `leads`:
       // this array gets written back below, and meta belongs in its own hash.
-      const meta = await getLeadMeta();
-      let sent = 0, bad = 0; const failed = [];
+      const [meta, suppressionState] = await Promise.all([getLeadMeta(), getSuppressionState()]);
+      let sent = 0, bad = 0, suppressed = 0; const failed = [];
       let done = 0;
       for (const l of leads) {
         if (done >= cap) break;
         if (!ids.has(l.id) || l.status === 'mailed' || l.status === 'bad_address' || l.lob_id) continue;
         done++;
-        const r = await lobSend({ ...l, ...(meta[l.id] || {}) });
+        const r = await lobSend({ ...l, ...(meta[l.id] || {}) }, suppressionState);
         if (r.id) { l.status = 'mailed'; l.lob_id = r.id; sent++; }
         else if (r.code === 'failed_deliverability_strictness') { l.status = 'bad_address'; bad++; }
+        else if (r.code === 'suppressed') { suppressed++; }
         else { failed.push({ name: l.name, error: r.error }); }
       }
       await saveLeads(leads);
-      res.status(200).json({ ok: true, sent, bad, failed }); return;
+      res.status(200).json({ ok: true, sent, bad, suppressed, failed }); return;
     }
     res.status(400).json({ error: 'unknown action' });
   } catch (e) {

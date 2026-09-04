@@ -55,6 +55,7 @@
     <div class="row">
       <div class="fld"><label class="lab" for="url">Their URL (optional)</label><input type="text" id="url" placeholder="brightwayplumbing.wixsite.com" /></div>
       <div class="fld"><label class="lab" for="email">Their email (optional)</label><input type="text" id="email" placeholder="joe@business.com" /></div>
+      <div class="fld"><label class="lab" for="phone">Their phone (optional)</label><input type="text" id="phone" placeholder="913-555-0123" /></div>
     </div>
     <div class="fld"><label class="lab" for="link">Link to insert (replaces [link])</label><input type="text" id="link" value="https://killswitchwebsites.com/start" /></div>
     <div class="fld"><label class="lab" for="token">Access token</label><input type="password" id="token" placeholder="Switch token" /></div>
@@ -125,7 +126,7 @@
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: $('name').value, area: $('area').value, trade: $('trade').value,
-        site: $('site').value, url: $('url').value, email: $('email').value, token: $('token').value,
+        site: $('site').value, url: $('url').value, email: $('email').value, phone: $('phone').value, token: $('token').value,
       }),
     })
     .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, status: r.status, d: d }; }); })
@@ -135,6 +136,8 @@
         note.style.color = 'var(--red)';
         note.textContent = res.status === 401 ? 'Wrong access token.' :
           res.status === 503 ? 'Not configured yet (token or API key missing).' :
+          d.error === 'contact_suppressed' ? 'Do not contact: ' + (d.reason || 'this contact has opted out') :
+          d.error === 'contact_identifier_required' ? 'Add an email or phone number so the do-not-contact list can be checked.' :
           d.error === 'refused' ? 'Model declined this one.' : 'Error: ' + (d.error || res.status);
         go.disabled = false; return;
       }

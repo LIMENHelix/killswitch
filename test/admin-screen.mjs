@@ -15,9 +15,10 @@ const ADMIN = path.join(ROOT, 'admin.html');
 const LEADS = [
   { id: 'L1', name: 'Auto Tech Services Center', trade: 'auto repair', phone: '913-268-7887', street: '11441 Shawnee Mission Pkwy', city: 'Shawnee', state: 'KS', zip: '66203', stage: 'called', owner: 'dana' },
   { id: 'L2', name: 'Autobots Garage', trade: 'auto repair', phone: '913-722-5151', street: '5000 Mackey St', city: 'Overland Park', state: 'KS', zip: '66203', attribution: { source: 'google', medium: 'cpc', campaign: 'kc-free-site-v1' } },
-  { id: 'L3', name: 'Some Random Salon', trade: 'hair salon', phone: '816-555-0000', street: '9 X St', city: 'Kansas City', state: 'MO', zip: '64109', status: 'mailed' },
+  { id: 'L3', name: 'Some Random Salon', trade: 'hair salon', phone: '816-555-0000', street: '9 X St', city: 'Kansas City', state: 'MO', zip: '64109', status: 'mailed', suppressed: true, suppressionId: 'sup_0123456789abcdef0123456789abcdef', suppressionReason: 'Customer replied STOP' },
   // a bulk-generated draft, waiting to be published on the call
   { id: 'L4', name: 'Downtown Dental', trade: 'dentist', phone: '816-555-1212', street: '5 Elm St', city: 'Kansas City', state: 'MO', zip: '64111', siteSlug: 'downtown-dental', sitePublished: false },
+  { id: 'L5', name: 'No Demo Cafe', trade: 'cafe', phone: '816-555-2323', street: '7 Pine St', city: 'Kansas City', state: 'MO', zip: '64112' },
 ];
 
 let ROLE = 'owner';
@@ -129,13 +130,21 @@ console.log('\nOWNER view');
 await load('owner');
 check('no javascript errors', consoleErrors.length === 0, consoleErrors.join(' | '));
 check('app is showing', await evaluate(`getComputedStyle(document.getElementById('app')).display !== 'none'`));
-check('all 4 leads rendered', await evaluate(`document.querySelectorAll('#tb tr').length`) === 4);
+check('all 5 leads rendered', await evaluate(`document.querySelectorAll('#tb tr').length`) === 5);
 check('autopilot panel is visible', await evaluate(`!document.getElementById('autopanel').hidden`));
 check('mail bar is visible', await evaluate(`!document.getElementById('mailbar').hidden`));
 check('badge says Owner', (await evaluate(`document.getElementById('whoami').textContent`)) === 'Owner');
 check('owner column shows the rep who worked L1', (await evaluate(`document.querySelector('#tb tr td.owner-c').textContent`)) === 'dana');
 check('campaign source is visible on its lead',
   (await evaluate(`[...document.querySelectorAll('#tb tr')].find(r=>r.textContent.includes('Autobots Garage')).querySelector('.attr').textContent`)) === 'google · cpc · kc-free-site-v1');
+check('the do-not-contact reason is visible',
+  (await evaluate(`[...document.querySelectorAll('#tb tr')].find(r=>r.textContent.includes('Random Salon')).textContent`)).includes('Customer replied STOP'));
+check('a suppressed phone number is not clickable',
+  await evaluate(`![...document.querySelectorAll('#tb tr')].find(r=>r.textContent.includes('Random Salon')).querySelector('a[href^="tel:"]')`));
+check('a suppressed call script is disabled',
+  await evaluate(`[...document.querySelectorAll('#tb tr')].find(r=>r.textContent.includes('Random Salon')).querySelector('.scriptbtn').disabled`));
+check('the owner can see the lift control',
+  await evaluate(`!![...document.querySelectorAll('#tb tr')].find(r=>r.textContent.includes('Random Salon')).querySelector('[data-unsuppress]')`));
 
 console.log('\nREP view');
 await load('rep');
@@ -146,12 +155,14 @@ check('spend to date is HIDDEN', await evaluate(`document.getElementById('spendW
 check('badge names the rep', (await evaluate(`document.getElementById('whoami').textContent`)) === 'Rep · dana');
 check('title is the call list', (await evaluate(`document.getElementById('pageTitle').textContent`)) === 'Call list');
 check('no mail checkbox column in rows', await evaluate(`!document.querySelector('#tb .rc')`));
+check('a rep cannot see a suppression lift control',
+  await evaluate(`![...document.querySelectorAll('#tb tr')].find(r=>r.textContent.includes('Random Salon')).querySelector('[data-unsuppress]')`));
 
 console.log('\nCALL SCRIPT');
 check('a shop with a demo offers Script + demo', (await evaluate(
   `[...document.querySelectorAll('#tb tr')].find(r=>r.textContent.includes('Auto Tech')).querySelector('.scriptbtn').textContent`)) === 'Script + demo');
 check('a shop without one offers plain Script', (await evaluate(
-  `[...document.querySelectorAll('#tb tr')].find(r=>r.textContent.includes('Random Salon')).querySelector('.scriptbtn').textContent`)) === 'Script');
+  `[...document.querySelectorAll('#tb tr')].find(r=>r.textContent.includes('No Demo Cafe')).querySelector('.scriptbtn').textContent`)) === 'Script');
 
 await evaluate(`[...document.querySelectorAll('#tb tr')].find(r=>r.textContent.includes('Auto Tech')).querySelector('.scriptbtn').click()`);
 await new Promise((r) => setTimeout(r, 250));
@@ -163,7 +174,7 @@ check('it says delivery, not pitch', (await evaluate(`document.getElementById('s
 check('follow-up text is ready to copy', await evaluate(`document.getElementById('scCopyText').disabled === false`));
 
 await evaluate(`document.getElementById('scClose').click()`);
-await evaluate(`[...document.querySelectorAll('#tb tr')].find(r=>r.textContent.includes('Random Salon')).querySelector('.scriptbtn').click()`);
+await evaluate(`[...document.querySelectorAll('#tb tr')].find(r=>r.textContent.includes('No Demo Cafe')).querySelector('.scriptbtn').click()`);
 await new Promise((r) => setTimeout(r, 250));
 const warn = await evaluate(`document.getElementById('scWarn').textContent`);
 check('no demo means it WARNS instead of lying', warn.includes('No site has been built'), warn.slice(0, 80));
