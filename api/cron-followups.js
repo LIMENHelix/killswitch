@@ -1,4 +1,4 @@
-// Drains the P6 follow-up queue. Vercel cron, hourly.
+// Drains the P6 follow-up queue. Vercel cron, every five minutes.
 //
 // FAILS CLOSED, following the same pattern api/cron-mail.js had to be fixed to
 // use: without this the URL is a public trigger that can make us send real email
@@ -8,7 +8,7 @@
 // P6. Checked at send time, not at queue time, because someone can switch the
 // module off in the three days between an enquiry and its review request, and
 // the honest behaviour is that switching it off stops the sending.
-import { dueItems, retire, sendItem } from '../lib/automation.js';
+import { claimItem, deadLetter, dueItems, releaseItem, retire, sendItem } from '../lib/automation.js';
 import { getSite, has } from '../lib/sites.js';
 
 export default async function handler(req, res) {
@@ -21,10 +21,12 @@ export default async function handler(req, res) {
   try { items = await dueItems(Date.now()); }
   catch (e) { console.error('[cron-followups] read', e); res.status(500).json({ error: 'queue_unreadable' }); return; }
 
-  const out = { due: items.length, sent: 0, skipped: 0, failed: 0, reasons: {} };
+  const out = { due: items.length, sent: 0, skipped: 0, busy: 0, dead: 0, failed: 0, reasons: {} };
   const siteCache = new Map();
 
   for (const item of items) {
+    if (!await claimItem(item.id)) { out.busy++; continue; }
+    try {
     let site = siteCache.get(item.slug);
     if (site === undefined) {
       site = await getSite(item.slug).catch(() => null);
@@ -49,9 +51,16 @@ export default async function handler(req, res) {
       // after the key is set.
       out.failed++;
       out.reasons[r.reason] = (out.reasons[r.reason] || 0) + 1;
-      if (r.reason && r.reason.startsWith('resend_4')) await retire(item.id, new Date().toISOString());
+      if (r.reason && r.reason.startsWith('resend_4')) {
+        await deadLetter(item, r.reason);
+        await retire(item.id, new Date().toISOString());
+        out.dead++;
+      }
+    }
+    } finally {
+      await releaseItem(item.id).catch((e) => console.error('[cron-followups] release', item.id, e));
     }
   }
 
-  res.status(200).json({ ok: true, ...out });
+  res.status(out.failed > out.dead ? 500 : 200).json({ ok: out.failed <= out.dead, ...out });
 }

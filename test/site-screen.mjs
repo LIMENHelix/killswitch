@@ -14,6 +14,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
+import os from 'node:os';
 
 const { renderSite } = await import('../lib/site-template.js');
 const { SITE_DEFAULT } = await import('../lib/sites.js');
@@ -51,10 +52,10 @@ await new Promise((r) => server.listen(0, r));
 const PORT = server.address().port;
 
 const CHROME = ['C:/Program Files/Google/Chrome/Application/chrome.exe',
-  'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'].find((p) => fs.existsSync(p));
+  'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable'].find((p) => fs.existsSync(p));
 if (!CHROME) { console.log('Chrome not found, cannot run the DOM check'); process.exit(2); }
 
-const userDir = path.join(process.env.TEMP, 'ks-site-cdp-' + PORT);
+const userDir = path.join(os.tmpdir(), 'ks-site-cdp-' + PORT);
 const chrome = spawn(CHROME, ['--headless=new', '--remote-debugging-port=0', '--no-first-run',
   '--no-default-browser-check', '--disable-gpu', '--user-data-dir=' + userDir, 'about:blank'],
   { stdio: ['ignore', 'ignore', 'pipe'] });

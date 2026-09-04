@@ -9,6 +9,7 @@ import { renderSite } from '../lib/site-template.js';
 import { enforceRobots } from '../lib/site-writer.js';
 import { applyModules, rerootRelativeUrls } from '../lib/site-modules.js';
 import { recordShow } from '../lib/funnel.js';
+import { publicOrigin } from '../lib/origin.js';
 
 export default async function handler(req, res) {
   const slug = String((req.query && req.query.slug) || '').trim();
@@ -31,7 +32,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const host = (req.headers && req.headers.host) ? 'https://' + req.headers.host : 'https://killswitchwebsites.com';
+  const host = publicOrigin();
 
   // A site written for THIS business wins. The shared template is the fallback,
   // so a business whose own page has not been written yet still has one.
@@ -80,6 +81,7 @@ export default async function handler(req, res) {
   }
 
   res.setHeader('content-type', 'text/html; charset=utf-8');
+  res.setHeader('content-security-policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; connect-src 'self'; img-src 'self' data:; font-src 'self' data:; form-action 'self' https://calendly.com https://buy.stripe.com https://checkout.stripe.com");
   // Short cache: edits from the panel should show up quickly, but a burst of
   // traffic to one site must not hammer Redis on every hit.
   res.setHeader('cache-control', 'public, max-age=0, s-maxage=60, stale-while-revalidate=300');

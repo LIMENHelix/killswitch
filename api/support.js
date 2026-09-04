@@ -17,6 +17,8 @@ import { entitlements, canRequestChanges, CHANGE_PHASES } from '../lib/entitle.j
 import { notifyOperator } from '../lib/notify.js';
 import { limited, LIMITS } from '../lib/ratelimit.js';
 import { recordUsage } from '../lib/ai-usage.js';
+import { publicOrigin } from '../lib/origin.js';
+import { externalSideEffectsAllowed } from '../lib/environment.js';
 
 const SYSTEM = `You are the Killswitch Websites site-support assistant, helping an existing customer request changes to the website Killswitch Websites built and runs for them. They are on a plan that covers changes, so you never need to sell them anything.
 
@@ -52,7 +54,7 @@ export default async function handler(req, res) {
   if (!account) { res.status(404).json({ error: 'not_found' }); return; }
 
   // ---- are they paying for hand edits ----
-  const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitchwebsites.com';
+  const host = publicOrigin();
   let phases;
   try { ({ phases } = await entitlements(account, host)); }
   catch (e) { console.error('[support] entitlements', e); res.status(500).json({ error: 'server_error' }); return; }
@@ -98,6 +100,7 @@ export default async function handler(req, res) {
 
   // ---- the AI helper ----
   if (action !== 'ask') { res.status(400).json({ error: 'unknown_action' }); return; }
+  if (!externalSideEffectsAllowed()) { res.status(503).json({ error: 'preview_side_effects_disabled' }); return; }
 
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) { res.status(503).json({ error: 'not_configured' }); return; }

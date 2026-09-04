@@ -50,6 +50,13 @@ check('and with no tenant set at all, which is every existing code path',
   keyFor('ks:accounts') === 'ks:accounts', keyFor('ks:accounts'));
 check('the current tenant defaults to root', currentTenant() === ROOT, JSON.stringify(currentTenant()));
 
+process.env.VERCEL_ENV = 'preview';
+check('a Vercel preview is isolated from production data',
+  keyFor('ks:accounts') === 'ks:env:preview:accounts', keyFor('ks:accounts'));
+check('preview isolation also wraps tenant data',
+  keyFor('ks:site:joes', 'bob') === 'ks:env:preview:t:bob:site:joes', keyFor('ks:site:joes', 'bob'));
+delete process.env.VERCEL_ENV;
+
 console.log('\nA TENANT GETS ITS OWN KEYSPACE');
 
 check('a tenant key is prefixed', keyFor('ks:site:joes', 'bob') === 'ks:t:bob:site:joes', keyFor('ks:site:joes', 'bob'));

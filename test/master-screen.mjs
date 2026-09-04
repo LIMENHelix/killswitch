@@ -4,6 +4,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
+import os from 'node:os';
 
 // Repo root, derived from this file's own location so the suite runs
 // from any checkout rather than only from C:/Users/Chris/killswitch.
@@ -51,10 +52,10 @@ await new Promise((r) => server.listen(0, r));
 const PORT = server.address().port;
 
 const CHROME = ['C:/Program Files/Google/Chrome/Application/chrome.exe',
-  'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'].find((p) => fs.existsSync(p));
+  'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable'].find((p) => fs.existsSync(p));
 if (!CHROME) { console.log('Chrome not found'); process.exit(2); }
 const chrome = spawn(CHROME, ['--headless=new', '--remote-debugging-port=0', '--no-first-run',
-  '--no-default-browser-check', '--disable-gpu', '--user-data-dir=' + path.join(process.env.TEMP, 'ks-cdp-m' + PORT), 'about:blank'],
+  '--no-default-browser-check', '--disable-gpu', '--user-data-dir=' + path.join(os.tmpdir(), 'ks-cdp-m' + PORT), 'about:blank'],
   { stdio: ['ignore', 'ignore', 'pipe'] });
 const wsUrl = await new Promise((resolve, reject) => {
   let buf = ''; const t = setTimeout(() => reject(new Error('no debug port')), 20000);
@@ -78,7 +79,7 @@ const evaluate = async (e) => (await send('Runtime.evaluate', { expression: e, r
 
 await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/master` });
 await new Promise((r) => setTimeout(r, 1000));
-await evaluate(`localStorage.setItem('ks-admin-key','k'); location.reload();`);
+await evaluate(`document.getElementById('key').value='k'; document.getElementById('loginBtn').click();`);
 await new Promise((r) => setTimeout(r, 1600));
 
 let pass = 0, fail = 0;

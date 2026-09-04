@@ -5,6 +5,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
+import os from 'node:os';
 
 // Repo root, derived from this file's own location so the suite runs
 // from any checkout rather than only from C:/Users/Chris/killswitch.
@@ -71,10 +72,10 @@ await new Promise((r) => server.listen(0, r));
 const PORT = server.address().port;
 
 const CHROME = ['C:/Program Files/Google/Chrome/Application/chrome.exe',
-  'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'].find((p) => fs.existsSync(p));
+  'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable'].find((p) => fs.existsSync(p));
 if (!CHROME) { console.log('Chrome not found, cannot run the DOM check'); process.exit(2); }
 
-const userDir = path.join(process.env.TEMP, 'ks-cdp-' + PORT);
+const userDir = path.join(os.tmpdir(), 'ks-cdp-' + PORT);
 const chrome = spawn(CHROME, ['--headless=new', '--remote-debugging-port=0', '--no-first-run',
   '--no-default-browser-check', '--disable-gpu', '--user-data-dir=' + userDir, 'about:blank'],
   { stdio: ['ignore', 'ignore', 'pipe'] });
@@ -113,7 +114,7 @@ async function load(role) {
   ROLE = role; consoleErrors.length = 0;
   await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/admin` });
   await new Promise((r) => setTimeout(r, 1200));
-  await send('Runtime.evaluate', { expression: `localStorage.setItem('ks-admin-key','k'); location.reload();` });
+  await send('Runtime.evaluate', { expression: `document.getElementById('key').value='k'; document.getElementById('loginBtn').click();` });
   await new Promise((r) => setTimeout(r, 1500));
 }
 const evaluate = async (expr) => {

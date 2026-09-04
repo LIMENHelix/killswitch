@@ -7,6 +7,7 @@
 // Env: ANTHROPIC_API_KEY + SWITCH_TOKEN. Optional: RESEND_API_KEY.
 
 import { recordUsage } from '../lib/ai-usage.js';
+import { externalSideEffectsAllowed } from '../lib/environment.js';
 
 const SYSTEM = `You are "Switch," the cold-outreach writer for Killswitch Websites. Write strictly in the voice and framework of the Killswitch Websites Outbound Playbook below. Personalize everything to the one business you are given.
 
@@ -122,6 +123,7 @@ async function emailOperator(lead, p) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+  if (!externalSideEffectsAllowed()) { res.status(503).json({ error: 'preview_side_effects_disabled' }); return; }
 
   const token = process.env.SWITCH_TOKEN;
   if (!token) { res.status(503).json({ error: 'not_configured' }); return; }
