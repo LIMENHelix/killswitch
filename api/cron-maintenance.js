@@ -13,6 +13,7 @@ import { notifyOperator, labelPhases } from '../lib/notify.js';
 // being counted as done. See lib/site-link.js.
 import { removeModulesLoud } from '../lib/site-link.js';
 import { publicOrigin } from '../lib/origin.js';
+import { backfillLifecycle } from '../lib/lifecycle.js';
 
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
@@ -20,7 +21,17 @@ export default async function handler(req, res) {
     || (req.query && (req.query.token === process.env.ADMIN_KEY || req.query.token === process.env.SWITCH_TOKEN));
   if (!secret || !allowed) { res.status(401).json({ error: 'unauthorized' }); return; }
 
-  const out = { backup: null, uptime: null, expired: null, errors: [] };
+  const out = { backup: null, uptime: null, expired: null, lifecycle: null, errors: [] };
+
+  // Older customers existed before the lifecycle ledger. Seed a bounded batch
+  // on every hourly run until all of them have a truthful current state.
+  try {
+    const [accounts, sites] = await Promise.all([getAccounts(), listSites()]);
+    out.lifecycle = await backfillLifecycle({ accounts, sites, limit: 25 });
+  } catch (e) {
+    console.error('[cron-maintenance] lifecycle', e);
+    out.errors.push('lifecycle');
+  }
 
   // FIRST, because it is the only thing that actually ends a paid module. A
   // customer switched something off, kept it for the cycle they paid for, and

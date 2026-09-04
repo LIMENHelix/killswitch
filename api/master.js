@@ -18,6 +18,8 @@ import { identify, isOwner } from '../lib/roles.js';
 import { listSites, getSite, upsertSite, bulkUpsert, migrateAll, slugify, siteForEmail, siteSlugsByEmail, deleteSite } from '../lib/sites.js';
 import { linkAccountToSite } from '../lib/site-link.js';
 import { rerootRelativeUrls } from '../lib/site-modules.js';
+import { publicOrigin } from '../lib/origin.js';
+import { getLifecycleEvents, getLifecycleStates } from '../lib/lifecycle.js';
 
 // Everything the website editor is allowed to write. A save applies ONLY the
 // keys it was actually sent, so a partial save is a partial update. This used to
@@ -144,8 +146,15 @@ export default async function handler(req, res) {
   const action = body.action || 'list';
 
   try {
+    if (action === 'lifecycle-events') {
+      const email = String(body.email || '').trim().toLowerCase();
+      if (!email || !email.includes('@')) { res.status(400).json({ error: 'valid_email_required' }); return; }
+      res.status(200).json({ ok: true, email, events: await getLifecycleEvents(email, body.limit) });
+      return;
+    }
+
     if (action === 'onboard') {
-      const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitchwebsites.com';
+      const host = publicOrigin();
       const out = await onboardCustomer({ email: body.email, site: body.site, name: body.name, host, source: 'master-onboard' });
       if (out.error) { res.status(400).json({ error: out.error }); return; }
 
@@ -315,7 +324,7 @@ export default async function handler(req, res) {
       if (html && body.src) html = rerootRelativeUrls(html, String(body.src));
       if (body.src) patchSrc = String(body.src);
 
-      const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitchwebsites.com';
+      const host = publicOrigin();
       const out = { slug, url: host + '/s/' + slug, steps: {}, config: configReport() };
 
       // 1. The page itself. Publishing a record with no content would put a
@@ -389,7 +398,7 @@ export default async function handler(req, res) {
       const acct = map[email];
       if (!acct) { res.status(404).json({ error: 'no_such_account' }); return; }
 
-      const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitchwebsites.com';
+      const host = publicOrigin();
       const out = { email, repaired: false, reason: '' };
 
       let site = await siteForEmail(email);
@@ -515,8 +524,8 @@ export default async function handler(req, res) {
     }
 
     // action 'list'
-    const host = (req.headers && (req.headers.origin || (req.headers.host && ('https://' + req.headers.host)))) || 'https://killswitchwebsites.com';
-    const map = await getAccounts();
+    const host = publicOrigin();
+    const [map, lifecycleByEmail] = await Promise.all([getAccounts(), getLifecycleStates()]);
     const byCust = await stripeByCustomer();
 
     // SELF-HEAL. A customer who paid and then closed the tab never came back to
@@ -589,6 +598,7 @@ export default async function handler(req, res) {
         siteSlug: slug,
         attached: !!rec,
         working: !!(rec && rec.published),
+        lifecycle: lifecycleByEmail[String(a.email || '').trim().toLowerCase()] || null,
       };
     }).sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt)));
 
@@ -597,6 +607,7 @@ export default async function handler(req, res) {
       paying: accounts.filter((a) => a.mrr > 0).length,
       mrr: +accounts.reduce((n, a) => n + a.mrr, 0).toFixed(2),
       ending: accounts.filter((a) => a.endsAt).length,
+      attention: accounts.filter((a) => a.lifecycle && (a.lifecycle.status === 'blocked' || a.lifecycle.stage === 'integrations_required')).length,
     };
     res.status(200).json({
       ok: true, accounts, totals,

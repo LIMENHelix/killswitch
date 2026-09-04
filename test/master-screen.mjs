@@ -41,7 +41,17 @@ const server = http.createServer((req, res) => {
       if (body.action === 'site-migrate') return res.end(JSON.stringify({ ok: true, migrated: 7 }));
       if (body.action === 'site-get') { sawSiteGet = true; return res.end(JSON.stringify({ ok: true, site: FULL })); }
       if (body.action === 'site-save') { saved = body.site; return res.end(JSON.stringify({ ok: true, site: { ...FULL, ...body.site } })); }
-      return res.end(JSON.stringify({ ok: true, accounts: [], totals: { customers: 0, paying: 0, mrr: 0 }, stripe: true }));
+      return res.end(JSON.stringify({
+        ok: true,
+        accounts: [{
+          email: 'shop@example.com', name: 'Test Shop', site: 'Test Shop', switches: ['Online Booking'],
+          mrr: 19, portalUrl: '/panel?e=shop%40example.com&t=test', attached: true, working: true,
+          siteSlug: 'test-shop', lifecycle: {
+            stage: 'active', status: 'blocked', requiredStage: 'integrations_required', blocker: 'calendar_booking_url',
+          },
+        }],
+        totals: { customers: 1, paying: 1, mrr: 19, attention: 1 }, stripe: true,
+      }));
     });
     return;
   }
@@ -88,6 +98,8 @@ const check = (n, c, d) => { if (c) { console.log('  PASS  ' + n); pass++; } els
 console.log('\nMASTER website editor');
 check('no javascript errors', errors.length === 0, errors.join(' | '));
 check('the site list rendered', (await evaluate(`document.querySelectorAll('#sTb [data-edit]').length`)) === 1);
+check('the lifecycle attention tile is visible', (await evaluate(`document.getElementById('tiles').textContent`)).includes('Needs setup'));
+check('the customer row names the missing integration', (await evaluate(`document.getElementById('tb').textContent`)).includes('calendar_booking_url'));
 
 await evaluate(`document.querySelector('#sTb [data-edit]').click()`);
 await new Promise((r) => setTimeout(r, 600));
