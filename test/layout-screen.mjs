@@ -43,6 +43,10 @@ const PAGES = process.argv[2] ? [process.argv[2]] : [
   'demos/kcs-sports-academy-olathe.html', 'demos/lee-auto-repair-kansas-city.html',
   // and the product itself
   '__site__',
+  // The Trade layout is a SEPARATE rendered surface: different markup, a
+  // full-bleed hero and a sticky call bar the classic layout does not have, so
+  // "classic does not overflow" proves nothing about it.
+  '__site_trade__',
 ];
 
 // The rendered customer site is a product surface too.
@@ -68,6 +72,7 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (url === '/__site__') { res.setHeader('content-type', 'text/html'); res.end(renderSite(DEMO_SITE)); return; }
+    if (url === '/__site_trade__') { res.setHeader('content-type', 'text/html'); res.end(renderSite({ ...DEMO_SITE, layout: 'trade', theme: 'midnight' })); return; }
   let f = path.join(ROOT, url === '/' ? 'index.html' : url);
   if (!fs.existsSync(f) && fs.existsSync(f + '.html')) f += '.html';
   if (!fs.existsSync(f)) { res.statusCode = 404; res.end('nope'); return; }
@@ -167,7 +172,7 @@ const PROBE = `(() => {
 
 const findings = [];
 for (const page of PAGES) {
-  const url = page === '__site__' ? `http://127.0.0.1:${PORT}/__site__` : `http://127.0.0.1:${PORT}/${page}`;
+  const url = page.startsWith('__') ? `http://127.0.0.1:${PORT}/${page}` : `http://127.0.0.1:${PORT}/${page}`;
   for (const w of WIDTHS) {
     await send('Emulation.setDeviceMetricsOverride', { width: w, height: 900, deviceScaleFactor: 1, mobile: w < 700 });
     await send('Page.navigate', { url });
@@ -187,7 +192,8 @@ for (const f of findings) (byPage[f.page] = byPage[f.page] || []).push(f);
 
 for (const page of PAGES) {
   const fs2 = byPage[page];
-  const label = page === '__site__' ? 'a rendered customer site (/s/<slug>)' : page;
+  const label = page === '__site__' ? 'a rendered customer site (/s/<slug>, classic)'
+    : page === '__site_trade__' ? 'a rendered customer site (/s/<slug>, TRADE layout)' : page;
   if (!fs2) { if (!process.env.KS_QUIET) console.log('  CLEAN   ' + label); continue; }
   bad++;
   console.log('  BROKEN  ' + label);
