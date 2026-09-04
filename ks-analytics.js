@@ -27,12 +27,61 @@
   // The queue shim Vercel's script drains once it loads. Safe to call before it.
   window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
 
+  // Keep first-party attribution for this browser session. This is enough to
+  // follow a person from a city/trade landing page to signup without creating a
+  // long-lived identifier. The server accepts the same allowlisted envelope.
+  var ATTR_KEY = 'ks:campaign-attribution';
+  var PARAMS = {
+    utm_source: 'source', utm_medium: 'medium', utm_campaign: 'campaign',
+    utm_content: 'content', utm_term: 'term',
+    gclid: 'gclid', msclkid: 'msclkid', fbclid: 'fbclid'
+  };
+
+  function clipped(value, max) {
+    return String(value || '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, max);
+  }
+
+  function captureAttribution() {
+    var current = {};
+    try { current = JSON.parse(sessionStorage.getItem(ATTR_KEY) || '{}') || {}; } catch (e) {}
+    try {
+      var query = new URLSearchParams(location.search);
+      var hasCampaign = false;
+      Object.keys(PARAMS).forEach(function (param) {
+        if (!query.has(param)) return;
+        hasCampaign = true;
+        current[PARAMS[param]] = clipped(query.get(param), param === 'utm_campaign' ? 120 : 180);
+      });
+      if (hasCampaign || !current.landingPage) {
+        current.landingPage = clipped(location.pathname, 180);
+        if (document.referrer) current.referrerHost = clipped(new URL(document.referrer).hostname, 120);
+      }
+      sessionStorage.setItem(ATTR_KEY, JSON.stringify(current));
+    } catch (e) { /* private browsing or a malformed referrer must not break the page */ }
+    return current;
+  }
+
+  var attribution = captureAttribution();
+  window.ksAttribution = function () { return Object.assign({}, attribution); };
+
+  function eventAttribution() {
+    var out = {};
+    if (attribution.source) out.utm_source = attribution.source;
+    if (attribution.medium) out.utm_medium = attribution.medium;
+    if (attribution.campaign) out.utm_campaign = attribution.campaign;
+    if (attribution.landingPage) out.landing = attribution.landingPage;
+    return out;
+  }
+
   /**
    * Record a conversion. Never throws: analytics must not be able to break a
    * form submission, which is the whole point of the thing being measured.
    */
   function ksEvent(name, data) {
-    try { window.va('event', data ? { name: name, data: data } : { name: name }); }
+    try {
+      var details = Object.assign(eventAttribution(), data || {});
+      window.va('event', { name: name, data: details });
+    }
     catch (e) { /* measuring must never cost a lead */ }
   }
   window.ksEvent = ksEvent;
@@ -83,6 +132,19 @@
   document.addEventListener('click', function (e) {
     var a = e.target && e.target.closest && e.target.closest('a[href^="tel:"]');
     if (a) { human('call'); ksEvent('call_clicked', { path: location.pathname }); }
+  }, { passive: true, capture: true });
+
+  // Measure the handoff points that matter operationally, without recording
+  // link text or destination query strings that may contain customer data.
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest && e.target.closest('a[href]');
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    var kind = '';
+    if (/calendly\.com/i.test(href)) kind = 'booking';
+    else if (/^mailto:/i.test(href)) kind = 'email';
+    else if (/^\/(start|pricing)(?:[?#]|$)/i.test(href)) kind = 'site_cta';
+    if (kind) ksEvent('cta_clicked', { kind: kind, path: location.pathname });
   }, { passive: true, capture: true });
 
   // Someone reaching a demo is a warm signal: the only way to one is a postcard,

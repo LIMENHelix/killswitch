@@ -11,6 +11,7 @@ import { appendInboundLead } from '../lib/store.js';
 import { limited, LIMITS } from '../lib/ratelimit.js';
 import { ensureCustomerSite } from '../lib/autonomy.js';
 import { publicOrigin } from '../lib/origin.js';
+import { normalizeAttribution } from '../lib/attribution.js';
 import crypto from 'node:crypto';
 
 export default async function handler(req, res) {
@@ -30,6 +31,7 @@ export default async function handler(req, res) {
   const email = String(body.email || '').trim().toLowerCase();
   const business = String(body.business || '').trim();
   const phone = String(body.phone || '').trim();
+  const attribution = normalizeAttribution(body.attribution);
 
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     res.status(400).json({ error: 'valid_email' });
@@ -78,6 +80,7 @@ export default async function handler(req, res) {
       street: '', city: '', state: '', zip: '',
       status: 'new',
       source: 'homepage-inbound',
+      attribution,
       createdAt: new Date().toISOString(),
       // Contact flow captures these at once, not later.
       owner: null,

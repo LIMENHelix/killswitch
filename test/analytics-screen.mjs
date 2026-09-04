@@ -127,7 +127,27 @@ check('the tracker loaded', (await evaluate(`typeof window.ksEvent`)) === 'funct
 check('a page load alone is NOT counted as a human',
   !(await evaluate(NAMES)).includes('human_visit'), JSON.stringify(await evaluate(NAMES)));
 
+console.log('\nCAMPAIGN ATTRIBUTION SURVIVES THE LANDING JOURNEY');
+await open('/?utm_source=google&utm_medium=cpc&utm_campaign=launch-plumbers&gclid=click-123');
+const attribution = JSON.parse(await evaluate(`JSON.stringify(window.ksAttribution())`) || '{}');
+check('campaign parameters are captured',
+  attribution.source === 'google' && attribution.medium === 'cpc' && attribution.campaign === 'launch-plumbers',
+  JSON.stringify(attribution));
+check('the landing path and click id are retained for signup',
+  attribution.landingPage === '/' && attribution.gclid === 'click-123', JSON.stringify(attribution));
+await open('/pricing.html');
+const carried = JSON.parse(await evaluate(`JSON.stringify(window.ksAttribution())`) || '{}');
+check('attribution carries to another page in the session',
+  carried.source === 'google' && carried.campaign === 'launch-plumbers', JSON.stringify(carried));
+await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Tab'}))`);
+await new Promise((r) => setTimeout(r, 200));
+const attributedHuman = JSON.parse(await evaluate(EVENT('human_visit')) || '{}');
+check('conversion analytics include campaign dimensions',
+  attributedHuman.utm_source === 'google' && attributedHuman.utm_campaign === 'launch-plumbers',
+  JSON.stringify(attributedHuman));
+
 console.log('\nA REAL PERSON IS COUNTED, on any one of the signals');
+await open('/');
 await evaluate(`document.dispatchEvent(new MouseEvent('mousemove',{clientX:10,clientY:10}));
                 document.dispatchEvent(new MouseEvent('mousemove',{clientX:90,clientY:70}));`);
 await new Promise((r) => setTimeout(r, 200));

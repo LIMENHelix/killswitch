@@ -59,7 +59,14 @@ function check(name, condition, detail = '') {
 }
 
 console.log('\nPUBLIC SIGNUP IS THE FULL P0 FULFILLMENT PATH');
-let res = await submit({ email: 'owner@example.com', business: 'North Star Electric', phone: '(816) 555-0199' });
+let res = await submit({
+  email: 'owner@example.com', business: 'North Star Electric', phone: '(816) 555-0199',
+  attribution: {
+    source: 'google', medium: 'cpc', campaign: 'launch-plumbers',
+    landingPage: '/free-website-for-plumbers-in-kansas-city', gclid: 'click-123',
+    ignored: 'must not persist',
+  },
+});
 check('signup succeeds', res.code === 200, JSON.stringify(res.body));
 const account = await getAccount('owner@example.com');
 const site = await siteForEmail('owner@example.com');
@@ -69,7 +76,11 @@ check('the site is live and customer-claimed', site.published && site.claimed);
 check('the customer phone is on the page record', site.phone === '(816) 555-0199');
 check('the response links the live site', res.body.siteUrl === 'https://killswitchwebsites.com/s/north-star-electric', res.body.siteUrl);
 check('an attacker Host header cannot capture a panel token', !res.body.portalUrl && !JSON.stringify(res.body).includes('attacker.example'));
-check('the signup is present on the lead board', (await getLeads()).some((lead) => lead.email === 'owner@example.com'));
+const inboundLead = (await getLeads()).find((lead) => lead.email === 'owner@example.com');
+check('the signup is present on the lead board', !!inboundLead);
+check('campaign attribution survives into operations',
+  inboundLead.attribution?.source === 'google' && inboundLead.attribution?.campaign === 'launch-plumbers');
+check('unrecognized attribution fields are rejected', !('ignored' in (inboundLead.attribution || {})));
 
 console.log('\nREPEATED SIGNUP CANNOT DOWNGRADE A CUSTOMER');
 await upsertAccount({ email: 'paid@example.com', name: 'Paid Original', site: 'Paid Original', plan: ['P0', 'P9'], owned: ['P3'], stripeCustomerId: 'cus_paid', createdAt: '2025-01-01T00:00:00.000Z', source: 'paid' });
