@@ -197,7 +197,7 @@ async function publish(res, body, host) {
 }
 
 // What the owner is allowed to correct about their own business, by voice.
-const SAY_FIELDS = ['tagline', 'about', 'phone', 'email_public', 'street', 'city', 'state', 'zip', 'bookingUrl', 'payUrl'];
+const SAY_FIELDS = ['tagline', 'about', 'phone', 'email_public', 'street', 'city', 'state', 'zip', 'googleBusinessProfile', 'bookingUrl', 'payUrl'];
 
 function normHours(v) {
   if (!Array.isArray(v)) return null;

@@ -28,7 +28,7 @@ import { getLifecycleEvents, getLifecycleStates } from '../lib/lifecycle.js';
 // their phone, address, hours, services and about text. Use site-get to load.
 const SITE_FIELDS = [
   'email', 'business', 'trade', 'tagline', 'phone', 'email_public',
-  'street', 'city', 'state', 'zip', 'about', 'accent', 'bookingUrl', 'payUrl',
+  'street', 'city', 'state', 'zip', 'about', 'accent', 'googleBusinessProfile', 'bookingUrl', 'payUrl',
 ];
 const SITE_ARRAYS = ['hours', 'services', 'posts', 'modules'];
 

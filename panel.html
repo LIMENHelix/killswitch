@@ -180,6 +180,20 @@
   .aibox-foot .deliver:hover{background:color-mix(in srgb,var(--go) 14%,transparent)}
   .aibox-foot .dnote{font-size:.78rem;color:var(--mute-2);min-height:14px}
 
+  /* customer-owned public connections; credentials never enter this screen */
+  .conn-grid{display:grid;gap:10px}
+  .conn{background:var(--panel);border:1px solid var(--line);border-radius:2px;padding:15px 16px}
+  .conn-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
+  .conn h3{font-size:.95rem;margin:0}.conn p{font-size:.78rem;color:var(--mute-2);margin:3px 0 0;line-height:1.45}
+  .conn-status{font-family:"IBM Plex Mono",monospace;font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);white-space:nowrap}
+  .conn-status.on{color:var(--go)}
+  .conn-row{display:flex;gap:8px;align-items:center}
+  .conn-row input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:2px;color:var(--ink);font:inherit;font-size:.86rem;padding:10px 11px;outline:none}
+  .conn-row input:focus{border-color:var(--go)}
+  .conn-row button{background:var(--go);color:var(--go-ink);border:0;border-radius:2px;padding:10px 14px;font-weight:700;cursor:pointer}
+  .conn-msg{font-size:.75rem;color:var(--mute-2);min-height:16px;margin-top:7px}
+  .conn-safe{color:var(--mute-2);font-size:.8rem;margin-top:12px;line-height:1.5}
+
   footer{border-top:1px solid var(--line-soft);padding:36px 0;margin-top:24px;color:var(--mute-2);font-size:.8rem;font-family:"IBM Plex Mono",monospace;letter-spacing:.05em}
 
   @media(max-width:640px){
@@ -280,6 +294,12 @@
     <div class="s-lbl">The look of your site</div>
     <div class="thlist" id="thList"></div>
     <p class="thnote" id="thNote">Free, and you can change it as often as you like. Your words, photos and hours stay exactly as they are.</p>
+  </section>
+
+  <section class="s" id="connectionsWrap" hidden>
+    <div class="s-lbl">Connect what you switched on</div>
+    <div class="conn-grid" id="connectionsList"></div>
+    <p class="conn-safe">Paste only the public link customers should visit. Killswitch never asks for or stores your Google, calendar, or payment password.</p>
   </section>
 
   <section class="s">
@@ -580,7 +600,7 @@
     return sw('state').then(function(d){
       if(d && !d.error){
         applyState(d); LIVE=true; baselineOn = paidOn(); committedState = snapshot();
-        render(); loadStats(); loadCrm();
+        render(); loadStats(); loadCrm(); loadConnections();
       } else {
         // Could not confirm what they actually have. Showing a switchboard here
         // would be showing switches that cannot save, which is exactly how a
@@ -600,7 +620,7 @@
     listEl.innerHTML = '<div class="mrow"><div></div><div class="m-main">'
       + '<h3>Your switches are not shown</h3><p>' + safe + '</p></div><div></div></div>';
     var t = document.getElementById('totalbar'); if(t) t.hidden = true;
-    ['statsWrap','crmWrap'].forEach(function(id){ var el = document.getElementById(id); if(el) el.hidden = true; });
+    ['statsWrap','crmWrap','connectionsWrap'].forEach(function(id){ var el = document.getElementById(id); if(el) el.hidden = true; });
   }
 
   // ---- P5: their customer list, and P6's queue alongside it ----
@@ -699,6 +719,41 @@
         document.getElementById('stNote').textContent = 'Nobody has opened your site yet. This fills in as visitors arrive.';
       }
     }).catch(function(){ /* stats are never worth breaking the panel over */ });
+  }
+
+  // ---- P1/P3/P7: public destinations, never provider credentials -----------
+  function loadConnections(){
+    var wrap=document.getElementById('connectionsWrap'), list=document.getElementById('connectionsList');
+    if(!wrap||!list||!acctEmail||!acctToken) return;
+    function api(action, extra){
+      var payload={action:action,e:acctEmail,t:acctToken};
+      if(extra){ for(var k in extra) payload[k]=extra[k]; }
+      return fetch('/api/integrations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+        .then(function(r){ return r.json().catch(function(){return {};}); });
+    }
+    function esc4(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function draw(items){
+      var active=(items||[]).filter(function(x){return x.active;});
+      if(!active.length){ wrap.hidden=true; list.innerHTML=''; return; }
+      list.innerHTML=active.map(function(x){return '<div class="conn" data-field="'+esc4(x.field)+'">'
+        +'<div class="conn-head"><div><h3>'+esc4(x.label)+'</h3><p>'+esc4(x.note)+'</p></div>'
+        +'<span class="conn-status '+(x.connected?'on':'')+'">'+(x.connected?'Connected':'Needs connection')+'</span></div>'
+        +'<div class="conn-row"><input type="url" inputmode="url" autocomplete="url" value="'+esc4(x.value)+'" placeholder="'+esc4(x.placeholder)+'" aria-label="'+esc4(x.label)+' public link" />'
+        +'<button type="button">Save</button></div><div class="conn-msg" aria-live="polite"></div></div>';}).join('');
+      wrap.hidden=false;
+    }
+    list.onclick=function(ev){
+      var button=ev.target.closest?ev.target.closest('.conn button'):null;
+      if(!button||button.disabled) return;
+      var row=button.closest('.conn'), input=row.querySelector('input'), msg=row.querySelector('.conn-msg');
+      button.disabled=true; msg.textContent='Checking and saving…';
+      api('set',{field:row.getAttribute('data-field'),value:input.value}).then(function(d){
+        button.disabled=false;
+        if(d&&d.ok){ draw(d.integrations); var fresh=list.querySelector('[data-field="'+d.field+'"] .conn-msg'); if(fresh) fresh.textContent=d.connected?'Connected. Your live site now uses this link.':'Disconnected. Your site will use its built-in request form.'; }
+        else msg.textContent=(d&&d.error)?d.error.replace(/_/g,' '):'Could not save. Try again in a moment.';
+      }).catch(function(){ button.disabled=false; msg.textContent='Could not save. Try again in a moment.'; });
+    };
+    return api('list').then(function(d){ if(d&&d.ok) draw(d.integrations); }).catch(function(){ wrap.hidden=true; });
   }
   if(acctEmail && acctToken){
     if(sessionId){ sw('link',{session_id:sessionId}).then(loadState); }

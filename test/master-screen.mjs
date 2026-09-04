@@ -14,7 +14,7 @@ const FULL = {
   slug: 'test-shop', business: 'Test Shop', email: 'shop@example.com', trade: 'auto repair',
   phone: '816-555-0101', street: '123 Main St', city: 'Lenexa', state: 'KS', zip: '66215',
   about: 'Family run since 1998.', tagline: 'Brakes done right', accent: '#12703C',
-  bookingUrl: '', payUrl: '', email_public: '',
+  googleBusinessProfile: 'https://maps.app.goo.gl/TestShop', bookingUrl: '', payUrl: '', email_public: '',
   hours: [{ d: 'Mon to Fri', h: '8am to 6pm' }],
   services: [{ name: 'Brakes', desc: 'Pads and rotors' }],
   posts: [], modules: ['P0', 'P3'], published: true,
@@ -107,6 +107,7 @@ check('Edit calls site-get, not site-list', sawSiteGet);
 check('phone is filled from the full record', (await evaluate(`document.getElementById('f_phone').value`)) === '816-555-0101');
 check('address is filled', (await evaluate(`document.getElementById('f_city').value`)) === 'Lenexa');
 check('about text is filled', (await evaluate(`document.getElementById('f_about').value`)) === 'Family run since 1998.');
+check('Google profile is filled', (await evaluate(`document.getElementById('f_googleBusinessProfile').value`)) === 'https://maps.app.goo.gl/TestShop');
 check('hours repeater is populated', (await evaluate(`document.querySelectorAll('#r_hours .rep').length`)) === 1);
 check('services repeater is populated', (await evaluate(`document.querySelectorAll('#r_services .rep').length`)) === 1);
 
@@ -115,6 +116,7 @@ await evaluate(`document.getElementById('f_tagline').value='Brakes done right, f
 await new Promise((r) => setTimeout(r, 600));
 check('save carries the phone number back', saved && saved.phone === '816-555-0101', JSON.stringify(saved && saved.phone));
 check('save carries the address back', saved && saved.city === 'Lenexa' && saved.zip === '66215');
+check('save carries the Google profile back', saved && saved.googleBusinessProfile === 'https://maps.app.goo.gl/TestShop');
 check('save carries hours and services back', saved && saved.hours.length === 1 && saved.services.length === 1);
 check('the edit itself landed', saved && saved.tagline === 'Brakes done right, fast');
 check('P10 is gone from the module list', !(await evaluate(`document.getElementById('f_mods').textContent`)).includes('P10'));

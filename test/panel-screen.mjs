@@ -30,6 +30,8 @@ let applied = null;
 let STATS = { entitled: false };
 let CRM = { entitled: false };
 let DENY = false;   // make the stubbed /api/switch answer 'unauthorized'
+let INTEGRATIONS = [];
+let SAVED_CONNECTION = null;
 
 const server = http.createServer((req, res) => {
   if (req.url.startsWith('/api/switch')) {
@@ -50,6 +52,22 @@ const server = http.createServer((req, res) => {
   if (req.url.startsWith('/api/support')) {
     res.setHeader('content-type', 'application/json');
     res.end(JSON.stringify({ error: 'not_entitled', need: ['P11', 'P4'] }));
+    return;
+  }
+  if (req.url.startsWith('/api/integrations')) {
+    let b = '';
+    req.on('data', (c) => { b += c; });
+    req.on('end', () => {
+      const body = JSON.parse(b || '{}');
+      res.setHeader('content-type', 'application/json');
+      if (body.action === 'set') {
+        SAVED_CONNECTION = { field: body.field, value: body.value };
+        INTEGRATIONS = INTEGRATIONS.map((x) => x.field === body.field ? { ...x, value: body.value, connected: !!body.value } : x);
+        res.end(JSON.stringify({ ok: true, field: body.field, value: body.value, connected: !!body.value, integrations: INTEGRATIONS }));
+        return;
+      }
+      res.end(JSON.stringify({ ok: true, integrations: INTEGRATIONS }));
+    });
     return;
   }
   res.setHeader('content-type', 'text/html');
@@ -96,8 +114,8 @@ const { result: t } = await send('Target.createTarget', { url: 'about:blank' }, 
 await send('Runtime.enable');
 await send('Page.enable');
 
-async function load(live, stats = { entitled: false }, crm = { entitled: false }, deny = false) {
-  MODULES_LIVE = live; applied = null; STATS = stats; CRM = crm; DENY = deny; consoleErrors.length = 0;
+async function load(live, stats = { entitled: false }, crm = { entitled: false }, deny = false, integrations = []) {
+  MODULES_LIVE = live; applied = null; STATS = stats; CRM = crm; DENY = deny; INTEGRATIONS = integrations; SAVED_CONNECTION = null; consoleErrors.length = 0;
   await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/panel?e=shop%40example.com&t=tok` });
   await new Promise((r) => setTimeout(r, 1400));
 }
@@ -221,6 +239,24 @@ check('an empty list explains itself',
   await evaluate(`document.getElementById('crmNote').textContent`));
 check('and the automation counts hide when P6 is off',
   await evaluate(`document.getElementById('autoStat').hidden === true`));
+
+console.log('\nPAID CONNECTIONS ARE FINISHED BY THE CUSTOMER');
+const connectionList = [
+  { field:'googleBusinessProfile', phase:'P1', label:'Google Business Profile', note:'Public Google link', placeholder:'https://maps.app.goo.gl/...', active:false, connected:false, value:'' },
+  { field:'bookingUrl', phase:'P3', label:'Booking calendar', note:'Public calendar link', placeholder:'https://calendly.com/...', active:true, connected:false, value:'' },
+  { field:'payUrl', phase:'P7', label:'Secure payment page', note:'Hosted checkout link', placeholder:'https://buy.stripe.com/...', active:true, connected:true, value:'https://buy.stripe.com/already' },
+];
+await load({ P3: { state:'active' }, P7: { state:'active' } }, { entitled:false }, { entitled:false }, false, connectionList);
+check('the connection center appears for paid modules', await evaluate(`document.getElementById('connectionsWrap').hidden === false`));
+check('only connections for active modules are shown', (await evaluate(`document.querySelectorAll('#connectionsList .conn').length`)) === 2);
+check('the existing public payment link is loaded', (await evaluate(`document.querySelector('[data-field="payUrl"] input').value`)) === 'https://buy.stripe.com/already');
+await evaluate(`(function(){var r=document.querySelector('[data-field="bookingUrl"]');r.querySelector('input').value='https://calendly.com/owner/30min';r.querySelector('button').click();})()`);
+await new Promise((r) => setTimeout(r, 300));
+check('saving sends exactly the chosen public link', SAVED_CONNECTION && SAVED_CONNECTION.field === 'bookingUrl' && SAVED_CONNECTION.value === 'https://calendly.com/owner/30min', JSON.stringify(SAVED_CONNECTION));
+check('the panel confirms that the live site uses it', (await evaluate(`document.querySelector('[data-field="bookingUrl"] .conn-msg').textContent`)).includes('live site'));
+
+await load({ P5: { state:'active' } });
+check('the connection center stays hidden when no connected module is active', await evaluate(`document.getElementById('connectionsWrap').hidden === true`));
 
 console.log('\nA PANEL THAT CANNOT LOAD MUST NOT SHOW SWITCHES');
 // The reported bug: switches read ON, would not stay off, and were back on
