@@ -19,7 +19,9 @@ import { listSites, getSite, upsertSite, bulkUpsert, migrateAll, slugify, siteFo
 import { linkAccountToSite } from '../lib/site-link.js';
 import { rerootRelativeUrls } from '../lib/site-modules.js';
 import { publicOrigin } from '../lib/origin.js';
-import { getLifecycleEvents, getLifecycleStates } from '../lib/lifecycle.js';
+import { getLifecycleEvents, getLifecycleStates, recordLifecycle } from '../lib/lifecycle.js';
+import { completeWorkOrder, listWorkOrders, markWorkOrderNotified } from '../lib/work-orders.js';
+import { notifyCustomer } from '../lib/notify.js';
 
 // Everything the website editor is allowed to write. A save applies ONLY the
 // keys it was actually sent, so a partial save is a partial update. This used to
@@ -146,6 +148,41 @@ export default async function handler(req, res) {
   const action = body.action || 'list';
 
   try {
+    if (action === 'work-list') {
+      res.status(200).json({ ok: true, orders: await listWorkOrders(body.limit) });
+      return;
+    }
+
+    if (action === 'work-complete') {
+      const result = await completeWorkOrder(body.id, body.note);
+      if (!result) { res.status(404).json({ error: 'work_order_not_found' }); return; }
+      const order = result.order;
+      await recordLifecycle(order.email, {
+        type: 'service.completed', stage: 'service_completed', blocked: false,
+        idempotencyKey: 'work-order:' + order.id + ':completed',
+        data: { workOrderId: order.id, site: order.site || '' },
+      });
+      let notice = { sent: !!order.customerNotifiedAt, reason: order.customerNotifiedAt ? 'already_sent' : '' };
+      if (!order.customerNotifiedAt) {
+        notice = await notifyCustomer({
+          to: order.email,
+          subject: `Your website update is complete${order.name ? ' - ' + order.name : ''}`,
+          heading: 'Your requested website work is complete',
+          lines: [
+            order.name ? `Customer: ${order.name}` : '',
+            order.completionNote || 'The website change you requested has been completed.',
+            'Open your website and reply to this email if anything still needs attention.',
+          ].filter(Boolean),
+          url: order.site && order.site.startsWith('/') ? publicOrigin() + order.site : '',
+          urlText: 'Open your website',
+          idempotencyKey: 'work-order-complete-' + order.id,
+        });
+        if (notice.sent) await markWorkOrderNotified(order.id);
+      }
+      res.status(200).json({ ok: true, order, duplicate: result.duplicate, notified: !!notice.sent, notifyReason: notice.reason || '' });
+      return;
+    }
+
     if (action === 'lifecycle-events') {
       const email = String(body.email || '').trim().toLowerCase();
       if (!email || !email.includes('@')) { res.status(400).json({ error: 'valid_email_required' }); return; }

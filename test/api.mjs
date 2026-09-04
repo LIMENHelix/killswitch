@@ -32,6 +32,7 @@ globalThis.fetch = async (url, opts = {}) => {
       if (cmd === 'SET' && a[3] === 'NX') { if (KV.has(key)) return null; KV.set(key, f); return 'OK'; }
       if (cmd === 'SET') { KV.set(key, v === undefined ? f : v); return 'OK'; }
       if (cmd === 'HSET') { const h = KV.get(key) || {}; h[f] = v; KV.set(key, h); return 1; }
+      if (cmd === 'HSETNX') { const h = KV.get(key) || {}; if (h[f] !== undefined) return 0; h[f] = v; KV.set(key, h); return 1; }
       if (cmd === 'HGET') { const h = KV.get(key) || {}; return h[f] == null ? null : h[f]; }
       if (cmd === 'HDEL') { const h = KV.get(key) || {}; delete h[f]; KV.set(key, h); return 1; }
       if (cmd === 'HGETALL') {
