@@ -71,7 +71,7 @@ const CHROME = ['C:/Program Files/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable'].find((p) => fs.existsSync(p));
 if (!CHROME) { console.log('Chrome not found'); process.exit(2); }
 const chrome = spawn(CHROME, ['--headless=new', '--remote-debugging-port=0', '--no-first-run',
-  '--no-default-browser-check', '--disable-gpu', '--user-data-dir=' + path.join(os.tmpdir(), 'ks-cdp-m' + PORT), 'about:blank'],
+  '--no-default-browser-check', '--disable-gpu', '--no-sandbox', '--disable-dev-shm-usage', '--user-data-dir=' + path.join(os.tmpdir(), 'ks-cdp-m' + PORT), 'about:blank'],
   { stdio: ['ignore', 'ignore', 'pipe'] });
 const wsUrl = await new Promise((resolve, reject) => {
   let buf = ''; const t = setTimeout(() => reject(new Error('no debug port')), 20000);

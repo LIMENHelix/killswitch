@@ -57,7 +57,7 @@ if (!CHROME) { console.log('Chrome not found, cannot run the DOM check'); proces
 
 const userDir = path.join(os.tmpdir(), 'ks-site-cdp-' + PORT);
 const chrome = spawn(CHROME, ['--headless=new', '--remote-debugging-port=0', '--no-first-run',
-  '--no-default-browser-check', '--disable-gpu', '--user-data-dir=' + userDir, 'about:blank'],
+  '--no-default-browser-check', '--disable-gpu', '--no-sandbox', '--disable-dev-shm-usage', '--user-data-dir=' + userDir, 'about:blank'],
   { stdio: ['ignore', 'ignore', 'pipe'] });
 
 const wsUrl = await new Promise((resolve, reject) => {

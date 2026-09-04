@@ -85,7 +85,7 @@ if (!CHROME) { console.log('Chrome not found'); process.exit(2); }
 
 const userDir = path.join(os.tmpdir(), 'ks-overflow-' + PORT);
 const chrome = spawn(CHROME, ['--headless=new', '--remote-debugging-port=0', '--no-first-run',
-  '--no-default-browser-check', '--disable-gpu', '--hide-scrollbars',
+  '--no-default-browser-check', '--disable-gpu', '--no-sandbox', '--disable-dev-shm-usage', '--hide-scrollbars',
   '--user-data-dir=' + userDir, 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
 
 const wsUrl = await new Promise((resolve, reject) => {
