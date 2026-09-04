@@ -254,6 +254,7 @@
           <label class="f">State<input id="f_state" placeholder="MO" /></label>
           <label class="f">ZIP<input id="f_zip" placeholder="64030" /></label>
           <label class="f">Brand colour<input id="f_accent" placeholder="#12703C" /></label>
+          <label class="f">Google Business Profile<input id="f_googleBusinessProfile" placeholder="https://maps.app.goo.gl/..." /></label>
           <label class="f">Booking link (optional)<input id="f_bookingUrl" placeholder="https://calendly.com/..." /></label>
           <label class="f">Payment link (optional)<input id="f_payUrl" placeholder="https://buy.stripe.com/..." /></label>
         </div>
@@ -389,7 +390,7 @@ function drawMods(on){
 }
 function readMods(){ return ['P0',...[...document.querySelectorAll('#f_mods input:checked')].map(i=>i.value)]; }
 
-const FIELDS=['business','slug','email','trade','phone','email_public','street','city','state','zip','accent','bookingUrl','payUrl','tagline','about'];
+const FIELDS=['business','slug','email','trade','phone','email_public','street','city','state','zip','accent','googleBusinessProfile','bookingUrl','payUrl','tagline','about'];
 
 function openEditor(site){
   editing=site||null;
