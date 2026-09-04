@@ -369,6 +369,7 @@
         email: email,
         business: business,
         phone: phone,
+        attribution: window.ksAttribution ? window.ksAttribution() : {},
       })
     })
     .then(function(r){ return r.json().catch(function(){ return {}; }); })

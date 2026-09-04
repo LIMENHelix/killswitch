@@ -111,6 +111,8 @@
   th{color:var(--mute2);font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;position:sticky;top:0;background:#0e0e10;z-index:2}
   tr:hover td{background:var(--panel)}
   td.name{font-weight:600;white-space:normal;max-width:210px}
+  .attr{display:block;margin-top:3px;color:var(--blue);font-family:"IBM Plex Mono",monospace;
+    font-size:.58rem;letter-spacing:.03em;font-weight:500;text-transform:uppercase}
   .pill{font-size:.64rem;font-weight:700;padding:3px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
   .pill.queued{background:rgba(255,196,46,.14);color:var(--amber)}
   .pill.mailed{background:rgba(27,164,90,.16);color:var(--go)}
@@ -632,9 +634,11 @@ function render(){
     const opts=STAGES.map(([v,l])=>`<option value="${v}" ${stg===v?'selected':''}>${l}</option>`).join('');
     const ci=callInfo(r);
     const own=r.owner||'';
+    const at=r.attribution||{};
+    const attr=[at.source,at.medium,at.campaign].filter(Boolean).join(' · ');
     return `<tr>
       ${rep?'':`<td><input type="checkbox" class="rc" data-id="${esc(r.id)}" ${sel.has(r.id)?'checked':''} ${canSel?'':'disabled'}></td>`}
-      <td>${esc(r.trade)}</td><td class="name">${esc(r.name)}</td><td>${tel}</td>
+      <td>${esc(r.trade)}</td><td class="name">${esc(r.name)}${attr?`<span class="attr">${esc(attr)}</span>`:''}</td><td>${tel}</td>
       <td><button class="scriptbtn${(r.siteSlug||(ci&&ci.demo))?'':' cold'}" data-script="${esc(r.id)}">${r.siteSlug?(r.sitePublished?'Script + live site':'Script + site ready'):(ci&&ci.demo?'Script + demo':'Script')}</button></td>
       <td>${esc(addr(r))}</td>
       ${rep?'':`<td><span class="pill ${ms}">${ms==='bad_address'?'bad addr':ms==='noaddr'?'no addr':ms}</span></td>`}

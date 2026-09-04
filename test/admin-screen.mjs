@@ -14,7 +14,7 @@ const ROOT = path.join(import.meta.dirname, '..');
 const ADMIN = path.join(ROOT, 'admin.html');
 const LEADS = [
   { id: 'L1', name: 'Auto Tech Services Center', trade: 'auto repair', phone: '913-268-7887', street: '11441 Shawnee Mission Pkwy', city: 'Shawnee', state: 'KS', zip: '66203', stage: 'called', owner: 'dana' },
-  { id: 'L2', name: 'Autobots Garage', trade: 'auto repair', phone: '913-722-5151', street: '5000 Mackey St', city: 'Overland Park', state: 'KS', zip: '66203' },
+  { id: 'L2', name: 'Autobots Garage', trade: 'auto repair', phone: '913-722-5151', street: '5000 Mackey St', city: 'Overland Park', state: 'KS', zip: '66203', attribution: { source: 'google', medium: 'cpc', campaign: 'kc-free-site-v1' } },
   { id: 'L3', name: 'Some Random Salon', trade: 'hair salon', phone: '816-555-0000', street: '9 X St', city: 'Kansas City', state: 'MO', zip: '64109', status: 'mailed' },
   // a bulk-generated draft, waiting to be published on the call
   { id: 'L4', name: 'Downtown Dental', trade: 'dentist', phone: '816-555-1212', street: '5 Elm St', city: 'Kansas City', state: 'MO', zip: '64111', siteSlug: 'downtown-dental', sitePublished: false },
@@ -134,6 +134,8 @@ check('autopilot panel is visible', await evaluate(`!document.getElementById('au
 check('mail bar is visible', await evaluate(`!document.getElementById('mailbar').hidden`));
 check('badge says Owner', (await evaluate(`document.getElementById('whoami').textContent`)) === 'Owner');
 check('owner column shows the rep who worked L1', (await evaluate(`document.querySelector('#tb tr td.owner-c').textContent`)) === 'dana');
+check('campaign source is visible on its lead',
+  (await evaluate(`[...document.querySelectorAll('#tb tr')].find(r=>r.textContent.includes('Autobots Garage')).querySelector('.attr').textContent`)) === 'google · cpc · kc-free-site-v1');
 
 console.log('\nREP view');
 await load('rep');
