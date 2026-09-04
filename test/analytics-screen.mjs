@@ -67,7 +67,7 @@ const CHROME = ['C:/Program Files/Google/Chrome/Application/chrome.exe',
 if (!CHROME) { console.log('Chrome not found, cannot run the DOM check'); process.exit(2); }
 const userDir = path.join(os.tmpdir(), 'ks-analytics-' + PORT);
 const chrome = spawn(CHROME, ['--headless=new', '--remote-debugging-port=0', '--no-first-run',
-  '--no-default-browser-check', '--disable-gpu', '--user-data-dir=' + userDir, 'about:blank'],
+  '--no-default-browser-check', '--disable-gpu', '--no-sandbox', '--disable-dev-shm-usage', '--user-data-dir=' + userDir, 'about:blank'],
   { stdio: ['ignore', 'ignore', 'pipe'] });
 const wsUrl = await new Promise((resolve, reject) => {
   let buf = ''; const t = setTimeout(() => reject(new Error('no debug port')), 20000);

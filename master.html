@@ -92,6 +92,9 @@
   .fine2{font-size:.76rem;color:var(--mute2);margin-top:9px;max-width:70ch}
   .chk{display:flex;align-items:center;gap:8px;font-size:.9rem;cursor:pointer}
   td.live .yes{color:var(--go);font-weight:600} td.live .no{color:var(--mute2)}
+  .wo-status{font-family:"IBM Plex Mono",monospace;font-size:.64rem;text-transform:uppercase;letter-spacing:.05em}
+  .wo-status.open{color:var(--amber)}.wo-status.completed{color:var(--go)}
+  .wo-req{max-width:520px;white-space:normal;line-height:1.45;color:var(--mute)}
 </style>
 </head>
 <body>
@@ -127,6 +130,13 @@
         <button class="btn sm" id="oBtn">Create &amp; send receipt</button>
       </div>
       <div class="onres" id="oRes"></div>
+    </div>
+
+    <div class="card" id="workCard">
+      <h2>Customer work orders</h2>
+      <div class="h-sub">Paid change requests stay here until the work is actually marked complete. Completion records the lifecycle event and emails the customer.</div>
+      <div class="onres" id="wMsg"></div>
+      <div class="wrapt"><table><thead><tr><th>Customer</th><th>Requested</th><th>Work</th><th>Status</th><th></th></tr></thead><tbody id="wTb"></tbody></table></div>
     </div>
 
     <div class="card">
@@ -725,7 +735,34 @@ async function boot(){
   if(!res.ok){ showLogin('Error: '+(res.d.error||res.status)); return; }
   $('login').style.display='none'; $('app').style.display='block';
   paint(res.d);
+  loadWork();
   loadSites();
+}
+
+async function loadWork(){
+  const r=await api('work-list',{limit:200});
+  if(!r.ok){ $('wMsg').textContent='Could not load work orders: '+(r.d.error||r.status); return; }
+  const orders=r.d.orders||[];
+  $('wTb').innerHTML=orders.length?orders.map(o=>{
+    const when=o.createdAt?new Date(o.createdAt).toLocaleString():'';
+    const work=(o.requests||[]).map(x=>esc(x)).join('<br>');
+    return `<tr data-work="${esc(o.id)}"><td class="email">${esc(o.email)}${o.name?'<div class="sub">'+esc(o.name)+'</div>':''}</td>`
+      +`<td class="dt">${esc(when)}</td><td class="wo-req">${work}</td>`
+      +`<td><span class="wo-status ${esc(o.status)}">${esc(o.status)}</span>${o.completionNote?'<div class="sub">'+esc(o.completionNote)+'</div>':''}</td>`
+      +`<td>${o.status==='open'?'<button class="btn sm wdone" type="button">Mark complete</button>':(o.customerNotifiedAt?'<span class="sub">Customer emailed</span>':'<button class="btn ghost sm wdone" type="button">Retry notice</button>')}</td></tr>`;
+  }).join(''):'<tr><td colspan="5" style="color:var(--mute2);text-align:center;padding:22px">No work orders yet.</td></tr>';
+  document.querySelectorAll('.wdone').forEach(btn=>{btn.onclick=()=>completeWork(btn);});
+}
+
+async function completeWork(btn){
+  const row=btn.closest('tr'), id=row.dataset.work;
+  const note=window.prompt('Completion note for the customer (optional):','The requested website update is live.') ;
+  if(note===null) return;
+  btn.disabled=true; btn.textContent='Completing…';
+  const r=await api('work-complete',{id,note});
+  if(!r.ok){ btn.disabled=false; btn.textContent='Try again'; $('wMsg').textContent='Could not complete: '+(r.d.error||r.status); return; }
+  $('wMsg').textContent=r.d.notified?'Completed and customer emailed.':'Completed. Customer email is queued for retry because delivery is not configured.';
+  boot();
 }
 
 function paint(d){

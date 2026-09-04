@@ -768,6 +768,7 @@
       sendBtn = document.getElementById('aiSend'), deliver = document.getElementById('aiDeliver'),
       dnote = document.getElementById('aiDnote');
   var history = [];
+  var pendingRequestId = '';
 
   function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function bubble(text, who){
@@ -814,12 +815,13 @@
     var reqs = history.filter(function(m){ return m.role==='user'; }).map(function(m){ return m.content; });
     if(!reqs.length){ dnote.style.color='var(--red)'; dnote.textContent='Type your change above first.'; return; }
     dnote.style.color=''; dnote.textContent='Sending to your builder…'; deliver.disabled=true;
+    if(!pendingRequestId){ pendingRequestId=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():('work-'+Date.now()+'-'+Math.random().toString(36).slice(2)); }
     try{
       // Goes through our own API now, not straight to Web3Forms. The old path
       // sent the request WITHOUT the customer's email, so a work order arrived
       // with no way to tell who it was from. This one is signed in.
       var r = await fetch('/api/support', { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ action:'submit', e:acctEmail, t:acctToken, requests: reqs }) });
+        body: JSON.stringify({ action:'submit', e:acctEmail, t:acctToken, requests: reqs, requestId:pendingRequestId }) });
       var d = await r.json().catch(function(){ return {}; });
       if(r.status===403 && d.error==='not_entitled'){
         dnote.style.color='var(--amber)';

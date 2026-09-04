@@ -20,7 +20,7 @@ const FULL = {
   posts: [], modules: ['P0', 'P3'], published: true,
 };
 const SUMMARY = { slug: FULL.slug, business: FULL.business, email: FULL.email, trade: FULL.trade, published: true, modules: FULL.modules };
-let sawSiteGet = false, saved = null, bulkCalls = 0;
+let sawSiteGet = false, saved = null, bulkCalls = 0, workCompleted = false;
 
 const server = http.createServer((req, res) => {
   if (req.url.startsWith('/api/master')) {
@@ -28,6 +28,12 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       const body = JSON.parse(b || '{}');
       res.setHeader('content-type', 'application/json');
+      if (body.action === 'work-list') return res.end(JSON.stringify({ ok: true, orders: [{
+        id: 'work_req_0001', email: 'shop@example.com', name: 'Test Shop', status: workCompleted ? 'completed' : 'open',
+        requests: ['Change Saturday hours'], createdAt: '2026-09-04T10:00:00Z',
+        completionNote: workCompleted ? 'Saturday hours are live.' : '', customerNotifiedAt: workCompleted ? '2026-09-04T11:00:00Z' : '',
+      }] }));
+      if (body.action === 'work-complete') { workCompleted = true; return res.end(JSON.stringify({ ok: true, order: { id: body.id, status: 'completed' }, notified: true })); }
       if (body.action === 'site-list') return res.end(JSON.stringify({
         ok: true, sites: [SUMMARY], total: 1,
         counts: { all: 3, published: 1, drafts: 2 }, offset: 0, limit: 100,
@@ -65,7 +71,7 @@ const CHROME = ['C:/Program Files/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable'].find((p) => fs.existsSync(p));
 if (!CHROME) { console.log('Chrome not found'); process.exit(2); }
 const chrome = spawn(CHROME, ['--headless=new', '--remote-debugging-port=0', '--no-first-run',
-  '--no-default-browser-check', '--disable-gpu', '--user-data-dir=' + path.join(os.tmpdir(), 'ks-cdp-m' + PORT), 'about:blank'],
+  '--no-default-browser-check', '--disable-gpu', '--no-sandbox', '--disable-dev-shm-usage', '--user-data-dir=' + path.join(os.tmpdir(), 'ks-cdp-m' + PORT), 'about:blank'],
   { stdio: ['ignore', 'ignore', 'pipe'] });
 const wsUrl = await new Promise((resolve, reject) => {
   let buf = ''; const t = setTimeout(() => reject(new Error('no debug port')), 20000);
@@ -100,6 +106,11 @@ check('no javascript errors', errors.length === 0, errors.join(' | '));
 check('the site list rendered', (await evaluate(`document.querySelectorAll('#sTb [data-edit]').length`)) === 1);
 check('the lifecycle attention tile is visible', (await evaluate(`document.getElementById('tiles').textContent`)).includes('Needs setup'));
 check('the customer row names the missing integration', (await evaluate(`document.getElementById('tb').textContent`)).includes('calendar_booking_url'));
+check('the paid work order is visible', (await evaluate(`document.getElementById('wTb').textContent`)).includes('Change Saturday hours'));
+await evaluate(`window.prompt=()=> 'Saturday hours are live.'; document.querySelector('#wTb .wdone').click();`);
+await new Promise((r) => setTimeout(r, 500));
+check('Master completion calls the real completion action', workCompleted === true);
+check('completed work says the customer was emailed', (await evaluate(`document.getElementById('wMsg').textContent`)).includes('customer emailed'));
 
 await evaluate(`document.querySelector('#sTb [data-edit]').click()`);
 await new Promise((r) => setTimeout(r, 600));

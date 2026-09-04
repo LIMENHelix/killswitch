@@ -128,6 +128,6 @@ The campaign winner is the channel with the best cost per activated customer aft
 - [ ] Bing Webmaster Tools account connected
 - [x] Durable customer lifecycle and event ledger implemented
 - [x] Customer self-service connection center implemented for Google, booking, and payments
-- [ ] Service-completion event connected to a real fulfillment action
+- [x] Service-completion event connected to a real fulfillment action
 - [ ] Cross-channel suppression list implemented
 - [ ] Weekly scorecard owner and review time assigned

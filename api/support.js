@@ -19,6 +19,8 @@ import { limited, LIMITS } from '../lib/ratelimit.js';
 import { recordUsage } from '../lib/ai-usage.js';
 import { publicOrigin } from '../lib/origin.js';
 import { externalSideEffectsAllowed } from '../lib/environment.js';
+import { createWorkOrder } from '../lib/work-orders.js';
+import { siteForEmail } from '../lib/sites.js';
 
 const SYSTEM = `You are the Killswitch Websites site-support assistant, helping an existing customer request changes to the website Killswitch Websites built and runs for them. They are on a plan that covers changes, so you never need to sell them anything.
 
@@ -81,7 +83,20 @@ export default async function handler(req, res) {
 
     const who = account.name || account.site || email;
     const plan = CHANGE_PHASES.filter((p) => phases.has(p)).join(', ');
-    const r = await notifyOperator({
+    let queued;
+    try {
+      const liveSite = await siteForEmail(email);
+      queued = await createWorkOrder({
+        id: body.requestId, email, name: who,
+        site: liveSite && liveSite.published ? '/s/' + liveSite.slug : '',
+        siteLabel: account.site || '', plan, requests,
+      });
+    } catch (e) {
+      console.error('[support] queue', e);
+      res.status(500).json({ error: 'queue_unavailable' });
+      return;
+    }
+    const r = queued.duplicate ? { sent: false, reason: 'duplicate' } : await notifyOperator({
       subject: `Site change request - ${who}`,
       heading: 'A customer asked for a change to their site',
       lines: [
@@ -94,7 +109,10 @@ export default async function handler(req, res) {
       ].filter((l) => l !== undefined),
       url: host + '/master', urlText: 'Open Master Panel',
     });
-    res.status(200).json({ ok: true, delivered: !!r.sent });
+    res.status(200).json({
+      ok: true, queued: true, workOrderId: queued.order.id,
+      duplicate: queued.duplicate, delivered: !!r.sent,
+    });
     return;
   }
 
