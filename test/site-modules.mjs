@@ -44,11 +44,20 @@ check('P1 carries the real address into it',
 
 const book = applyModules(REAL, site(['P3'], { bookingUrl: 'https://booksy.com/x' }));
 check('P3 adds a booking action', book.includes('ksm-book') && book.includes('https://booksy.com/x'));
-check('but P3 with no booking link adds nothing, rather than a dead button',
-  !applyModules(REAL, site(['P3'])).includes('ksm-book'));
+const builtInBook = applyModules(REAL, site(['P3']));
+check('P3 with no calendar link gets a working request form',
+  builtInBook.includes('ksmBookForm') && builtInBook.includes("action:'book'"));
 const pay = applyModules(REAL, site(['P7'], { payUrl: 'https://pay.example/x' }));
 check('P7 adds a pay action', pay.includes('ksm-pay'));
 check('and P7 with no pay link adds nothing', !applyModules(REAL, site(['P7'])).includes('ksm-pay'));
+
+const withPosts = applyModules(REAL, site(['P2'], { posts: [
+  { title: 'Fall registration', date: '2026-09-04', body: 'Registration is now open.' },
+] }));
+check('P2 renders updates at the opt-in module marker',
+  withPosts.includes('ksm-updates') && withPosts.includes('Fall registration'));
+check('P2 content is escaped before it reaches a customer page',
+  applyModules(REAL, site(['P2'], { posts: [{ title: '<script>bad()</script>' }] })).includes('&lt;script&gt;bad()&lt;/script&gt;'));
 
 console.log('\nIT MUST NOT WRECK A LAYOUT WE DID NOT DESIGN');
 
@@ -78,6 +87,23 @@ check('and the marker itself is consumed', !m.includes('<!--ks:modules-->'));
 check('the marker wins over the default end-of-body placement',
   m.indexOf('ksmAiBtn') < m.toLowerCase().indexOf('</body>') && m.indexOf('ZZOMEGA') > m.indexOf('ksmAiBtn'));
 
+console.log('\nA CUSTOM FORM CAN OPT INTO THE FREE CONTACT PIPELINE');
+
+const contactPage = '<html><body><form data-ks-contact><input name="name"><input name="contact"><textarea name="message"></textarea><button type="submit">Send</button><p class="ok" hidden></p></form></body></html>';
+const wiredContact = applyModules(contactPage, site([]));
+check('an opted-in form posts to the site action endpoint',
+  wiredContact.includes("action:'contact'") && wiredContact.includes("form[data-ks-contact]"));
+check('the original custom form survives intact', wiredContact.includes('<textarea name="message"></textarea>'));
+check('an ordinary unmarked form is never intercepted',
+  applyModules('<html><body><form></form></body></html>', site([])) === '<html><body><form></form></body></html>');
+
+const legacyDemo = '<html><body><form id="quoteForm"><input name="name"><input name="contact"><textarea name="message"></textarea><button type="submit">Send</button></form><section class="final">Contact</section></body></html>';
+const upgradedLegacy = applyModules(legacyDemo, site(['P2'], { posts: [{ title: 'Stored-page update' }] }));
+check('an already-stored demo form is upgraded without re-importing its HTML',
+  upgradedLegacy.includes('form#quoteForm') && upgradedLegacy.includes("action:'contact'"));
+check('an already-stored demo gets P2 at its legacy content boundary',
+  upgradedLegacy.indexOf('Stored-page update') < upgradedLegacy.indexOf('<section class="final">'));
+
 console.log('\nSERVING THEIR PAGE BEATS SERVING A BROKEN ONE');
 
 check('empty html stays empty', applyModules('', site(['P9'])) === '');
@@ -94,7 +120,7 @@ check('a business name cannot break out of the listing markup',
   !/<\/script><script>alert/.test(nasty), nasty.slice(nasty.indexOf('ld+json'), nasty.indexOf('ld+json') + 200));
 
 check('INJECTABLE names exactly what this file can place',
-  JSON.stringify(INJECTABLE) === JSON.stringify(['P1', 'P3', 'P7', 'P8', 'P9']), JSON.stringify(INJECTABLE));
+  JSON.stringify(INJECTABLE) === JSON.stringify(['P1', 'P2', 'P3', 'P7', 'P8', 'P9']), JSON.stringify(INJECTABLE));
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

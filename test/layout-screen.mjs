@@ -42,12 +42,13 @@ const PAGES = process.argv[2] ? [process.argv[2]] : [
   'demos/amilcars-auto-repair-independence.html', 'demos/autobots-overland-park.html',
   'demos/charlies-brake-muffler-lenexa.html', 'demos/daves-trusted-auto-grandview.html',
   'demos/kcs-sports-academy-olathe.html', 'demos/lee-auto-repair-kansas-city.html',
-  // and the product itself
-  '__site__',
+  // and both customer-site paths: shared template and hand-written/demo HTML
+  '__site__', '__custom-site__',
 ];
 
 // The rendered customer site is a product surface too.
 const { renderSite } = await import('../lib/site-template.js');
+const { applyModules } = await import('../lib/site-modules.js');
 const { SITE_DEFAULT } = await import('../lib/sites.js');
 const DEMO_SITE = {
   ...SITE_DEFAULT, slug: 'demo', business: "Gonzalez & Sons Automotive Repair Specialists",
@@ -60,6 +61,10 @@ const DEMO_SITE = {
   posts: [{ title: 'Winter servicing', body: 'Book early', date: 'Nov 1' }],
   modules: ['P0', 'P1', 'P2', 'P3', 'P7', 'P8', 'P9'], published: true, claimed: true,
 };
+const CUSTOM_SITE = {
+  ...DEMO_SITE, slug: 'auto-tech-shawnee', bookingUrl: '', payUrl: 'https://buy.stripe.com/example',
+};
+const CUSTOM_HTML = fs.readFileSync(path.join(ROOT, 'demos/auto-tech-shawnee.html'), 'utf8');
 
 const server = http.createServer((req, res) => {
   const url = req.url.split('?')[0];
@@ -69,6 +74,7 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (url === '/__site__') { res.setHeader('content-type', 'text/html'); res.end(renderSite(DEMO_SITE)); return; }
+  if (url === '/__custom-site__') { res.setHeader('content-type', 'text/html'); res.end(applyModules(CUSTOM_HTML, CUSTOM_SITE)); return; }
   let f = path.join(ROOT, url === '/' ? 'index.html' : url);
   if (!fs.existsSync(f) && fs.existsSync(f + '.html')) f += '.html';
   if (!fs.existsSync(f)) { res.statusCode = 404; res.end('nope'); return; }

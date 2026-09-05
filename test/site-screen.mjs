@@ -17,6 +17,7 @@ import path from 'node:path';
 import os from 'node:os';
 
 const { renderSite } = await import('../lib/site-template.js');
+const { applyModules } = await import('../lib/site-modules.js');
 const { SITE_DEFAULT } = await import('../lib/sites.js');
 
 const BASE = {
@@ -29,8 +30,15 @@ const BASE = {
 };
 const FREE = { ...BASE, modules: ['P0'] };
 const PAID = { ...BASE, modules: ['P0', 'P1', 'P3', 'P7', 'P8', 'P9'] };
+const CUSTOM = {
+  ...BASE, slug: 'auto-tech-shawnee', business: 'Auto Tech Services Center', bookingUrl: '',
+  payUrl: 'https://buy.stripe.com/example', posts: [{ title: 'Winter checkups', body: 'Appointments are open.' }],
+  modules: ['P0', 'P1', 'P2', 'P3', 'P7', 'P8', 'P9'],
+};
+const CUSTOM_HTML = fs.readFileSync(path.join(import.meta.dirname, '..', 'demos', 'auto-tech-shawnee.html'), 'utf8');
 
 let which = FREE;
+let custom = false;
 let posted = null;
 
 const server = http.createServer((req, res) => {
@@ -44,9 +52,9 @@ const server = http.createServer((req, res) => {
     });
     return;
   }
-  if (req.url.startsWith('/_vercel')) { res.setHeader('content-type', 'application/javascript'); res.end(''); return; }
+  if (req.url.startsWith('/_vercel') || req.url === '/ks-analytics.js') { res.setHeader('content-type', 'application/javascript'); res.end(''); return; }
   res.setHeader('content-type', 'text/html');
-  res.end(renderSite(which));
+  res.end(custom ? applyModules(CUSTOM_HTML, which) : renderSite(which));
 });
 await new Promise((r) => server.listen(0, r));
 const PORT = server.address().port;
@@ -89,8 +97,8 @@ const { result: t } = await send('Target.createTarget', { url: 'about:blank' }, 
 await send('Runtime.enable');
 await send('Page.enable');
 
-async function load(site) {
-  which = site; posted = null; consoleErrors.length = 0;
+async function load(site, customPage = false) {
+  which = site; custom = customPage; posted = null; consoleErrors.length = 0;
   await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/s/free-shop` });
   await new Promise((r) => setTimeout(r, 900));
 }
@@ -143,6 +151,42 @@ check('the search listing markup is present', await evaluate(`!!document.querySe
 await evaluate(`document.getElementById('aiBtn').click()`);
 await new Promise((r) => setTimeout(r, 200));
 check('the AI panel opens', await evaluate(`document.getElementById('aiP').classList.contains('open')`));
+
+console.log('\nA CUSTOM DEMO becomes a live modular site without being rebuilt');
+await load(CUSTOM, true);
+check('no javascript errors', consoleErrors.length === 0, consoleErrors.join(' | '));
+check('P2 updates are placed inside the custom design', await evaluate(`!!document.querySelector('.ksm-updates') && document.querySelector('.ksm-updates').textContent.includes('Winter checkups')`));
+check('P3 supplies a built-in booking request when no calendar is connected', await evaluate(`!!document.getElementById('ksmBookForm')`));
+check('P7 supplies the connected payment action', await evaluate(`!!document.querySelector('.ksm-pay[href="https://buy.stripe.com/example"]')`));
+check('P9 supplies the assistant', await evaluate(`!!document.getElementById('ksmAiBtn')`));
+
+posted = null;
+await evaluate(`
+  var f=document.getElementById('quoteForm');
+  f.querySelector('[name=name]').value='Morgan';
+  f.querySelector('[name=contact]').value='morgan@example.com';
+  f.querySelector('[name=vehicle]').value='2019 Ford F-150';
+  f.querySelector('[name=message]').value='The brakes are squeaking.';
+  f.requestSubmit ? f.requestSubmit() : f.querySelector('button').click();
+`);
+await new Promise((r) => setTimeout(r, 500));
+check('the demo quote form reaches the real contact pipeline after launch',
+  posted && posted.action === 'contact' && posted.slug === 'auto-tech-shawnee', JSON.stringify(posted));
+check('design-specific fields are retained in the message',
+  posted && posted.message.includes('2019 Ford F-150'), JSON.stringify(posted));
+
+posted = null;
+await evaluate(`
+  document.getElementById('ksmBookBtn').click();
+  var f=document.getElementById('ksmBookForm');
+  f.querySelector('[name=name]').value='Morgan';
+  f.querySelector('[name=phone]').value='816-555-0199';
+  f.querySelector('[name=when]').value='Tuesday morning';
+  f.requestSubmit ? f.requestSubmit() : f.querySelector('button[type=submit]').click();
+`);
+await new Promise((r) => setTimeout(r, 500));
+check('the built-in booking request reaches the real booking pipeline',
+  posted && posted.action === 'book' && posted.when === 'Tuesday morning', JSON.stringify(posted));
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 try { chrome.kill(); } catch { /* already gone */ }
