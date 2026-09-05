@@ -15,6 +15,7 @@ Acquire local-service businesses that need a credible website, deliver the free 
 - Search performance visible at launch: 119 impressions, 2 clicks, 1.7% CTR, average position 30.1.
 - Vercel Web Analytics and conversion events: active.
 - Campaign attribution: source, medium, campaign, content, term, landing page, referring host, and supported ad click IDs attach to completed signups.
+- Weekly operating scorecard: visible in Master and emailed to `KS_NOTIFY_EMAIL` every Monday at 9:00 AM America/Chicago.
 - Paid media: not active. A budget and stop-loss must be approved before launch.
 
 ## First market
@@ -116,6 +117,8 @@ Record these every Monday for the previous complete week:
 
 The campaign winner is the channel with the best cost per activated customer after fulfillment cost—not the most leads.
 
+The automated report includes internal acquisition, funnel, fulfillment, billing, suppression, and dead-letter events. Search Console search performance and Vercel Web Analytics traffic remain explicitly labelled external inputs until their reporting APIs are connected; the scorecard does not turn unavailable data into zeroes.
+
 ## Launch gates
 
 - [x] Search Console domain verified
@@ -131,4 +134,4 @@ The campaign winner is the channel with the best cost per activated customer aft
 - [x] Service-completion event connected to a real fulfillment action
 - [x] Refunds and payment disputes retained in the billing ledger and alerted to the operator
 - [x] Cross-channel suppression list implemented
-- [ ] Weekly scorecard owner and review time assigned
+- [x] Weekly scorecard owner and review time assigned (`KS_NOTIFY_EMAIL`, Monday 9:00 AM America/Chicago)

@@ -5,7 +5,8 @@
   "crons": [
     { "path": "/api/cron-mail", "schedule": "0 14,20 * * *" },
     { "path": "/api/cron-followups", "schedule": "*/5 * * * *" },
-    { "path": "/api/cron-maintenance", "schedule": "15 * * * *" }
+    { "path": "/api/cron-maintenance", "schedule": "15 * * * *" },
+    { "path": "/api/cron-scorecard", "schedule": "0 14,15 * * 1" }
   ],
   "headers": [
     {

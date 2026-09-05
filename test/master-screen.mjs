@@ -28,6 +28,14 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       const body = JSON.parse(b || '{}');
       res.setHeader('content-type', 'application/json');
+      if (body.action === 'scorecard') return res.end(JSON.stringify({ ok: true, report: {
+        period: { startDate: '2026-08-24', endDate: '2026-08-31' },
+        acquisition: { validSignups: 3, claimedSites: 2, paidActivations: 1, signupToClaimedRate: 66.7, claimedToPaidRate: 50, breakdown: [{ source: 'google', medium: 'cpc', campaign: 'kc-free-site', trade: 'plumber', city: 'Kansas City', count: 3 }] },
+        activity: { calls: 4, bookings: 2, enquiries: 1, suppressionRequests: 1 },
+        economics: { trackedSpendCents: 282, collectedCents: 1900, refundedCents: 0 },
+        operations: { blockedCustomers: 1, paymentFailures: 1, disputes: 0, failedWebhooks: 0, openWorkOrders: 1, deadLetters: 0 },
+        externalInputs: ['Google Search Console impressions', 'Vercel Web Analytics human visits'],
+      } }));
       if (body.action === 'billing-events') return res.end(JSON.stringify({ ok: true, events: [{
         id: 'evt_dispute', type: 'payment.dispute.created', email: 'shop@example.com',
         amountCents: 1900, currency: 'usd', status: 'needs_response', reason: 'fraudulent', at: '2026-09-04T10:30:00Z',
@@ -109,6 +117,10 @@ console.log('\nMASTER website editor');
 check('no javascript errors', errors.length === 0, errors.join(' | '));
 check('the site list rendered', (await evaluate(`document.querySelectorAll('#sTb [data-edit]').length`)) === 1);
 check('the lifecycle attention tile is visible', (await evaluate(`document.getElementById('tiles').textContent`)).includes('Needs setup'));
+check('the weekly scorecard is visible', (await evaluate(`document.getElementById('scTiles').textContent`)).includes('Valid signups'));
+check('the scorecard uses the complete week', (await evaluate(`document.getElementById('scPeriod').textContent`)).includes('2026-08-24 through 2026-08-31'));
+check('campaign attribution is broken down', (await evaluate(`document.getElementById('scTb').textContent`)).includes('kc-free-site'));
+check('external analytics are labelled instead of shown as zero', (await evaluate(`document.getElementById('scGaps').textContent`)).includes('Search Console'));
 check('the customer row names the missing integration', (await evaluate(`document.getElementById('tb').textContent`)).includes('calendar_booking_url'));
 check('the paid work order is visible', (await evaluate(`document.getElementById('wTb').textContent`)).includes('Change Saturday hours'));
 check('the billing exception is visible', (await evaluate(`document.getElementById('bTb').textContent`)).includes('dispute created'));
