@@ -129,6 +129,12 @@ export default async function handler(req, res) {
   } catch (e) {
     console.error('[stripe-webhook] handling', event && event.type, e);
     try { await releaseStripeEvent(event.id); } catch (releaseError) { console.error('[stripe-webhook] release', releaseError); }
+    try {
+      await recordBillingEvent({
+        id: 'failed:' + event.id, type: 'webhook.failed', status: 'retrying',
+        reason: String(e && e.message || e).slice(0, 240), sourceId: event.id,
+      });
+    } catch (ledgerError) { console.error('[stripe-webhook] failure ledger', ledgerError); }
     await notifyOperator({
       subject: 'Stripe webhook could not be processed',
       heading: 'A payment event arrived but we failed to act on it',

@@ -119,6 +119,15 @@
 
     <div class="tiles" id="tiles"></div>
 
+    <div class="card" id="scorecardCard">
+      <h2>Weekly operating scorecard</h2>
+      <div class="h-sub" id="scPeriod">Loading the previous complete week…</div>
+      <div class="tiles" id="scTiles" style="margin-bottom:12px"></div>
+      <div class="onres" id="scMsg"></div>
+      <div class="wrapt"><table><thead><tr><th>Source</th><th>Medium</th><th>Campaign</th><th>Trade</th><th>City</th><th>Valid signups</th></tr></thead><tbody id="scTb"></tbody></table></div>
+      <div class="fine2" id="scGaps"></div>
+    </div>
+
     <div class="card">
       <h2>Onboard a customer</h2>
       <div class="h-sub">Creates their free account and emails a $0 receipt with their portal link. No card, no Stripe.</div>
@@ -742,9 +751,28 @@ async function boot(){
   if(!res.ok){ showLogin('Error: '+(res.d.error||res.status)); return; }
   $('login').style.display='none'; $('app').style.display='block';
   paint(res.d);
+  loadScorecard();
   loadWork();
   loadBilling();
   loadSites();
+}
+
+function scoreMoney(cents){return '$'+((Number(cents)||0)/100).toFixed(2)}
+async function loadScorecard(){
+  const r=await api('scorecard');
+  if(!r.ok){ $('scMsg').textContent='Could not load scorecard: '+(r.d.error||r.status); return; }
+  const d=r.d.report||{}, a=d.acquisition||{}, x=d.activity||{}, e=d.economics||{}, o=d.operations||{};
+  $('scPeriod').textContent=`${(d.period||{}).startDate||'—'} through ${(d.period||{}).endDate||'—'} · Owner: operator notification address · Review: Monday 9:00 AM America/Chicago`;
+  $('scTiles').innerHTML=[
+    ['go',a.validSignups||0,'Valid signups'],['go',a.claimedSites||0,'Claimed sites'],['gold',a.paidActivations||0,'Paid activations'],
+    ['blue',x.calls||0,'Calls'],['blue',x.bookings||0,'Bookings'],['gold',scoreMoney(e.trackedSpendCents),'Tracked spend'],
+    ['red',o.blockedCustomers||0,'Blocked customers'],['red',(o.paymentFailures||0)+(o.disputes||0)+(o.failedWebhooks||0),'Money exceptions']
+  ].map(([c,k,l])=>`<div class="tile ${c}"><div class="k">${typeof k==='number'?k.toLocaleString():esc(k)}</div><div class="l">${l}</div></div>`).join('');
+  const rate=value=>value==null?'n/a':value+'%';
+  $('scMsg').textContent=`Signup → claimed ${rate(a.signupToClaimedRate)} · Claimed → paid ${rate(a.claimedToPaidRate)} · Collected ${scoreMoney(e.collectedCents)} · Refunded ${scoreMoney(e.refundedCents)} · Suppressions ${x.suppressionRequests||0} · Open work ${o.openWorkOrders||0} · Dead letters ${o.deadLetters||0}`;
+  const rows=a.breakdown||[];
+  $('scTb').innerHTML=rows.length?rows.map(row=>`<tr><td>${esc(row.source)}</td><td>${esc(row.medium)}</td><td>${esc(row.campaign)}</td><td>${esc(row.trade)}</td><td>${esc(row.city)}</td><td class="mrr">${Number(row.count)||0}</td></tr>`).join(''):'<tr><td colspan="6" style="color:var(--mute2);text-align:center;padding:22px">No valid signups in this complete week.</td></tr>';
+  $('scGaps').textContent='External inputs not guessed: '+(d.externalInputs||[]).join(' · ');
 }
 
 async function loadBilling(){
