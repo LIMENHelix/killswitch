@@ -79,10 +79,12 @@ Stop-loss rules:
 - Do not automate cold SMS or prerecorded/AI calls without documented consent and a legal review of the target jurisdiction.
 - Suppression requests are permanent and apply across every channel.
 
-### 5. Referral loop
+### 5. Referral loop — active
 
-- Trigger a referral request after the customer's site is claimed and a service-completion event exists.
-- Give the referrer a simple tracked link; do not create cash rewards until terms, fraud controls, and tax handling are documented.
+- A referral request is included in the idempotent completion email only after the customer's site is claimed and a service-completion event exists.
+- The link is attributed to `customer-referral-v1` and the claimed site slug, so completed referrals appear in the weekly source/campaign breakdown.
+- A suppression decision removes the referral ask while preserving the transactional completion notice.
+- Do not create cash rewards until terms, fraud controls, and tax handling are documented.
 
 ## Campaign naming and links
 
@@ -135,3 +137,4 @@ The automated report includes internal acquisition, funnel, fulfillment, billing
 - [x] Refunds and payment disputes retained in the billing ledger and alerted to the operator
 - [x] Cross-channel suppression list implemented
 - [x] Weekly scorecard owner and review time assigned (`KS_NOTIFY_EMAIL`, Monday 9:00 AM America/Chicago)
+- [x] Claimed-customer referral request connected to service completion with attribution and suppression
