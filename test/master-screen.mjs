@@ -28,6 +28,10 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       const body = JSON.parse(b || '{}');
       res.setHeader('content-type', 'application/json');
+      if (body.action === 'billing-events') return res.end(JSON.stringify({ ok: true, events: [{
+        id: 'evt_dispute', type: 'payment.dispute.created', email: 'shop@example.com',
+        amountCents: 1900, currency: 'usd', status: 'needs_response', reason: 'fraudulent', at: '2026-09-04T10:30:00Z',
+      }] }));
       if (body.action === 'work-list') return res.end(JSON.stringify({ ok: true, orders: [{
         id: 'work_req_0001', email: 'shop@example.com', name: 'Test Shop', status: workCompleted ? 'completed' : 'open',
         requests: ['Change Saturday hours'], createdAt: '2026-09-04T10:00:00Z',
@@ -107,6 +111,8 @@ check('the site list rendered', (await evaluate(`document.querySelectorAll('#sTb
 check('the lifecycle attention tile is visible', (await evaluate(`document.getElementById('tiles').textContent`)).includes('Needs setup'));
 check('the customer row names the missing integration', (await evaluate(`document.getElementById('tb').textContent`)).includes('calendar_booking_url'));
 check('the paid work order is visible', (await evaluate(`document.getElementById('wTb').textContent`)).includes('Change Saturday hours'));
+check('the billing exception is visible', (await evaluate(`document.getElementById('bTb').textContent`)).includes('dispute created'));
+check('the billing exception keeps its amount and reason', (await evaluate(`document.getElementById('bTb').textContent`)).includes('$19.00 USD') && (await evaluate(`document.getElementById('bTb').textContent`)).includes('fraudulent'));
 await evaluate(`window.prompt=()=> 'Saturday hours are live.'; document.querySelector('#wTb .wdone').click();`);
 await new Promise((r) => setTimeout(r, 500));
 check('Master completion calls the real completion action', workCompleted === true);

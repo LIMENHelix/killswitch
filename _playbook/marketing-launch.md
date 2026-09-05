@@ -129,5 +129,6 @@ The campaign winner is the channel with the best cost per activated customer aft
 - [x] Durable customer lifecycle and event ledger implemented
 - [x] Customer self-service connection center implemented for Google, booking, and payments
 - [x] Service-completion event connected to a real fulfillment action
+- [x] Refunds and payment disputes retained in the billing ledger and alerted to the operator
 - [x] Cross-channel suppression list implemented
 - [ ] Weekly scorecard owner and review time assigned

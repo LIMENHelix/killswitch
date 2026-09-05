@@ -22,6 +22,7 @@ import { publicOrigin } from '../lib/origin.js';
 import { getLifecycleEvents, getLifecycleStates, recordLifecycle } from '../lib/lifecycle.js';
 import { completeWorkOrder, listWorkOrders, markWorkOrderNotified } from '../lib/work-orders.js';
 import { notifyCustomer } from '../lib/notify.js';
+import { listBillingEvents } from '../lib/billing-events.js';
 
 // Everything the website editor is allowed to write. A save applies ONLY the
 // keys it was actually sent, so a partial save is a partial update. This used to
@@ -148,6 +149,15 @@ export default async function handler(req, res) {
   const action = body.action || 'list';
 
   try {
+    if (action === 'billing-events') {
+      const events = await listBillingEvents({ limit: body.limit });
+      res.status(200).json({
+        ok: true,
+        events: events.filter((event) => event.type !== 'payment.completed' && !event.type.startsWith('customer.subscription.')),
+      });
+      return;
+    }
+
     if (action === 'work-list') {
       res.status(200).json({ ok: true, orders: await listWorkOrders(body.limit) });
       return;
