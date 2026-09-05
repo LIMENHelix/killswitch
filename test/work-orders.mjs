@@ -47,6 +47,7 @@ const { upsertSite } = await import('../lib/sites.js');
 const { panelToken } = await import('../lib/panel-auth.js');
 const { createWorkOrder, listWorkOrders, getWorkOrder } = await import('../lib/work-orders.js');
 const { getLifecycleEvents, getLifecycleState } = await import('../lib/lifecycle.js');
+const { suppressContact } = await import('../lib/suppression.js');
 
 let passed = 0, failed = 0;
 function check(name, condition, detail = '') {
@@ -102,18 +103,42 @@ check('Master marks the real order complete', completed.code === 200 && complete
 check('the completion note is stored', (await getWorkOrder(workId)).completionNote.includes('Saturday hours'));
 check('the customer, not the operator, receives the completion email', sentMail.length === 1 && sentMail[0].to[0] === email, JSON.stringify(sentMail));
 check('the provider send has a deterministic idempotency key', sentHeaders[0]['Idempotency-Key'] === 'work-order-complete-' + workId, JSON.stringify(sentHeaders[0]));
+check('a claimed customer receives the referral ask in the completion email',
+  sentMail[0].html.includes('Share a free website with another business'));
+check('the referral link carries first-party campaign attribution and the public site slug',
+  sentMail[0].html.includes('utm_source=referral') && sentMail[0].html.includes('utm_medium=referral')
+    && sentMail[0].html.includes('utm_campaign=customer-referral-v1') && sentMail[0].html.includes('utm_content=care-shop'));
 check('successful notification is durable', !!(await getWorkOrder(workId)).customerNotifiedAt);
 const life = await getLifecycleState(email);
 check('completion advances the lifecycle', life.stage === 'service_completed' && life.status === 'active', JSON.stringify(life));
 check('the immutable event names the work order', (await getLifecycleEvents(email)).some((e) => e.type === 'service.completed' && e.data.workOrderId === workId));
+check('the referral request is retained as a separate immutable lifecycle event',
+  (await getLifecycleEvents(email)).some((e) => e.type === 'referral.requested' && e.data.workOrderId === workId));
 
 const completedReplay = await call(master, { token: 'admin-key', action: 'work-complete', id: workId });
 check('replaying completion is safe', completedReplay.code === 200 && completedReplay.body.duplicate === true);
 check('completion replay sends no second email', sentMail.length === 1);
 check('completion replay creates no second lifecycle event', (await getLifecycleEvents(email)).filter((e) => e.type === 'service.completed').length === 1);
+check('completion replay creates no second referral event', (await getLifecycleEvents(email)).filter((e) => e.type === 'referral.requested').length === 1);
 check('an unknown work order is not called complete', (await call(master, { token: 'admin-key', action: 'work-complete', id: 'work_missing' })).code === 404);
 const other = await createWorkOrder({ id: 'work_req_0001', email: 'other@example.com', requests: ['Different customer'] });
 check('the same browser id cannot collide across customers', other.order.id !== workId);
+
+console.log('\nSUPPRESSION REMOVES MARKETING WITHOUT HIDING THE SERVICE UPDATE');
+const quietEmail = 'quiet@example.com';
+await upsertAccount({ email: quietEmail, name: 'Quiet Shop', site: 'Quiet Shop', plan: ['P0'], owned: ['P4'] });
+await upsertSite({ business: 'Quiet Shop', email: quietEmail, published: true, claimed: true, modules: ['P0', 'P4'] });
+await suppressContact({ email: quietEmail }, { reason: 'No marketing', actor: 'owner', source: 'customer-request' });
+const quietOrder = await createWorkOrder({ id: 'work_req_quiet_1', email: quietEmail, requests: ['Update the phone number.'] });
+const quietDone = await call(master, {
+  token: 'admin-key', action: 'work-complete', id: quietOrder.order.id, note: 'Phone number updated.',
+});
+check('a suppressed customer still receives their requested completion notice',
+  quietDone.code === 200 && sentMail.length === 2 && sentMail[1].to[0] === quietEmail, JSON.stringify(quietDone.body));
+check('the suppressed completion email contains no referral ask or referral campaign link',
+  !sentMail[1].html.includes('Share a free website') && !sentMail[1].html.includes('customer-referral-v1'));
+check('suppression creates no referral-requested lifecycle event',
+  !(await getLifecycleEvents(quietEmail)).some((e) => e.type === 'referral.requested'));
 
 console.log('\n' + passed + ' passed, ' + failed + ' failed\n');
 process.exit(failed ? 1 : 0);

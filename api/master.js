@@ -24,6 +24,7 @@ import { completeWorkOrder, listWorkOrders, markWorkOrderNotified } from '../lib
 import { notifyCustomer } from '../lib/notify.js';
 import { listBillingEvents } from '../lib/billing-events.js';
 import { collectWeeklyScorecard } from '../lib/scorecard.js';
+import { getSuppression } from '../lib/suppression.js';
 
 // Everything the website editor is allowed to write. A save applies ONLY the
 // keys it was actually sent, so a partial save is a partial update. This used to
@@ -180,6 +181,19 @@ export default async function handler(req, res) {
       });
       let notice = { sent: !!order.customerNotifiedAt, reason: order.customerNotifiedAt ? 'already_sent' : '' };
       if (!order.customerNotifiedAt) {
+        // The referral loop starts only after two facts are true: real work was
+        // completed and the customer has claimed the site. It rides in the
+        // completion email, so there is no second marketing send to schedule.
+        // A do-not-contact decision removes the referral ask but does not hide
+        // the transactional completion notice the customer is waiting for.
+        const customerSite = await siteForEmail(order.email).catch(() => null);
+        const suppressed = customerSite?.claimed
+          ? await getSuppression({ email: order.email }).catch(() => null)
+          : null;
+        const referralUrl = customerSite?.claimed && !suppressed
+          ? publicOrigin() + '/?utm_source=referral&utm_medium=referral&utm_campaign=customer-referral-v1&utm_content='
+            + encodeURIComponent(customerSite.slug)
+          : '';
         notice = await notifyCustomer({
           to: order.email,
           subject: `Your website update is complete${order.name ? ' - ' + order.name : ''}`,
@@ -191,9 +205,20 @@ export default async function handler(req, res) {
           ].filter(Boolean),
           url: order.site && order.site.startsWith('/') ? publicOrigin() + order.site : '',
           urlText: 'Open your website',
+          secondaryUrl: referralUrl,
+          secondaryUrlText: 'Share a free website with another business',
           idempotencyKey: 'work-order-complete-' + order.id,
         });
-        if (notice.sent) await markWorkOrderNotified(order.id);
+        if (notice.sent) {
+          await markWorkOrderNotified(order.id);
+          if (referralUrl) {
+            await recordLifecycle(order.email, {
+              type: 'referral.requested',
+              idempotencyKey: 'work-order:' + order.id + ':referral-requested',
+              data: { workOrderId: order.id, siteSlug: customerSite.slug, campaign: 'customer-referral-v1' },
+            });
+          }
+        }
       }
       res.status(200).json({ ok: true, order, duplicate: result.duplicate, notified: !!notice.sent, notifyReason: notice.reason || '' });
       return;
