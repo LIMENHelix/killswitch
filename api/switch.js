@@ -6,6 +6,7 @@
 // paid cycle is kept, no new charge next cycle); turning off everything cancels
 // the subscription at period end. "ending" (off but paid through a date) is shown
 // from a small per-account map so the promise stays visible.
+import crypto from 'node:crypto';
 import { getAccount, upsertAccount } from '../lib/store.js';
 import { verifyPanel, panelToken } from '../lib/panel-auth.js';
 import { MONTHLY, PRICE_TO_PHASE, isSellable } from '../lib/prices.js';
@@ -48,7 +49,7 @@ export default async function handler(req, res) {
   // If that repaired the link, the site never got told what they bought either.
   // Catch it up here, once, on the first panel load after the lost payment.
   if (account.stripeCustomerId && account.stripeCustomerId !== found.stripeCustomerId) {
-    try { await syncModulesLoud(email, [...new Set([...Object.keys(itemsByPhase(await liveSubs(account.stripeCustomerId))), ...effectiveOwned(account)])], 'panel-load-repair'); }
+    try { await syncModulesLoud(email, [...new Set([...Object.keys(itemsByPhase(await liveSubs(account.stripeCustomerId, { strict: true }))), ...effectiveOwned(account)])], 'panel-load-repair'); }
     catch (err) { console.error('[switch] repair site sync', err); }
   }
   const action = body.action || 'state';
@@ -58,7 +59,7 @@ export default async function handler(req, res) {
     if (action === 'stats') { res.status(200).json(await readStats(account)); return; }
     if (action === 'crm') { res.status(200).json(await readCrm(account)); return; }
     if (action === 'crm-update') { res.status(200).json(await writeCrm(account, body)); return; }
-    if (action === 'apply') { res.status(200).json(await applyChanges(account, body.on, host, email)); return; }
+    if (action === 'apply') { res.status(200).json(await applyChanges(account, body.on, host, email, body.operation_id)); return; }
     if (action === 'link')  { res.status(200).json(await link(account, body.session_id, host)); return; }
     res.status(400).json({ error: 'unknown_action' });
   } catch (err) {
@@ -82,8 +83,15 @@ function itemsByPhase(subs) {
   return map;
 }
 
+// A retry after a timeout must replay the same Stripe result, not create a
+// second line item or a second Checkout Session. The portal supplies one stable
+// operation id per Save; a later off/on decision gets a new operation id.
+function mutationKey(...parts) {
+  return 'ks-switch-' + crypto.createHash('sha256').update(parts.map(String).join('|')).digest('hex');
+}
+
 async function readState(account) {
-  const subs = await liveSubs(account.stripeCustomerId);
+  const subs = await liveSubs(account.stripeCustomerId, { strict: true });
   const items = itemsByPhase(subs);
   const now = Math.floor(Date.now() / 1000);
   const ending = account.ending || {};
@@ -132,7 +140,7 @@ async function readState(account) {
 // this is where it becomes visible. Entitlement is read from Stripe, not from
 // the site record, so switching P8 off stops the numbers with the billing.
 async function readStats(account) {
-  const subs = await liveSubs(account.stripeCustomerId);
+  const subs = await liveSubs(account.stripeCustomerId, { strict: true });
   const phases = new Set([...Object.keys(itemsByPhase(subs)), ...effectiveOwned(account)]);
   if (!phases.has('P8')) return { entitled: false };
 
@@ -143,7 +151,7 @@ async function readStats(account) {
 
 // ---- P5 CRM + P6 automation, both read from Stripe like everything else ----
 async function paidPhases(account) {
-  return new Set([...Object.keys(itemsByPhase(await liveSubs(account.stripeCustomerId))), ...effectiveOwned(account)]);
+  return new Set([...Object.keys(itemsByPhase(await liveSubs(account.stripeCustomerId, { strict: true }))), ...effectiveOwned(account)]);
 }
 
 async function readCrm(account) {
@@ -175,7 +183,10 @@ async function writeCrm(account, body) {
   return { ok: true, contact: rec };
 }
 
-async function applyChanges(account, on, host, email) {
+async function applyChanges(account, on, host, email, requestedOperationId) {
+  const operationId = /^[A-Za-z0-9_-]{8,128}$/.test(String(requestedOperationId || ''))
+    ? String(requestedOperationId)
+    : crypto.randomUUID();
   const desired = new Set((Array.isArray(on) ? on : []).filter((p) => MONTHLY[p]));
   const owned = new Set(account.owned || []);
   const ownedDisabled = new Set(account.ownedDisabled || []);
@@ -183,62 +194,53 @@ async function applyChanges(account, on, host, email) {
     if (desired.has(phase)) ownedDisabled.delete(phase);
     else ownedDisabled.add(phase);
   }
-  let subs = await liveSubs(account.stripeCustomerId);
+  let subs = await liveSubs(account.stripeCustomerId, { strict: true });
   let items = itemsByPhase(subs);
   const ending = { ...(account.ending || {}) };
   const now = Math.floor(Date.now() / 1000);
   const turnedOff = []; // confirmed removals, for the operator notification
+  const turnedOn = [];  // confirmed, paid additions to an existing subscription
+  let billingError = '';
 
   // 1) Reactivate any cancel-at-period-end subscription holding a desired phase.
   const uncancel = new Set();
   for (const phase of Object.keys(items)) if (desired.has(phase) && items[phase].cancelAtEnd) uncancel.add(items[phase].subId);
-  for (const subId of uncancel) await stripePost('/subscriptions/' + subId, { cancel_at_period_end: false });
-  if (uncancel.size) { subs = await liveSubs(account.stripeCustomerId); items = itemsByPhase(subs); }
-
-  // 2) Removals, grouped per subscription so removing all of one cancels it cleanly.
-  const bySub = {};
-  for (const phase of Object.keys(items)) {
-    if (items[phase].cancelAtEnd) continue; // already ending
-    const g = (bySub[items[phase].subId] = bySub[items[phase].subId] || { endsAt: items[phase].endsAt, phases: [] });
-    g.phases.push(phase);
+  for (const subId of uncancel) {
+    const r = await stripePost('/subscriptions/' + subId, { cancel_at_period_end: false }, {
+      idempotencyKey: mutationKey(operationId, 'uncancel', email, subId, [...desired].sort().join(',')),
+    });
+    if (r.error) { billingError = 'Stripe could not resume the ending subscription.'; break; }
   }
-  for (const subId of Object.keys(bySub)) {
-    const g = bySub[subId];
-    const remove = g.phases.filter((p) => !desired.has(p));
-    if (!remove.length) continue;
-    if (remove.length === g.phases.length) {
-      const r = await stripePost('/subscriptions/' + subId, { cancel_at_period_end: true });
-      if (!r.error) remove.forEach((p) => { ending[p] = r.current_period_end || g.endsAt || now; turnedOff.push(p); });
-    } else {
-      for (const p of remove) {
-        const r = await stripeDelete('/subscription_items/' + items[p].itemId, { proration_behavior: 'none' });
-        if (!r.error) { ending[p] = items[p].endsAt || now; turnedOff.push(p); }
-      }
-    }
+  if (uncancel.size && !billingError) {
+    subs = await liveSubs(account.stripeCustomerId, { strict: true });
+    items = itemsByPhase(subs);
   }
 
-  // 3) Additions.
-  //
-  // A RETIRED module can never be added, only kept or dropped. P5 and P6 are
-  // priced in Stripe but unbuilt, so they are gone from the panel: the only
-  // people who can still hold one are those who bought it before it was pulled.
-  // The filter is on ADDITIONS alone, deliberately. Their existing item is left
-  // untouched above, so it keeps billing and rendering exactly as before, and
-  // removal still works normally the moment they switch it off.
-  const toAdd = [...desired].filter((p) => !owned.has(p) && !items[p] && isSellable(p));
+  const plannedAdds = [...desired].filter((p) => !owned.has(p) && !items[p] && isSellable(p));
 
-  // Clear the expiry for EVERYTHING they want on, not just the new additions.
-  // Someone who switches a module off and then changes their mind before the
-  // cycle ends is still being billed for it, so there is nothing to add: toAdd
-  // is empty, and clearing only toAdd left the old expiry in place. The daily
-  // sweep would then have switched off a module they were paying for.
-  [...desired].forEach((p) => { delete ending[p]; });
-
+  // 2) Additions happen before removals. A single Save can replace the only
+  // line item on a subscription; adding first avoids trying to leave a Stripe
+  // subscription with zero items. A genuinely new module is prorated and
+  // invoiced immediately. Re-enabling one still paid through this cycle adds it
+  // back without charging twice.
+  const toAdd = plannedAdds;
   let url = null;
-  if (toAdd.length) {
+  if (!billingError && toAdd.length) {
     const existingSub = subs.find((s) => LIVE_STATUSES.includes(s.status) && !s.cancel_at_period_end);
     if (account.stripeCustomerId && existingSub) {
-      for (const p of toAdd) await stripePost('/subscription_items', { subscription: existingSub.id, price: MONTHLY[p], proration_behavior: 'none' });
+      for (const p of toAdd) {
+        const alreadyPaidThrough = Number(ending[p] || 0) > now;
+        const r = await stripePost('/subscription_items', {
+          subscription: existingSub.id,
+          price: MONTHLY[p],
+          proration_behavior: alreadyPaidThrough ? 'none' : 'always_invoice',
+          payment_behavior: 'error_if_incomplete',
+        }, {
+          idempotencyKey: mutationKey(operationId, 'add', email, existingSub.id, p, existingSub.current_period_end || ''),
+        });
+        if (r.error) { billingError = 'Stripe could not charge and activate one of the selected modules.'; break; }
+        turnedOn.push(p);
+      }
     } else {
       // First purchase (or no live sub): ONE checkout bundling all adds.
       const tok = await panelToken(email);
@@ -246,14 +248,72 @@ async function applyChanges(account, on, host, email) {
       const params = { mode: 'subscription', success_url: host + back + '&session_id={CHECKOUT_SESSION_ID}', cancel_url: host + back, allow_promotion_codes: 'true' };
       toAdd.forEach((p, i) => { params['line_items[' + i + '][price]'] = MONTHLY[p]; params['line_items[' + i + '][quantity]'] = 1; });
       if (account.stripeCustomerId) params.customer = account.stripeCustomerId; else params.customer_email = email;
-      const sess = await stripePost('/checkout/sessions', params);
-      if (sess.error || !sess.url) return { error: sess.error || 'checkout_failed' };
-      url = sess.url;
+      const sess = await stripePost('/checkout/sessions', params, {
+        idempotencyKey: mutationKey(operationId, 'checkout', email, [...toAdd].sort().join(',')),
+      });
+      if (sess.error || !sess.url) billingError = 'Stripe could not open secure checkout.';
+      else url = sess.url;
     }
   }
 
+  // 3) Removals, grouped per subscription so removing all of one cancels it cleanly.
+  const bySub = {};
+  for (const phase of Object.keys(items)) {
+    if (items[phase].cancelAtEnd) continue; // already ending
+    const g = (bySub[items[phase].subId] = bySub[items[phase].subId] || { endsAt: items[phase].endsAt, phases: [] });
+    g.phases.push(phase);
+  }
+  for (const subId of Object.keys(bySub)) {
+    if (billingError) break;
+    const g = bySub[subId];
+    const remove = g.phases.filter((p) => !desired.has(p));
+    if (!remove.length) continue;
+    // If another module is being added in the same Save, keep the subscription
+    // itself alive and replace its line items. Scheduling the whole subscription
+    // to cancel here would also cancel the brand-new, just-charged module.
+    if (remove.length === g.phases.length && !plannedAdds.length) {
+      const r = await stripePost('/subscriptions/' + subId, { cancel_at_period_end: true }, {
+        idempotencyKey: mutationKey(operationId, 'cancel-at-end', email, subId, g.endsAt || ''),
+      });
+      if (r.error) { billingError = 'Stripe could not schedule the subscription to stop.'; break; }
+      remove.forEach((p) => { ending[p] = r.current_period_end || g.endsAt || now; turnedOff.push(p); });
+    } else {
+      for (const p of remove) {
+        const previousEnd = ending[p];
+        ending[p] = items[p].endsAt || now;
+        // Prepare the paid-through record before touching Stripe so the
+        // resulting subscription.updated webhook can never overtake it.
+        await upsertAccount({ email: account.email, ending });
+        const r = await stripeDelete('/subscription_items/' + items[p].itemId, { proration_behavior: 'none' });
+        if (r.error) {
+          if (previousEnd === undefined) delete ending[p]; else ending[p] = previousEnd;
+          await upsertAccount({ email: account.email, ending });
+          billingError = 'Stripe could not stop one of the selected modules.';
+          break;
+        }
+        turnedOff.push(p);
+      }
+    }
+  }
+
+  // Additions are filtered to sellable modules only.
+  //
+  // A RETIRED module can never be added, only kept or dropped. Retired switches
+  // remain visible only to customers already paying for them, so those customers
+  // can still stop renewal without the portal silently confiscating anything.
+  // The filter is on ADDITIONS alone, deliberately. Their existing item is left
+  // untouched above, so it keeps billing and rendering exactly as before, and
+  // removal still works normally the moment they switch it off.
+  // Re-read Stripe after every mutation. This is the authoritative result used
+  // for both the portal response and the live site. A requested module never
+  // renders merely because the browser asked for it.
+  subs = await liveSubs(account.stripeCustomerId, { strict: true });
+  items = itemsByPhase(subs);
+  for (const p of desired) {
+    if (owned.has(p) || (items[p] && !items[p].cancelAtEnd)) delete ending[p];
+  }
   for (const p of Object.keys(ending)) if (!(ending[p] > now)) delete ending[p];
-  await upsertAccount({ email: account.email, ending, ownedDisabled: [...ownedDisabled] });
+  const updatedAccount = await upsertAccount({ email: account.email, ending, ownedDisabled: [...ownedDisabled] });
 
   // THE POINT OF THE WHOLE THING: push the new on/off state onto their live site,
   // so flipping a switch here changes what renders at /s/<slug>. No rebuild, no
@@ -280,11 +340,9 @@ async function applyChanges(account, on, host, email) {
   // days bought and not delivered. A turned-off module stays live until its
   // period actually ends, and cron-maintenance removes it the day after.
   try {
-    const held = new Set(Object.keys(items));
-    const pending = url ? new Set(toAdd) : new Set();
     const stillPaidFor = Object.keys(ending).filter((p) => ending[p] > now);
     const liveNow = [...new Set([
-      ...[...desired].filter((p) => !turnedOff.includes(p) && !pending.has(p) && (held.has(p) || toAdd.includes(p))),
+      ...Object.keys(items),
       ...stillPaidFor,
       ...[...owned].filter((p) => !ownedDisabled.has(p)),
     ])];
@@ -294,24 +352,37 @@ async function applyChanges(account, on, host, email) {
   // Tell the operator. Awaited so it actually runs before the serverless function
   // is frozen, but it can never throw and never blocks the customer's result.
   const who = account.name || account.site || email;
-  if (turnedOff.length || toAdd.length) {
+  if (turnedOff.length || turnedOn.length || url) {
     const lines = [`Customer: ${who}`, `Email: ${email}`];
-    if (toAdd.length) lines.push(url
-      ? `STARTED CHECKOUT for: ${labelPhases(toAdd)} (not paid yet, they still have to finish on Stripe)`
-      : `TURNED ON: ${labelPhases(toAdd)} (billing starts now)`);
+    if (url) lines.push(`STARTED CHECKOUT for: ${labelPhases(toAdd)} (not paid yet, they still have to finish on Stripe)`);
+    if (turnedOn.length) lines.push(`TURNED ON: ${labelPhases(turnedOn)} (Stripe charged the prorated amount now)`);
     if (turnedOff.length) lines.push(`TURNED OFF: ${labelPhases(turnedOff)} (runs to the end of the paid cycle, then stops)`);
     await notifyOperator({
-      subject: turnedOff.length && !toAdd.length
+      subject: turnedOff.length && !turnedOn.length && !url
         ? `Switch OFF - ${who}`
         : `Switch change - ${who}`,
-      heading: turnedOff.length && !toAdd.length ? 'A customer turned something off' : 'A customer changed their modules',
+      heading: turnedOff.length && !turnedOn.length && !url ? 'A customer turned something off' : 'A customer changed their modules',
       lines,
       url: host + '/master', urlText: 'Open Master Panel',
     });
   }
 
+  const st = await readState(updatedAccount);
+  if (billingError) {
+    await notifyOperator({
+      subject: `BILLING ERROR - ${who}`,
+      heading: 'Stripe could not complete a switch change',
+      lines: [
+        `Customer: ${who}`,
+        `Email: ${email}`,
+        billingError,
+        'The live site was reconciled to confirmed Stripe billing only. No unpaid module was enabled.',
+      ],
+      url: host + '/master', urlText: 'Open Master Panel',
+    });
+    return { error: 'billing_update_failed', message: 'Stripe could not complete every change. Nothing unpaid was switched on. Refresh and try again.', ...st };
+  }
   if (url) return { url };
-  const st = await readState({ ...account, ending, ownedDisabled: [...ownedDisabled] });
   return { ok: true, ...st };
 }
 
@@ -329,7 +400,7 @@ async function link(account, sessionId, host) {
   // site. applyChanges deliberately did not sync them, because at that point they
   // had only reached the checkout page.
   try {
-    const subs = await liveSubs(customer);
+    const subs = await liveSubs(customer, { strict: true });
     const live = [...new Set([...Object.keys(itemsByPhase(subs)), ...effectiveOwned(account)])];
     await syncModulesLoud(account.email, live, 'checkout-returned-paid');
   } catch (err) { console.error('[switch] link site sync', err); }

@@ -539,15 +539,29 @@
       if(newlyOn.length){
         var names=[], total=0;
         newlyOn.forEach(function(id){ var mm=MODULES.find(function(x){ return x.id===id; }); if(mm){ names.push(mm.name); total+=(mm.price||0); } });
-        if(!confirm('Start '+names.join(', ')+' for $'+total+'/mo.\n\nYour card is charged for the first month now. You can switch anything off anytime and it keeps working until your next billing date, then stops, but payments already made are not refunded.\n\nContinue to secure checkout?')) return;
+        if(!confirm('Start '+names.join(', ')+' for $'+total+'/mo.\n\nStripe charges the first billing amount now. If you already have an active Killswitch subscription, the new module is prorated to that billing date. You can switch anything off anytime; it keeps working through the date already paid, then stops and does not renew. Payments already made are not refunded.\n\nContinue?')) return;
       }
       var btn=document.getElementById('saveBtn'); btn.disabled=true;
       saveNote.style.color=''; saveNote.textContent='Saving your changes...';
-      sw('apply',{on:desired}).then(function(r){
+      var operationId = (window.crypto && window.crypto.randomUUID)
+        ? window.crypto.randomUUID()
+        : (Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));
+      sw('apply',{on:desired,operation_id:operationId}).then(function(r){
         if(r.url){ window.location.href=r.url; return; }   // first-time adds -> one checkout
         btn.disabled=false;
         if(r.ok){ applyState(r); baselineOn = paidOn(); committedState = snapshot(); render(); saveNote.style.color='var(--ok)'; saveNote.textContent='Saved. Your plan is up to date.'; }
-        else { saveNote.style.color='var(--red)'; saveNote.textContent='Could not save: '+(r.error||'error'); }
+        else {
+          // A partial provider failure can still leave confirmed Stripe state.
+          // Render only that returned state so a requested-but-unpaid switch
+          // never stays looking ON in the portal.
+          if(r && r.modules){ applyState(r); baselineOn = paidOn(); committedState = snapshot(); render(); }
+          saveNote.style.color='var(--red)'; saveNote.textContent=r.message||('Could not save: '+(r.error||'error'));
+        }
+      }).catch(function(){
+        btn.disabled=false;
+        saveNote.style.color='var(--red)';
+        saveNote.textContent='We could not confirm the billing change. Nothing unconfirmed is shown; reloading your Stripe state...';
+        loadState();
       });
       return;
     }
