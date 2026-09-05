@@ -130,7 +130,7 @@ The automated report includes internal acquisition, funnel, fulfillment, billing
 - [x] First-party campaign attribution implemented
 - [ ] Google Ads account and conversion action connected
 - [ ] Paid-search budget approved
-- [ ] Bing Webmaster Tools account connected
+- [x] Bing Webmaster Tools account connected
 - [x] Durable customer lifecycle and event ledger implemented
 - [x] Customer self-service connection center implemented for Google, booking, and payments
 - [x] Service-completion event connected to a real fulfillment action
