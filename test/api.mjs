@@ -18,6 +18,8 @@ let stripeSubs = [];        // subscriptions the fake Stripe knows about
 let stripeCustomers = [];   // customers by email
 let stripeCharges = {};     // charge lookup for refund/dispute webhooks
 let created = [];           // checkout sessions created
+let stripeCalls = [];       // mutation parameters and idempotency headers
+let stripeFailure = null;   // { method, path } for fail-closed billing tests
 
 globalThis.fetch = async (url, opts = {}) => {
   const u = String(url);
@@ -82,6 +84,10 @@ globalThis.fetch = async (url, opts = {}) => {
 
   if (u.startsWith('https://api.stripe.com/v1')) {
     const path = u.slice('https://api.stripe.com/v1'.length);
+    stripeCalls.push({ path, method: opts.method || 'GET', body: String(opts.body || ''), headers: opts.headers || {} });
+    if (stripeFailure && (opts.method || 'GET') === stripeFailure.method && path.startsWith(stripeFailure.path)) {
+      return { ok: false, status: 402, json: async () => ({ error: { message: 'simulated Stripe failure' } }) };
+    }
     if (path.startsWith('/subscriptions?')) return json({ data: stripeSubs, has_more: false });
     if (path.startsWith('/customers?')) {
       const email = decodeURIComponent((path.match(/email=([^&]+)/) || [])[1] || '');
@@ -189,7 +195,7 @@ function putSite(rec) {
   if (rec.email) { const em = KV.get('ks:siteemail') || {}; em[rec.email.toLowerCase()] = rec.slug; KV.set('ks:siteemail', em); }
 }
 function seed() {
-  KV.clear(); stripeSubs = []; stripeCustomers = []; stripeCharges = {}; created = [];
+  KV.clear(); stripeSubs = []; stripeCustomers = []; stripeCharges = {}; created = []; stripeCalls = []; stripeFailure = null;
   seedAccounts({ [EMAIL]: { email: EMAIL, tokenNonce: NONCE, name: 'Test Shop', plan: ['P0'] } });
   putSite({ slug: 'test-shop', business: 'Test Shop', email: EMAIL, phone: '816-555-0101', modules: ['P0'], published: true, claimed: true });
 }
@@ -1292,6 +1298,45 @@ function seedPaid(prices) {
     items: { data: prices.map((pr, i) => ({ id: 'si_' + i, price: { id: pr }, current_period_end: PAID_TO })) } }];
 }
 
+// ---- a genuinely new switch on an existing subscription charges now ----
+seedPaid([P1PRICE]);
+r = await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: ['P1', 'P3'], operation_id: 'turn-on-booking-1' });
+let addCall = stripeCalls.find((c) => c.method === 'POST' && c.path === '/subscription_items');
+let addForm = new URLSearchParams(addCall && addCall.body);
+check('a new switch on an existing subscription is invoiced immediately',
+  r.body.ok && addForm.get('proration_behavior') === 'always_invoice', JSON.stringify(addCall));
+check('a failed immediate charge cannot leave the module active',
+  addForm.get('payment_behavior') === 'error_if_incomplete', addCall && addCall.body);
+check('the charge mutation carries an idempotency key',
+  !!(addCall && addCall.headers && addCall.headers['Idempotency-Key']), JSON.stringify(addCall && addCall.headers));
+check('only a confirmed Stripe addition turns the live module on', site().modules.includes('P3'), JSON.stringify(site().modules));
+
+// Replacing the only existing module must add first, because Stripe does not
+// allow a live subscription to have zero items between two separate requests.
+seedPaid([P1PRICE]);
+r = await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: ['P3'], operation_id: 'replace-google-booking' });
+const addIndex = stripeCalls.findIndex((c) => c.method === 'POST' && c.path === '/subscription_items');
+const deleteIndex = stripeCalls.findIndex((c) => c.method === 'DELETE' && c.path.startsWith('/subscription_items/'));
+check('replacing the only switch adds the charged replacement before removing the old item',
+  r.body.ok && addIndex >= 0 && deleteIndex > addIndex, JSON.stringify(stripeCalls));
+check('the replacement is live while the removed module remains through its paid date',
+  site().modules.includes('P3') && site().modules.includes('P1'), JSON.stringify(site().modules));
+
+// Stripe errors fail closed: the browser request alone can never grant service.
+seedPaid([P1PRICE]);
+stripeFailure = { method: 'POST', path: '/subscription_items' };
+r = await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: ['P1', 'P3'], operation_id: 'declined-booking-1' });
+check('a failed switch-on returns a billing error', r.body.error === 'billing_update_failed', JSON.stringify(r.body));
+check('and never enables the unpaid module', !site().modules.includes('P3'), JSON.stringify(site().modules));
+
+seedPaid([P1PRICE, P3PRICE]);
+stripeFailure = { method: 'DELETE', path: '/subscription_items/' };
+r = await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: ['P1'], operation_id: 'failed-booking-off' });
+check('a failed switch-off returns a billing error', r.body.error === 'billing_update_failed', JSON.stringify(r.body));
+check('and does not pretend the still-billing module is ending',
+  r.body.modules.P3 && r.body.modules.P3.state === 'active', JSON.stringify(r.body.modules));
+check('the failed removal stays live and can be retried', site().modules.includes('P3'), JSON.stringify(site().modules));
+
 // ---- one of two modules switched off ----
 seedPaid([P1PRICE, P3PRICE]);
 r = await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: ['P1'] });
@@ -1301,6 +1346,25 @@ check('billing says it ends on the day they are paid to',
 check('and booking is STILL LIVE on their website, because they paid for it',
   site().modules.includes('P3'), JSON.stringify(site().modules));
 check('while the module they kept is untouched', site().modules.includes('P1'));
+
+// Stripe emits subscription.updated after deleting the line item. That webhook
+// must keep the locally recorded paid-through entitlement until PAID_TO.
+stripeCustomers = [{ id: 'cus_1', email: EMAIL }];
+w = await hook({
+  type: 'customer.subscription.updated', id: 'evt_partial_switch_off',
+  data: { object: { id: 'sub_1', customer: 'cus_1', status: 'active', current_period_end: PAID_TO } },
+});
+check('the Stripe update webhook also preserves the paid-through module',
+  w.code === 200 && site().modules.includes('P3'), JSON.stringify(site().modules));
+
+stripeFailure = { method: 'GET', path: '/subscriptions?' };
+w = await hook({
+  type: 'customer.subscription.updated', id: 'evt_stripe_read_failed',
+  data: { object: { id: 'sub_1', customer: 'cus_1', status: 'active', current_period_end: PAID_TO } },
+});
+check('a Stripe read outage asks for webhook retry instead of treating billing as empty', w.code === 500, JSON.stringify(w.body));
+check('and cannot switch paid modules off', site().modules.includes('P1') && site().modules.includes('P3'), JSON.stringify(site().modules));
+stripeFailure = null;
 
 // The day after the cycle ends, the sweep takes it away. Nothing else does.
 let sw = await sweepExpired({ getAccounts, saveAccounts, removeModules }, ON_THE_12TH);
@@ -1332,11 +1396,24 @@ check('then goes, leaving the free site behind', !site().modules.includes('P1') 
 // ---- switching it back on before the cycle ends must not later be swept ----
 seedPaid([P1PRICE, P3PRICE]);
 await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: ['P1'] });           // off
-stripeSubs[0].items.data.push({ id: 'si_re', price: { id: P3PRICE }, current_period_end: PAID_TO });
 await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: ['P1', 'P3'] });     // back on
+addCall = stripeCalls.filter((c) => c.method === 'POST' && c.path === '/subscription_items').at(-1);
+addForm = new URLSearchParams(addCall && addCall.body);
+check('re-enabling during the already-paid cycle does not charge twice',
+  addForm.get('proration_behavior') === 'none', addCall && addCall.body);
 sw = await sweepExpired({ getAccounts, saveAccounts, removeModules }, ON_THE_12TH);
 check('changing their mind and switching it back on cancels the expiry',
   site().modules.includes('P3'), JSON.stringify(site().modules));
+
+// The same rule applies when their last module had scheduled the whole
+// subscription to cancel: flipping it back on resumes it without another item.
+seedPaid([P1PRICE]);
+await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: [], operation_id: 'all-off-1' });
+await call(switchApi, { action: 'apply', e: EMAIL, t: TOK, on: ['P1'], operation_id: 'all-back-on-1' });
+check('flipping the last switch back on cancels period-end cancellation', stripeSubs[0].cancel_at_period_end === false);
+check('and does not create or double-charge a second line item', stripeSubs[0].items.data.length === 1, JSON.stringify(stripeSubs[0].items.data));
+sw = await sweepExpired({ getAccounts, saveAccounts, removeModules }, ON_THE_12TH);
+check('the resumed last switch is not removed by the expiry sweep', site().modules.includes('P1'), JSON.stringify(site().modules));
 
 // ---- no refunds, ever ----
 seedPaid([P1PRICE, P3PRICE]);

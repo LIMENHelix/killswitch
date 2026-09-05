@@ -81,7 +81,9 @@ export function verifySignature(rawBody, header, secret, nowSec = Math.floor(Dat
 
 /** Phases currently billed on a Stripe customer. */
 async function phasesFor(customerId) {
-  const subs = await liveSubs(customerId);
+  // A transient Stripe read failure must retry the webhook, never look like an
+  // empty subscription and switch every paid feature off.
+  const subs = await liveSubs(customerId, { strict: true });
   const out = new Set();
   for (const s of subs) {
     for (const it of (s.items && s.items.data) || []) {
@@ -291,7 +293,16 @@ async function onSubscriptionChange(sub, event) {
   const account = await getAccount(email);
   if (!account) return;
 
-  const phases = [...new Set([...(await phasesFor(customer)), ...effectiveOwned(account)])];
+  // A partial switch-off deletes only that Stripe line item so it cannot renew,
+  // but the customer already paid through its item period. Preserve those
+  // locally recorded paid-through entitlements when Stripe sends the resulting
+  // subscription.updated event; otherwise the webhook would turn the feature
+  // off immediately and break the promise shown in the portal.
+  const now = Math.floor(Date.now() / 1000);
+  const paidThrough = Object.entries(account.ending || {})
+    .filter(([, endsAt]) => Number(endsAt) > now)
+    .map(([phase]) => phase);
+  const phases = [...new Set([...(await phasesFor(customer)), ...paidThrough, ...effectiveOwned(account)])];
   const site = await syncModulesLoud(email, phases, 'stripe-webhook-subscription-changed');
   if (!site && phases.length) throw new Error('subscription modules could not be attached to a site');
   if (site) {
