@@ -407,7 +407,14 @@ check('running it again creates nothing', r.body.created === 0, JSON.stringify(r
 
 const charlie = await getSite('charlies-brake-muffler');
 check('same name in another city gets its own slug', !!(await getSite('charlies-brake-muffler-olathe')));
-check('draft holds only facts we have', charlie.phone === '913-859-9994' && charlie.city === 'Lenexa' && charlie.about === '' && charlie.hours.length === 0);
+// `about === ''` here was standing in for "we invented nothing". It is now a
+// seeded sentence assembled from the name, trade and town on this same record,
+// so the check is against that exact text: anything the seeder did not build
+// from held facts, or anything a future edit adds from elsewhere, fails it.
+check('draft holds only facts we have',
+  charlie.phone === '913-859-9994' && charlie.city === 'Lenexa' && charlie.hours.length === 0
+  && charlie.about === "Charlie's Brake & Muffler is an auto repair business in Lenexa, KS.",
+  charlie.about);
 check('trade services are filled in', charlie.services.length === 6 && charlie.services[0].name === 'Brakes');
 const dental = await getSite('downtown-dental');
 check('a medical practice gets NO invented service menu', dental.services.length === 0, JSON.stringify(dental.services));
@@ -643,7 +650,17 @@ check('a low rating is never excluded, only labelled',
     .includes(segmentFn(2.0, 500)));
 
 check('their published hours go live', d2.hours.length === 2 && d2.hours[0].h === '7am to 3pm');
-check("Google's description does NOT", d2.about === '' && d2.proposed.about.includes('sourdough'));
+// `about` used to be asserted as exactly '' here. It is now a seeded sentence
+// built from the name, trade and town already on the record, so the assertion
+// moved to the invariant it was really protecting: GOOGLE'S words do not go
+// live, they wait in `proposed`. Weakening this to "about is non-empty" would
+// let an editorial summary through, so it checks the actual text.
+check("Google's description does NOT",
+  !d2.about.toLowerCase().includes('sourdough')
+  && !d2.about.toLowerCase().includes('neighborhood')
+  && d2.proposed.about.includes('sourdough'));
+check('and about is the factual seeded line instead of blank',
+  d2.about === 'Hours Shop is a bakery in KC, MO.', d2.about);
 check('and it says whose words they are', d2.proposedNote.includes('not the owner'));
 
 // ---------------------------------------------------------------------------
