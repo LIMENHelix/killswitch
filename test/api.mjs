@@ -324,6 +324,28 @@ check('a partial save no longer blanks anything', site().phone === '816-555-0101
   JSON.stringify({ phone: site().phone, about: site().about, hours: site().hours.length }));
 check('modules survive a partial save', site().modules.includes('P3'), JSON.stringify(site().modules));
 
+// COLOUR AND SHAPE THROUGH THE OWNER'S FIELD PATH.
+// Without these there is no way to fix a site's look except hand-editing
+// storage, because SITE_FIELDS carries neither. They are validated rather than
+// stored by presence: an unknown name would fall back at render time, so the
+// record would claim one look and the page show another.
+r = await asAdmin({ action: 'site-save', site: { slug: 'test-shop', theme: 'midnight', layout: 'trade' } });
+check('the owner can set a theme', r.code === 200 && site().theme === 'midnight', site().theme);
+check('the owner can set a layout', site().layout === 'trade', site().layout);
+check('and setting them blanked nothing else', site().phone === '816-555-0101' && site().hours.length === 1);
+
+r = await asAdmin({ action: 'site-save', site: { slug: 'test-shop', theme: 'chartreuse' } });
+check('an unknown theme is refused, not stored', r.code === 400 && r.body.error === 'unknown_theme', JSON.stringify(r.body));
+check('and the real theme survives the refusal', site().theme === 'midnight');
+
+r = await asAdmin({ action: 'site-save', site: { slug: 'test-shop', layout: '../../etc/passwd' } });
+check('an unknown layout is refused, not stored', r.code === 400 && r.body.error === 'unknown_layout', JSON.stringify(r.body));
+check('and the real layout survives the refusal', site().layout === 'trade');
+
+r = await asAdmin({ action: 'site-save', site: { slug: 'test-shop', tagline: 'Untouched by look edits' } });
+check('a later ordinary save leaves the look alone',
+  site().theme === 'midnight' && site().layout === 'trade' && site().tagline === 'Untouched by look edits');
+
 // ---------------------------------------------------------------------------
 console.log('\n5. A rep key is not the owner key');
 process.env.REP_KEYS = 'dana:r_dana_key,mike:r_mike_key';
