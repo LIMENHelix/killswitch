@@ -18,6 +18,7 @@ import { identify, isOwner } from '../lib/roles.js';
 import { listSites, getSite, upsertSite, bulkUpsert, migrateAll, slugify, siteForEmail, siteSlugsByEmail, deleteSite } from '../lib/sites.js';
 import { linkAccountToSite } from '../lib/site-link.js';
 import { rerootRelativeUrls } from '../lib/site-modules.js';
+import { isTheme, isLayout } from '../lib/site-template.js';
 import { publicOrigin } from '../lib/origin.js';
 import { getLifecycleEvents, getLifecycleStates, recordLifecycle } from '../lib/lifecycle.js';
 import { completeWorkOrder, listWorkOrders, markWorkOrderNotified } from '../lib/work-orders.js';
@@ -595,6 +596,26 @@ export default async function handler(req, res) {
       // template when it is empty, so editing the business name, phone, hours
       // or address changed the record and changed nothing anybody could see.
       if (typeof p.html === 'string') patch.html = p.html;
+
+      // COLOUR AND SHAPE, VALIDATED RATHER THAN TRUSTED. Both are deliberately
+      // not in SITE_FIELDS, which applies fields by presence: an unknown name
+      // there would be stored happily and then silently fall back at render
+      // time, so the record would say one thing and the page show another.
+      // Refusing is the only answer that cannot lie.
+      //
+      // The customer's own picker lives in api/theme.js and stays a separate
+      // function that imports no Stripe. This is the OWNER editing a site from
+      // the admin screen, which is a different door, not a hole in that wall.
+      // Without it there is no field path that can set either, and the operator
+      // has to hand-edit storage to fix a site.
+      if (typeof p.theme === 'string' && p.theme !== '') {
+        if (!isTheme(p.theme)) { res.status(400).json({ error: 'unknown_theme', theme: p.theme }); return; }
+        patch.theme = p.theme.toLowerCase();
+      }
+      if (typeof p.layout === 'string' && p.layout !== '') {
+        if (!isLayout(p.layout)) { res.status(400).json({ error: 'unknown_layout', layout: p.layout }); return; }
+        patch.layout = p.layout.toLowerCase();
+      }
 
       const saved = await upsertSite(patch);
       res.status(200).json({ ok: true, site: saved, url: '/s/' + saved.slug });
