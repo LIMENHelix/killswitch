@@ -45,9 +45,9 @@ function response() {
   return out;
 }
 
-async function submit(body, host = 'attacker.example') {
+async function submit(body, host = 'attacker.example', ip = '127.0.0.1') {
   const res = response();
-  await inbound({ method: 'POST', body, headers: { host, origin: 'https://' + host, 'x-forwarded-for': '127.0.0.1' } }, res);
+  await inbound({ method: 'POST', body, headers: { host, origin: 'https://' + host, 'x-forwarded-for': ip } }, res);
   return res;
 }
 
@@ -93,6 +93,111 @@ check('Stripe identity survives unchanged', paid.stripeCustomerId === 'cus_paid'
 check('creation date and source survive unchanged', paid.createdAt === '2025-01-01T00:00:00.000Z' && paid.source === 'paid');
 check('the existing business identity is preserved', paid.name === 'Paid Original' && paid.site === 'Paid Original');
 check('the existing site remains the owned site', (await siteForEmail('paid@example.com')).slug === 'paid-original');
+
+console.log('\nTHE /START INTAKE PERSISTS FACTS AND TREATS MODULES AS INTERESTS ONLY');
+res = await submit({
+  email: 'rivertown@example.com', business: 'Rivertown Plumbing', phone: '816-555-0123',
+  name: 'Ada Ruiz', trade: 'plumber', city: 'Kansas City', state: 'MO',
+  street: '417 Grand Blvd', zip: '64108', publicEmail: 'hello@rivertownplumbing.com',
+  domain: 'rivertownplumbing.com',
+  services: 'Leak repair\nWater heaters — installed same week\n\nDrain cleaning',
+  hours: 'Mon to Fri: 8am to 6pm\nSat: 9am to 1pm',
+  about: 'Family owned, third generation, we answer the phone ourselves.',
+  interests: ['Online Booking', '24/7 AI Assistant', 'P9', 'free money'],
+  notes: 'Red truck, call before arriving.',
+  termsAcceptedAt: '2000-01-01T00:00:00.000Z',
+}, 'attacker.example', '10.0.0.2');
+check('the full intake signup succeeds', res.code === 200, JSON.stringify(res.body));
+const rvSite = await siteForEmail('rivertown@example.com');
+check('a real site is created and linked', rvSite && rvSite.slug === 'rivertown-plumbing', JSON.stringify(rvSite));
+check('the factual trade is on the site record', rvSite.trade === 'plumber');
+check('the factual city and state are on the site record', rvSite.city === 'Kansas City' && rvSite.state === 'MO');
+check('the factual street and ZIP are on the site record', rvSite.street === '417 Grand Blvd' && rvSite.zip === '64108');
+check('the public email is on the site record', rvSite.email_public === 'hello@rivertownplumbing.com');
+check('customer-typed services REPLACE the generated trade menu',
+  JSON.stringify(rvSite.services) === JSON.stringify([
+    { name: 'Leak repair', desc: '' },
+    { name: 'Water heaters', desc: 'installed same week' },
+    { name: 'Drain cleaning', desc: '' },
+  ]), JSON.stringify(rvSite.services));
+check('the parsed hours are on the site record',
+  JSON.stringify(rvSite.hours) === JSON.stringify([
+    { d: 'Mon to Fri', h: '8am to 6pm' },
+    { d: 'Sat', h: '9am to 1pm' },
+  ]), JSON.stringify(rvSite.hours));
+check('the customer about wins over the generated sentence',
+  rvSite.about === 'Family owned, third generation, we answer the phone ourselves.', rvSite.about);
+check('a new free site is P0 only', JSON.stringify(rvSite.modules) === JSON.stringify(['P0']), JSON.stringify(rvSite.modules));
+check('the response links the live site', res.body.siteUrl === 'https://killswitchwebsites.com/s/rivertown-plumbing', res.body.siteUrl);
+const rvAccount = await getAccount('rivertown@example.com');
+check('the contact name is on the account', rvAccount.name === 'Ada Ruiz', JSON.stringify(rvAccount));
+const rvLead = (await getLeads()).find((lead) => lead.email === 'rivertown@example.com');
+check('the lead carries the contact name', rvLead.contactName === 'Ada Ruiz');
+check('the lead carries trade, area, street, zip and public email',
+  rvLead.trade === 'plumber' && rvLead.city === 'Kansas City' && rvLead.state === 'MO'
+  && rvLead.street === '417 Grand Blvd' && rvLead.zip === '64108'
+  && rvLead.publicEmail === 'hello@rivertownplumbing.com');
+check('the lead carries domain and notes',
+  rvLead.domain === 'rivertownplumbing.com' && rvLead.notes === 'Red truck, call before arriving.');
+check('the lead carries the parsed services, hours and about',
+  rvLead.services.length === 3 && rvLead.hours.length === 2
+  && rvLead.about === 'Family owned, third generation, we answer the phone ourselves.');
+check('recognised interests are recorded on the lead',
+  JSON.stringify(rvLead.interests) === JSON.stringify(['Online Booking', '24/7 AI Assistant']), JSON.stringify(rvLead.interests));
+check('interest junk is rejected, raw module ids included', rvLead.interests.every((i) => !/^P\d+$/.test(i)));
+check('the Terms timestamp is server-generated, not client-sent',
+  typeof rvLead.termsAcceptedAt === 'string'
+  && !Number.isNaN(Date.parse(rvLead.termsAcceptedAt))
+  && rvLead.termsAcceptedAt !== '2000-01-01T00:00:00.000Z'
+  && Math.abs(Date.now() - Date.parse(rvLead.termsAcceptedAt)) < 5 * 60 * 1000, rvLead.termsAcceptedAt);
+
+console.log('\nBACKWARD COMPATIBILITY: THE LEGACY area FIELD AND MINIMAL CALLERS');
+res = await submit({
+  email: 'legacy@example.com', business: 'Legacy Area Shop', phone: '816-555-0177',
+  trade: 'bakery', area: 'Independence',
+}, 'attacker.example', '10.0.0.8');
+const legacySite = await siteForEmail('legacy@example.com');
+check('a legacy caller still succeeds', res.code === 200, JSON.stringify(res.body));
+check('the legacy area field still lands as the city', legacySite && legacySite.city === 'Independence', JSONSite(legacySite));
+check('and the generated seed still fills what the caller left blank',
+  legacySite && legacySite.about === 'Legacy Area Shop is a bakery in Independence.', legacySite && legacySite.about);
+function JSONSite(s) { return JSON.stringify(s && { slug: s.slug, city: s.city }); }
+
+console.log('\nSIGNUP CANNOT OVERWRITE A CLAIMED CUSTOMER\'S CONTENT WITH NEW FACTS');
+await upsertSite({
+  slug: 'harbour-electric', email: 'harbour@example.com', business: 'Harbour Electric',
+  tagline: 'Wired right, first time.', about: 'Our own words since 2004.',
+  services: [{ name: 'Panel upgrades', desc: '' }], theme: 'coastal', layout: 'classic',
+  trade: 'electrician', city: 'Overland Park', published: true, claimed: true, modules: ['P0', 'P3'],
+});
+res = await submit({
+  email: 'harbour@example.com', business: 'Harbour Electric', phone: '913-555-0180',
+  trade: 'plumber', area: 'Topeka', interests: ['Payments'], notes: 'overwrite attempt',
+}, 'attacker.example', '10.0.0.3');
+const hs = await siteForEmail('harbour@example.com');
+check('repeat signup still succeeds', res.code === 200, JSON.stringify(res.body));
+check('their about line survives', hs.about === 'Our own words since 2004.');
+check('their existing trade is not overwritten', hs.trade === 'electrician');
+check('their existing city is not overwritten', hs.city === 'Overland Park');
+check('their paid module survives, an interest activated nothing',
+  JSON.stringify(hs.modules) === JSON.stringify(['P0', 'P3']), JSON.stringify(hs.modules));
+
+console.log('\nEMPTY FIELDS ON AN EXISTING RECORD DO GET THE NEW FACTS FILLED');
+await upsertSite({ slug: 'plain-garage', email: 'plain@example.com', business: 'Plain Garage', published: true, claimed: true, modules: ['P0'] });
+res = await submit({ email: 'plain@example.com', business: 'Plain Garage', phone: '816-555-0199', trade: 'auto repair', area: 'Shawnee' }, 'attacker.example', '10.0.0.4');
+const pg = await siteForEmail('plain@example.com');
+check('repeat signup succeeds', res.code === 200, JSON.stringify(res.body));
+check('an empty trade is filled from the signup facts', pg.trade === 'auto repair', pg.trade);
+check('an empty city is filled from the signup facts', pg.city === 'Shawnee', pg.city);
+check('nothing else about the record was invented', JSON.stringify(pg.modules) === JSON.stringify(['P0']));
+
+console.log('\nEXTENDED FIELDS ARE VALIDATED, NOT TRUSTED');
+res = await submit({ email: 'x@example.com', business: 'X Y', phone: '816-555-0100', interests: 'P9' }, 'attacker.example', '10.0.0.5');
+check('non-array interests are rejected', res.code === 400 && res.body.error === 'interests_must_be_array', JSON.stringify(res.body));
+res = await submit({ email: 'x@example.com', business: 'X Y', phone: '816-555-0100', notes: 'a'.repeat(2001) }, 'attacker.example', '10.0.0.6');
+check('oversized notes are rejected', res.code === 400 && res.body.error === 'notes_too_long', JSON.stringify(res.body));
+res = await submit({ email: 'x@example.com', business: 'X Y', phone: '816-555-0100', trade: 't'.repeat(81) }, 'attacker.example', '10.0.0.7');
+check('oversized intake fields are rejected', res.code === 400 && res.body.error === 'intake_fields_too_long', JSON.stringify(res.body));
 
 console.log('\n' + passed + ' passed, ' + failed + ' failed\n');
 process.exit(failed ? 1 : 0);
