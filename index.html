@@ -117,11 +117,6 @@
   .cap-err{margin-top:12px;font-size:.9rem;color:var(--red);display:none}
   .cap-err.show{display:block}
 
-  .done{display:none;margin-top:30px;max-width:430px;padding:24px;border:1px solid var(--go);border-radius:var(--r);background:rgba(27,164,90,.09)}
-  .done.show{display:block}
-  .done h2{font-family:"Manrope",sans-serif;font-size:1.35rem;margin-bottom:10px}
-  .done p{color:var(--mute);font-size:.96rem}
-
   .proof{margin-top:26px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:.9rem;color:var(--mute-2)}
   .proof a{color:var(--amber);border-bottom:1px solid rgba(255,196,46,.4);padding-bottom:1px}
   .proof a:hover{color:var(--ink);border-color:var(--ink)}
@@ -245,11 +240,6 @@
         <div class="cap-err" id="capErr"></div>
       </form>
 
-      <div class="done" id="capDone">
-        <h2>You're in.</h2>
-        <p>We'll build your site and send you the link, usually the same day. Watch your phone.</p>
-      </div>
-
       <p class="cap-note">Your site goes live at <b>killswitchwebsites.com/yourbusiness</b>, ready to share. Want your own web address like yourbusiness.com? That's the first upgrade whenever you want it.</p>
 
       <!-- "Built recently" read as a delivered customer, and the page it links
@@ -314,9 +304,6 @@
 
 <script>
 (function(){
-  var WEB3FORMS_KEY = 'fd068540-d6c4-44e3-9f5b-3d46da7c44ed';
-  var CALENDLY = 'https://calendly.com/chrishubbel72/30min';
-
   /* ---- the lever: brand device, lights the page and focuses the form ---- */
   var sw = document.getElementById('killSwitch');
   var statusEl = document.getElementById('status');
@@ -338,14 +325,15 @@
   }
   sw.addEventListener('click', function(){ setSwitch(!on, true); });
 
-  /* ---- capture ---- */
+  /* ---- capture ----
+     The homepage does NOT create a site. It checks the three things we cannot
+     start without, parks them in sessionStorage, and hands off to /start,
+     which collects the rest and posts everything to first-party /api/inbound
+     in one place. */
   var form = document.getElementById('capForm');
-  var btn  = document.getElementById('capBtn');
   var err  = document.getElementById('capErr');
-  var done = document.getElementById('capDone');
 
-  function showErr(msg){ err.innerHTML = msg; err.classList.add('show'); }
-  function safeText(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+  function showErr(msg){ err.textContent = msg; err.classList.add('show'); }
 
   form.addEventListener('submit', function(e){
     e.preventDefault();
@@ -359,38 +347,11 @@
     if(phone.replace(/\D/g,'').length < 10){ showErr('Add a 10 digit phone so we can send you the link.'); document.getElementById('fPhone').focus(); return; }
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){ showErr('Check the email address so the link reaches you.'); document.getElementById('fEmail').focus(); return; }
 
-    btn.disabled = true;
-    btn.textContent = 'Sending…';
-
-    fetch('/api/inbound', {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({
-        email: email,
-        business: business,
-        phone: phone,
-        attribution: window.ksAttribution ? window.ksAttribution() : {},
-      })
-    })
-    .then(function(r){ return r.json().catch(function(){ return {}; }); })
-    .then(function(d){
-      if(d && d.ok){
-        if(window.ksEvent) ksEvent('signup_submitted', { source: 'homepage' });
-        form.style.display = 'none';
-        done.classList.add('show');
-        var siteLink = d.siteUrl ? '<p><a href="' + d.siteUrl.replace(/"/g, '&quot;') + '" style="color:var(--amber);font-weight:700">Open your live website →</a></p>' : '';
-        done.innerHTML = '<h2>Your website is live.</h2><p>Your private control-panel link is on its way to <b>' + safeText(email) + '</b>.</p>' + siteLink;
-        setSwitch(true, false);
-        done.scrollIntoView({ behavior:'smooth', block:'center' });
-      } else { fail(); }
-    })
-    .catch(fail);
-
-    function fail(){
-      btn.disabled = false;
-      btn.textContent = 'Get my free site';
-      showErr('That did not send. Try again, or <a href="' + CALENDLY + '" target="_blank" rel="noopener" style="color:var(--amber);border-bottom:1px solid">book a quick call</a> and we will start it together.');
-    }
+    try {
+      sessionStorage.setItem('ks:intake', JSON.stringify({ business: business, phone: phone, email: email }));
+    } catch (e2) { /* private mode: /start simply starts empty */ }
+    if (window.ksEvent) ksEvent('intake_started', { source: 'homepage' });
+    window.location.href = '/start';
   });
 })();
 </script>

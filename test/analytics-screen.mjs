@@ -15,11 +15,11 @@ import os from 'node:os';
 import { spawn } from 'node:child_process';
 
 const ROOT = path.join(import.meta.dirname, '..');
-// /w3f is still the stand-in for Web3Forms, which pricing.html, start.html,
-// script.js and the seven demo pages still post to. The HOMEPAGE stopped using
-// it when the capture form was rewired to /api/inbound, so counting the
-// homepage submission there counted nothing and this file had been failing ever
-// since. It is counted at its real endpoint now.
+// /w3f is still the stand-in for Web3Forms, which pricing.html, script.js and
+// the seven demo pages still post to. The signup flow does NOT use it anymore:
+// the homepage parks business/phone/email in sessionStorage and redirects to
+// /start, and /start posts the full intake to first-party /api/inbound. The
+// homepage conversion is counted when /start actually submits.
 let web3 = 0, checkout = 0, inbound = 0;
 
 const server = http.createServer((req, res) => {
@@ -50,7 +50,10 @@ const server = http.createServer((req, res) => {
   if (url === '/landed.html') { res.setHeader('content-type', 'text/html'); res.end('<title>landed</title>ok'); return; }
   if (url.startsWith('/api/')) { res.setHeader('content-type', 'application/json'); res.end('{"ok":true}'); return; }
   if (url === '/_vercel/insights/script.js') { res.setHeader('content-type', 'application/javascript'); res.end(''); return; }
-  const f = path.join(ROOT, url === '/' ? 'index.html' : url);
+  const f0 = path.join(ROOT, url === '/' ? 'index.html' : url);
+  // Extensionless paths are the clean URLs (/start, /pricing): serve the
+  // matching .html file the way the host does.
+  const f = fs.existsSync(f0) || path.extname(f0) ? f0 : f0 + '.html';
   if (!fs.existsSync(f)) { res.statusCode = 404; res.end('no'); return; }
   const ext = path.extname(f);
   res.setHeader('content-type', ext === '.css' ? 'text/css' : ext === '.js' ? 'application/javascript' : 'text/html');
@@ -178,11 +181,23 @@ await evaluate(`
   document.getElementById('capForm').requestSubmit();
 `);
 await new Promise((r) => setTimeout(r, 900));
-check('the homepage form still actually submits, and to /api/inbound',
+check('the homepage does NOT create the site itself: no /api/inbound call',
+  inbound === before, `${before} -> ${inbound}`);
+check('it hands off to /start instead', (await evaluate('location.pathname')) === '/start',
+  await evaluate('location.pathname'));
+check('the parked homepage intake prefills the /start form',
+  (await evaluate(`document.getElementById('f-business').value`)) === 'Test Plumbing');
+await evaluate(`
+  document.getElementById('f-name').value = 'Test Owner';
+  document.getElementById('agree').checked = true;
+  document.getElementById('startForm').requestSubmit();
+`);
+await new Promise((r) => setTimeout(r, 900));
+check('/start submits the signup to first-party /api/inbound',
   inbound === before + 1, `${before} -> ${inbound}`);
 check('and a signup is recorded', (await evaluate(NAMES)).includes('signup_submitted'), JSON.stringify(await evaluate(NAMES)));
 check('tagged with where it came from',
-  JSON.parse(await evaluate(EVENT('signup_submitted')) || 'null')?.source === 'homepage', await evaluate(EVENT('signup_submitted')));
+  JSON.parse(await evaluate(EVENT('signup_submitted')) || 'null')?.source === 'start-page', await evaluate(EVENT('signup_submitted')));
 
 await open('/');
 await evaluate(`document.querySelector('a[href^="tel:"]').click()`);

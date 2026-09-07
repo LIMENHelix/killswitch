@@ -59,7 +59,7 @@
         </div>
         <div class="fld">
           <label class="lab" for="f-phone">Phone</label>
-          <input type="tel" id="f-phone" name="phone" placeholder="(555) 555-5555" />
+          <input type="tel" id="f-phone" name="phone" placeholder="(555) 555-5555" required />
         </div>
       </div>
       <div class="fld">
@@ -129,7 +129,6 @@
 
 <script>
 (function () {
-  var KEY = 'fd068540-d6c4-44e3-9f5b-3d46da7c44ed';
   var form = document.getElementById('startForm'),
       note = document.getElementById('startNote'),
       whichWrap = document.getElementById('domWhichWrap');
@@ -139,57 +138,65 @@
   }
   form.querySelectorAll('input[name=domain]').forEach(function (r) { r.addEventListener('change', toggleWhich); });
 
+  // The homepage validates business/phone/email and parks them here before
+  // redirecting. Prefill so nobody types the same thing twice, then clear the
+  // parked copy: first-party intake lives in our own records from here on.
+  try {
+    var parked = JSON.parse(sessionStorage.getItem('ks:intake') || 'null');
+    if (parked && typeof parked === 'object') {
+      ['business', 'phone', 'email'].forEach(function (n) {
+        var el = form.querySelector('[name=' + n + ']');
+        if (el && !el.value && typeof parked[n] === 'string') el.value = parked[n];
+      });
+      sessionStorage.removeItem('ks:intake');
+    }
+  } catch (e) {}
+
   function setNote(t, err) { note.textContent = t; note.style.color = err ? 'var(--red)' : 'var(--mute-2)'; }
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var g = function (n) { var el = form.querySelector('[name=' + n + ']'); return el ? el.value.trim() : ''; };
-    var business = g('business'), name = g('name'), email = g('email');
+    var business = g('business'), name = g('name'), email = g('email'), phone = g('phone');
     if (!business || !name || !email) { setNote('Please add your business name, your name, and an email.', true); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setNote("That email doesn't look right, mind checking it?", true); return; }
+    if (phone.replace(/\D/g, '').length < 10) { setNote('Add a 10 digit phone so we can send you the link.', true); return; }
     if (!document.getElementById('agree').checked) { setNote('Please agree to the Terms and Privacy Policy to continue.', true); return; }
 
+    // INTERESTS ONLY. These checkboxes tell us what a customer is curious
+    // about; they are stored on the lead so a rep can see them, and nothing
+    // here activates a module, entitlement, or anything paid.
     var modules = [];
     form.querySelectorAll('input[name=module]:checked').forEach(function (m) { modules.push(m.value); });
-    var domain = document.getElementById('domYes').checked
-      ? ('Yes: ' + (g('domainName') || '(not given)'))
-      : 'No, needs one';
-
-    var message = 'NEW SIGNUP (Killswitch Websites /start)\n'
-      + 'Business: ' + business + '\n'
-      + 'Trade: ' + (g('trade') || '-') + '\n'
-      + 'Service area: ' + (g('area') || '-') + '\n'
-      + 'Name: ' + name + '\n'
-      + 'Phone: ' + (g('phone') || '-') + '\n'
-      + 'Email: ' + email + '\n'
-      + 'Domain: ' + domain + '\n'
-      + 'Starting with: Free website' + (modules.length ? (' + ' + modules.join(', ')) : '') + '\n'
-      + 'Notes: ' + (g('notes') || '-') + '\n'
-      + 'Agreed to Terms + Privacy: yes';
+    var domain = document.getElementById('domYes').checked ? g('domainName') : '';
 
     var btn = form.querySelector('button[type=submit]');
     btn.disabled = true; setNote('Sending...', false);
 
-    fetch('https://api.web3forms.com/submit', {
+    fetch('/api/inbound', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        access_key: KEY,
-        subject: '🔔 NEW Killswitch Websites SIGNUP · ' + business,
-        from_name: 'Killswitch Websites Signup',
-        name: name, contact: email, business: business,
-        source: 'signup · /start', message: message
+        email: email, business: business, phone: phone, name: name,
+        trade: g('trade'), area: g('area'), domain: domain,
+        interests: modules, notes: g('notes'),
+        attribution: window.ksAttribution ? window.ksAttribution() : {},
       })
     })
     .then(function (r) { return r.json().catch(function () { return {}; }); })
     .then(function (d) {
-      if (d && d.success) {
+      if (d && d.ok) {
         if (window.ksEvent) ksEvent('signup_submitted', { source: 'start-page' });
         form.style.display = 'none'; setNote('', false);
-        document.getElementById('startDone').style.display = 'block';
-        document.getElementById('startDone').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        var done = document.getElementById('startDone');
+        if (d.siteUrl) {
+          done.insertAdjacentHTML('beforeend',
+            '<p>Your website is already live: <a href="' + String(d.siteUrl).replace(/"/g, '&quot;') + '" style="color:var(--amber);font-weight:700">open it here →</a></p>');
+        }
+        done.style.display = 'block';
+        done.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
-        setNote('Could not send (' + ((d && d.message) || 'please try again') + ').', true);
+        setNote('Could not send just now — please try again.', true);
         btn.disabled = false;
       }
     })

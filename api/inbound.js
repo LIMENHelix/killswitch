@@ -1,10 +1,14 @@
 // Customer-facing inbound signup. No authentication needed.
 //
-// POST /api/inbound   body: { email, business, phone }
-//   -> { ok, portalUrl, message }
+// POST /api/inbound   body: { email, business, phone, name?, trade?, area?,
+//                             domain?, interests?, notes?, attribution? }
+//   -> { ok, siteUrl, email, message }
 //
-// Creates account, sends panel link, logs the lead.
-// No operator step needed: fully autonomous signup.
+// The /start intake form posts here. It creates the free (P0-only) site, the
+// account, and the lead-board row in our own storage, and sends the panel link.
+// Paid-module checkboxes on the form arrive as `interests`: they are recorded
+// on the lead row so a rep can see them, and NEVER touch modules[], entitlements,
+// Stripe, or checkout. No operator step needed: fully autonomous signup.
 
 import { onboardCustomer } from '../lib/onboard.js';
 import { appendInboundLead } from '../lib/store.js';
@@ -14,6 +18,11 @@ import { publicOrigin } from '../lib/origin.js';
 import { normalizeAttribution } from '../lib/attribution.js';
 import { recordLifecycle } from '../lib/lifecycle.js';
 import crypto from 'node:crypto';
+
+// The four paid modules /start offers as "starting with" checkboxes. Anything
+// else a client submits is not an interest we recognise and is dropped, the
+// same way normalizeAttribution drops unknown fields.
+const INTEREST_LABELS = ['Get Found on Google', 'Online Booking', 'Payments', '24/7 AI Assistant'];
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -34,6 +43,14 @@ export default async function handler(req, res) {
   const phone = String(body.phone || '').trim();
   const attribution = normalizeAttribution(body.attribution);
 
+  // Factual intake details from /start. All optional; all length-capped so a
+  // public endpoint cannot write unbounded payloads into customer records.
+  const name = String(body.name || '').trim();
+  const trade = String(body.trade || '').trim();
+  const area = String(body.area || '').trim();
+  const domain = String(body.domain || '').trim();
+  const notes = String(body.notes || '').trim();
+
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     res.status(400).json({ error: 'valid_email' });
     return;
@@ -48,6 +65,29 @@ export default async function handler(req, res) {
     return;
   }
 
+  if (name.length > 120 || trade.length > 80 || area.length > 120 || domain.length > 160) {
+    res.status(400).json({ error: 'intake_fields_too_long' });
+    return;
+  }
+  if (notes.length > 2000) {
+    res.status(400).json({ error: 'notes_too_long' });
+    return;
+  }
+
+  // INTERESTS ONLY. A checkbox is a customer telling us what they are curious
+  // about, not a purchase; it lands on the lead row and never near modules[].
+  let interests = [];
+  if (body.interests !== undefined) {
+    if (!Array.isArray(body.interests)) {
+      res.status(400).json({ error: 'interests_must_be_array' });
+      return;
+    }
+    interests = body.interests
+      .map((i) => String(i || '').trim())
+      .filter((i) => i && i.length <= 60 && INTEREST_LABELS.includes(i))
+      .slice(0, 10);
+  }
+
   let out;
   let provisioned;
   // Stable across HTTP/Stripe retries so one real prospect is one lead and one
@@ -60,13 +100,13 @@ export default async function handler(req, res) {
     });
     // The shared template is immediately usable, so site creation belongs in
     // the request transaction rather than in an operator queue.
-    provisioned = await ensureCustomerSite({ email, business, phone, source: 'inbound-homepage' });
+    provisioned = await ensureCustomerSite({ email, business, phone, trade, city: area, source: 'inbound-homepage' });
     await recordLifecycle(email, {
       type: 'site.published', stage: 'site_published', idempotencyKey: 'inbound:site-published',
       data: { siteSlug: provisioned.site.slug, created: provisioned.created },
     });
     out = await onboardCustomer({
-      email, site: business, name: business, phone,
+      email, site: business, name: name || business, phone,
       source: 'inbound-homepage', leadId,
     });
   } catch (e) {
@@ -87,9 +127,13 @@ export default async function handler(req, res) {
       id: leadId,
       email,
       name: business,
+      contactName: name,
       phone,
-      trade: '',
-      street: '', city: '', state: '', zip: '',
+      trade,
+      street: '', city: area, state: '', zip: '',
+      domain,
+      interests,
+      notes,
       status: 'new',
       source: 'homepage-inbound',
       attribution,
