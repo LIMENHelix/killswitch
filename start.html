@@ -48,9 +48,23 @@
           <input type="text" id="f-trade" name="trade" placeholder="Plumber, salon, clinic..." />
         </div>
         <div class="fld">
-          <label class="lab" for="f-area">Town / area you serve</label>
-          <input type="text" id="f-area" name="area" placeholder="City or region" />
+          <label class="lab" for="f-city">City / town you serve</label>
+          <input type="text" id="f-city" name="city" placeholder="City or region" />
         </div>
+      </div>
+      <div class="row">
+        <div class="fld">
+          <label class="lab" for="f-state">State</label>
+          <input type="text" id="f-state" name="state" placeholder="MO" />
+        </div>
+        <div class="fld">
+          <label class="lab" for="f-zip">ZIP (optional)</label>
+          <input type="text" id="f-zip" name="zip" placeholder="64108" />
+        </div>
+      </div>
+      <div class="fld">
+        <label class="lab" for="f-street">Street address (optional — shows on your site)</label>
+        <input type="text" id="f-street" name="street" placeholder="123 Main St" />
       </div>
       <div class="row">
         <div class="fld">
@@ -65,6 +79,23 @@
       <div class="fld">
         <label class="lab" for="f-email">Best email</label>
         <input type="email" id="f-email" name="email" placeholder="you@business.com" required />
+      </div>
+      <div class="fld">
+        <label class="lab" for="f-emailpub">Public email for your site (optional)</label>
+        <input type="email" id="f-emailpub" name="publicEmail" placeholder="hello@yourbusiness.com" />
+      </div>
+
+      <div class="fld">
+        <label class="lab" for="f-services">Services you offer (optional, one per line)</label>
+        <textarea id="f-services" name="services" placeholder="Leak repair&#10;Water heaters — installed same week"></textarea>
+      </div>
+      <div class="fld">
+        <label class="lab" for="f-hours">Hours (optional, one per line)</label>
+        <textarea id="f-hours" name="hours" placeholder="Mon to Fri: 8am to 6pm&#10;Sat: 9am to 1pm"></textarea>
+      </div>
+      <div class="fld">
+        <label class="lab" for="f-about">About your business (optional)</label>
+        <textarea id="f-about" name="about" placeholder="If you leave this blank we write one factual line from the details above — you can rewrite it anytime."></textarea>
       </div>
 
       <div class="fld">
@@ -90,7 +121,7 @@
 
       <div class="fld">
         <label class="lab" for="f-notes">Anything else we should know?</label>
-        <textarea id="f-notes" name="notes" placeholder="Photos, hours, colors, a site you like, anything at all."></textarea>
+        <textarea id="f-notes" name="notes" placeholder="Photos, colors, a site you like, anything at all."></textarea>
       </div>
 
       <label class="agree">
@@ -138,6 +169,8 @@
   }
   form.querySelectorAll('input[name=domain]').forEach(function (r) { r.addEventListener('change', toggleWhich); });
 
+  function setNote(t, err) { note.textContent = t; note.style.color = err ? 'var(--red)' : 'var(--mute-2)'; }
+
   // The homepage validates business/phone/email and parks them here before
   // redirecting. Prefill so nobody types the same thing twice, then clear the
   // parked copy: first-party intake lives in our own records from here on.
@@ -150,9 +183,12 @@
       });
       sessionStorage.removeItem('ks:intake');
     }
-  } catch (e) {}
-
-  function setNote(t, err) { note.textContent = t; note.style.color = err ? 'var(--red)' : 'var(--mute-2)'; }
+  } catch (e) {
+    // sessionStorage can be unavailable (private mode, storage blocked). The
+    // signup must still work — the form just starts empty — and the person
+    // should see that rather than have it fail silently.
+    setNote('Your browser is blocking saved details, so this form starts fresh.', false);
+  }
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
@@ -161,6 +197,8 @@
     if (!business || !name || !email) { setNote('Please add your business name, your name, and an email.', true); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setNote("That email doesn't look right, mind checking it?", true); return; }
     if (phone.replace(/\D/g, '').length < 10) { setNote('Add a 10 digit phone so we can send you the link.', true); return; }
+    var publicEmail = g('publicEmail');
+    if (publicEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(publicEmail)) { setNote("The public email for your site doesn't look right, mind checking it?", true); return; }
     if (!document.getElementById('agree').checked) { setNote('Please agree to the Terms and Privacy Policy to continue.', true); return; }
 
     // INTERESTS ONLY. These checkboxes tell us what a customer is curious
@@ -178,7 +216,10 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: email, business: business, phone: phone, name: name,
-        trade: g('trade'), area: g('area'), domain: domain,
+        trade: g('trade'), city: g('city'), state: g('state'),
+        street: g('street'), zip: g('zip'), publicEmail: publicEmail,
+        services: g('services'), hours: g('hours'), about: g('about'),
+        domain: domain,
         interests: modules, notes: g('notes'),
         attribution: window.ksAttribution ? window.ksAttribution() : {},
       })
@@ -190,8 +231,19 @@
         form.style.display = 'none'; setNote('', false);
         var done = document.getElementById('startDone');
         if (d.siteUrl) {
-          done.insertAdjacentHTML('beforeend',
-            '<p>Your website is already live: <a href="' + String(d.siteUrl).replace(/"/g, '&quot;') + '" style="color:var(--amber);font-weight:700">open it here →</a></p>');
+          // Built as DOM, never as an HTML string: href and text go through
+          // property assignment, so nothing the server returned can inject
+          // markup into the page.
+          var p = document.createElement('p');
+          var a = document.createElement('a');
+          a.href = String(d.siteUrl);
+          a.textContent = 'Your website is already live — open it here →';
+          a.target = '_blank';
+          a.rel = 'noopener';
+          a.style.color = 'var(--amber)';
+          a.style.fontWeight = '700';
+          p.appendChild(a);
+          done.appendChild(p);
         }
         done.style.display = 'block';
         done.scrollIntoView({ behavior: 'smooth', block: 'center' });
