@@ -20,6 +20,7 @@ let stripeCharges = {};     // charge lookup for refund/dispute webhooks
 let created = [];           // checkout sessions created
 let stripeCalls = [];       // mutation parameters and idempotency headers
 let stripeFailure = null;   // { method, path } for fail-closed billing tests
+let kvFailure = null;       // key prefix that must throw, for provisioning retry tests
 
 globalThis.fetch = async (url, opts = {}) => {
   const u = String(url);
@@ -29,6 +30,7 @@ globalThis.fetch = async (url, opts = {}) => {
     const args = JSON.parse(opts.body);
     const run = (a) => {
       const [cmd, key, f, v] = a;
+      if (kvFailure && String(key || '').startsWith(kvFailure)) throw new Error('simulated kv failure: ' + key);
       if (cmd === 'GET') return KV.has(key) ? KV.get(key) : null;
       // NX first: the generic SET below would otherwise swallow it and store the
       // literal string "NX" as the value.
@@ -195,7 +197,7 @@ function putSite(rec) {
   if (rec.email) { const em = KV.get('ks:siteemail') || {}; em[rec.email.toLowerCase()] = rec.slug; KV.set('ks:siteemail', em); }
 }
 function seed() {
-  KV.clear(); stripeSubs = []; stripeCustomers = []; stripeCharges = {}; created = []; stripeCalls = []; stripeFailure = null;
+  KV.clear(); stripeSubs = []; stripeCustomers = []; stripeCharges = {}; created = []; stripeCalls = []; stripeFailure = null; kvFailure = null;
   seedAccounts({ [EMAIL]: { email: EMAIL, tokenNonce: NONCE, name: 'Test Shop', plan: ['P0'] } });
   putSite({ slug: 'test-shop', business: 'Test Shop', email: EMAIL, phone: '816-555-0101', modules: ['P0'], published: true, claimed: true });
 }
@@ -1258,6 +1260,154 @@ retryBase.data.object.line_items = { data: [{ description: 'CRM & Customer Datab
 w = await hook(retryBase);
 check('the same event can succeed after the dependency recovers', w.code === 200, 'got ' + w.code);
 check('the successful retry records ownership', accts()['retry@example.com'].owned.includes('P5'));
+
+// ---------------------------------------------------------------------------
+// A verified paid customer must get a site built from THEIR OWN saved intake,
+// not a bare shell. The intake record is the customer's own words; the webhook
+// only feeds it into the provisioning that already existed.
+console.log('\n17b. A paid customer gets a site seeded from their own intake');
+
+const { appendInboundLead, saveLeads } = await import('../lib/store.js');
+function intakeLead(email, extra = {}) {
+  return { id: 'inbound-' + email, email, name: 'Blue River Plumbing', contactName: 'Sam Ortega',
+    phone: '816-555-0142', trade: 'plumber', street: '88 River Rd', city: 'Kansas City', state: 'MO', zip: '64105',
+    publicEmail: 'hello@blueriverplumbing.com', domain: '',
+    services: [{ name: 'Leak repair', desc: '' }, { name: 'Water heaters', desc: 'installed same week' }],
+    hours: [{ d: 'Mon to Fri', h: '8am to 6pm' }],
+    about: 'Family owned, we answer the phone ourselves.',
+    interests: [], notes: '', termsAcceptedAt: '', status: 'new', source: 'homepage-inbound', ...extra };
+}
+const paidSession = (email, extra = {}) => ({
+  id: 'cs_' + email.split('@')[0], mode: 'payment', payment_status: 'paid',
+  customer: 'cus_' + email.split('@')[0].replace(/[^a-z]/g, ''), amount_total: 14900,
+  customer_details: { email, name: 'Stripe Collected Name' },
+  line_items: { data: [{ description: 'Online Booking & Scheduling', price: { id: 'price_once_booking', metadata: {} } }] },
+  ...extra,
+});
+const PAID = 'paidintake@example.com';
+
+// A + B: verified paid event -> one customer site, and the intake IS the content.
+seed();
+await appendInboundLead(intakeLead(PAID));
+w = await hook({ type: 'checkout.session.completed', id: 'evt_intake', data: { object: paidSession(PAID) } });
+check('a verified paid event is accepted', w.code === 200, 'got ' + w.code);
+const intakeSite = () => JSON.parse(KV.get('ks:site:blue-river-plumbing'));
+check('one customer site exists and is live and claimed', !!intakeSite() && intakeSite().published && intakeSite().claimed);
+check('the intake business name beats the session name', intakeSite().business === 'Blue River Plumbing', intakeSite().business);
+check('the intake phone lands on the site', intakeSite().phone === '816-555-0142');
+check('the intake facts land on the site',
+  intakeSite().trade === 'plumber' && intakeSite().city === 'Kansas City' && intakeSite().state === 'MO'
+  && intakeSite().street === '88 River Rd' && intakeSite().zip === '64105', JSON.stringify(intakeSite()));
+check('the public email lands on the site', intakeSite().email_public === 'hello@blueriverplumbing.com');
+check('customer-typed services become the site menu',
+  JSON.stringify(intakeSite().services) === JSON.stringify([{ name: 'Leak repair', desc: '' }, { name: 'Water heaters', desc: 'installed same week' }]),
+  JSON.stringify(intakeSite().services));
+check('customer-typed hours land on the site',
+  JSON.stringify(intakeSite().hours) === JSON.stringify([{ d: 'Mon to Fri', h: '8am to 6pm' }]));
+check('the customer about wins over any generated sentence',
+  intakeSite().about === 'Family owned, we answer the phone ourselves.', intakeSite().about);
+check('the purchased module is switched on too', intakeSite().modules.includes('P3'), JSON.stringify(intakeSite().modules));
+
+// C: the same Stripe event again changes nothing.
+w = await hook({ type: 'checkout.session.completed', id: 'evt_intake', data: { object: paidSession(PAID) } });
+check('replaying the same paid event is a deduplicated no-op', w.code === 200 && w.body.duplicate === true, 'got ' + w.code);
+check('there is still exactly one site for the customer',
+  (KV.get('ks:siteemail') || {})[PAID] === 'blue-river-plumbing' && KV.get('ks:site:blue-river-plumbing-2') == null);
+check('and its content is unchanged', intakeSite().about === 'Family owned, we answer the phone ourselves.');
+
+// D + E: an existing site with customer-edited content is protected, empty
+// scalars still get the intake facts.
+const EDITEDBUYER = 'edited@example.com';
+seed();
+await appendInboundLead(intakeLead(EDITEDBUYER));
+putSite({ slug: 'blue-river-plumbing', business: 'Blue River Plumbing', email: EDITEDBUYER, phone: '',
+  trade: '', city: '', state: '', street: '', zip: '', email_public: '',
+  about: 'The owner wrote this themselves.', services: [{ name: 'Custom edit', desc: 'keep me' }],
+  hours: [], modules: ['P0'], published: true, claimed: true });
+w = await hook({ type: 'checkout.session.completed', id: 'evt_edited', data: { object: paidSession(EDITEDBUYER) } });
+check('a paid event against an existing site is accepted', w.code === 200, 'got ' + w.code);
+check('customer-edited about survives the paid event', intakeSite().about === 'The owner wrote this themselves.', intakeSite().about);
+check('customer-edited services survive the paid event',
+  JSON.stringify(intakeSite().services) === JSON.stringify([{ name: 'Custom edit', desc: 'keep me' }]));
+check('an empty scalar IS filled from the saved intake',
+  intakeSite().trade === 'plumber' && intakeSite().city === 'Kansas City' && intakeSite().phone === '816-555-0142',
+  JSON.stringify({ trade: intakeSite().trade, city: intakeSite().city, phone: intakeSite().phone }));
+check('content fields on an existing record stay untouched, empty hours included',
+  JSON.stringify(intakeSite().hours) === '[]');
+
+// F: no saved intake at all -> the site is still factual, nothing is invented.
+const NOINTAKE = 'nointake@example.com';
+seed();
+w = await hook({ type: 'checkout.session.completed', id: 'evt_nointake', data: { object: paidSession(NOINTAKE, { customer_details: { email: NOINTAKE, name: 'Solo Electric' } }) } });
+check('a paid event with no saved intake still provisions', w.code === 200, 'got ' + w.code);
+const solo = JSON.parse(KV.get('ks:site:solo-electric'));
+check('the name comes from the verified session', solo.business === 'Solo Electric');
+check('the about line is the neutral factual fallback, not a claim', solo.about === 'Solo Electric is a local business.', solo.about);
+check('no services are fabricated without intake or a known trade', JSON.stringify(solo.services) === '[]', JSON.stringify(solo.services));
+
+// H: an unpaid session provisions nothing, and the settlement event completes it.
+const DEFER = 'defer@example.com';
+seed();
+await appendInboundLead(intakeLead(DEFER, { name: 'Defer Works' }));
+w = await hook({ type: 'checkout.session.completed', id: 'evt_unpaid', data: { object: paidSession(DEFER, { id: 'cs_defer', payment_status: 'unpaid' }) } });
+check('an unpaid session is acknowledged without provisioning', w.code === 200, 'got ' + w.code);
+check('no account is created for an unpaid session', !accts()[DEFER], Object.keys(accts()).join(','));
+check('no site is created for an unpaid session', KV.get('ks:site:defer-works') == null && !(KV.get('ks:siteemail') || {})[DEFER]);
+check('the pending payment is durable for reconciliation',
+  (await listBillingEvents({ limit: 20 })).some((e) => e.id === 'evt_unpaid' && e.type === 'payment.pending' && e.status === 'unpaid'));
+w = await hook({ type: 'checkout.session.async_payment_succeeded', id: 'evt_async_ok', data: { object: paidSession(DEFER, { id: 'cs_defer', name: undefined }) } });
+check('when the money settles the same session provisions', w.code === 200, 'got ' + w.code + ' ' + JSON.stringify(w.body));
+check('and the saved intake becomes the site content',
+  JSON.parse(KV.get('ks:site:defer-works')).about === 'Family owned, we answer the phone ourselves.');
+
+// G: a forged event mutates nothing at all.
+seed();
+w = await hook({ type: 'checkout.session.completed', id: 'evt_forged', data: { object: paidSession(PAID) } }, { secret: 'whsec_wrong' });
+check('a forged paid event is rejected', w.code === 400, 'got ' + w.code);
+check('it creates no account', Object.keys(accts()).length === 1, Object.keys(accts()).join(','));
+check('it creates no site and claims no email link', !(KV.get('ks:siteemail') || {})[PAID]);
+check('and it lands in no ledger', (await listBillingEvents({ limit: 20 })).length === 0);
+
+// I: content seeding failure is visible (500, Stripe retries), not false success.
+const FAILSEED = 'failseed@example.com';
+seed();
+await appendInboundLead(intakeLead(FAILSEED, { name: 'Fail Seed Shop' }));
+kvFailure = 'ks:site:';
+w = await hook({ type: 'checkout.session.completed', id: 'evt_seeds_fail', data: { object: paidSession(FAILSEED) } });
+check('a seeding failure returns 500 so Stripe retries', w.code === 500, 'got ' + w.code);
+check('no site is half-created', KV.get('ks:site:fail-seed-shop') == null && !(KV.get('ks:siteemail') || {})[FAILSEED]);
+kvFailure = null;
+w = await hook({ type: 'checkout.session.completed', id: 'evt_seeds_fail', data: { object: paidSession(FAILSEED) } });
+check('the retry after the failure provisions cleanly', w.code === 200, 'got ' + w.code);
+check('with the intake content intact', JSON.parse(KV.get('ks:site:fail-seed-shop')).about === 'Family owned, we answer the phone ourselves.');
+
+// J: a failure AFTER the site exists must not duplicate the site on retry.
+const PARTIAL = 'partial@example.com';
+seed();
+await appendInboundLead(intakeLead(PARTIAL, { name: 'Partial Shop' }));
+kvFailure = 'ks:billing:events';
+w = await hook({ type: 'checkout.session.completed', id: 'evt_partial', data: { object: paidSession(PARTIAL) } });
+check('a post-provisioning failure is still a 500', w.code === 500, 'got ' + w.code);
+check('the site was provisioned before the failure', KV.get('ks:site:partial-shop') != null);
+kvFailure = null;
+w = await hook({ type: 'checkout.session.completed', id: 'evt_partial', data: { object: paidSession(PARTIAL) } });
+check('the retry finishes the provisioning', w.code === 200, 'got ' + w.code);
+check('still exactly one site for the customer', (KV.get('ks:siteemail') || {})[PARTIAL] === 'partial-shop' && KV.get('ks:site:partial-shop-2') == null);
+check('with the content exactly as first seeded', JSON.parse(KV.get('ks:site:partial-shop')).about === 'Family owned, we answer the phone ourselves.');
+
+// K: a legacy lead row (no services/about/publicEmail fields) still works.
+const LEGACY = 'legacy@example.com';
+seed();
+await saveLeads([{ id: 'L1', email: LEGACY, name: 'Old Town Bakery', trade: 'bakery', phone: '913-555-0100',
+  city: 'Independence', state: 'MO', street: '', zip: '', hours: [{ d: 'Sat', h: '7am to 2pm' }] }]);
+w = await hook({ type: 'checkout.session.completed', id: 'evt_legacy', data: { object: paidSession(LEGACY, { customer_details: { email: LEGACY, name: 'Old Town Bakery' } }) } });
+check('a paid event matching a legacy lead row is accepted', w.code === 200, 'got ' + w.code);
+const legacySite = JSON.parse(KV.get('ks:site:old-town-bakery'));
+check('the legacy facts land on the site', legacySite.trade === 'bakery' && legacySite.city === 'Independence' && legacySite.phone === '913-555-0100');
+check('legacy hours land on the site', JSON.stringify(legacySite.hours) === JSON.stringify([{ d: 'Sat', h: '7am to 2pm' }]));
+check('fields the legacy row never had stay empty, not invented', legacySite.email_public === '' && legacySite.street === '');
+check('the about line is the neutral seeded sentence, nothing more',
+  legacySite.about === 'Old Town Bakery is a bakery in Independence, MO.', legacySite.about);
 
 // ---------------------------------------------------------------------------
 // P4: the two claims that had no code behind them.
