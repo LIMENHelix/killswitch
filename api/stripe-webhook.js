@@ -14,7 +14,9 @@
 // SETUP, two clicks in the Stripe dashboard, then one env var:
 //   1. Developers > Webhooks > Add endpoint
 //      https://killswitchwebsites.com/api/stripe-webhook
-//      events: checkout.session.completed, customer.subscription.updated,
+//      events: checkout.session.completed,
+//              checkout.session.async_payment_succeeded,
+//              customer.subscription.updated,
 //              customer.subscription.deleted, invoice.payment_failed,
 //              charge.refunded, refund.created, refund.updated, refund.failed,
 //              charge.dispute.created, charge.dispute.updated,
@@ -25,7 +27,7 @@
 // FAILS CLOSED. Without the secret it rejects everything, because an unverified
 // webhook is an open endpoint that lets anyone claim a payment happened.
 import crypto from 'node:crypto';
-import { getAccount, upsertAccount } from '../lib/store.js';
+import { getAccount, upsertAccount, getLeads } from '../lib/store.js';
 import { panelToken } from '../lib/panel-auth.js';
 import { sendPanelLink } from '../lib/onboard.js';
 import { notifyOperator, labelPhases } from '../lib/notify.js';
@@ -155,7 +157,9 @@ async function handleEvent(event) {
   const type = event && event.type;
   const obj = (event && event.data && event.data.object) || {};
 
-  if (type === 'checkout.session.completed') return onCheckout(obj, event);
+  if (type === 'checkout.session.completed' || type === 'checkout.session.async_payment_succeeded') {
+    return onCheckout(obj, event);
+  }
   if (type === 'customer.subscription.updated' || type === 'customer.subscription.deleted') {
     return onSubscriptionChange(obj, event);
   }
@@ -170,6 +174,52 @@ async function handleEvent(event) {
   return null;
 }
 
+// The fields a paid site is actually seeded from. Two intake rows that agree
+// on ALL of these are the same content decision, whichever one is picked; a
+// disagreement on any of them is a conflicting business identity.
+const INTAKE_IDENTITY_FIELDS = ['name', 'phone', 'trade', 'street', 'city', 'state', 'zip', 'publicEmail', 'about'];
+
+function intakeIdentityKey(lead) {
+  const parts = INTAKE_IDENTITY_FIELDS.map((k) => String((lead && lead[k]) || '').trim());
+  parts.push(JSON.stringify(Array.isArray(lead && lead.services) ? lead.services : []));
+  parts.push(JSON.stringify(Array.isArray(lead && lead.hours) ? lead.hours : []));
+  return parts.join('');
+}
+
+/**
+ * SAVED INTAKE is the authoritative content source for a paid customer's site.
+ * The /start intake record is the customer's own words about their own
+ * business, so it beats anything the webhook payload happens to carry, and the
+ * caller's session fields are only ever a fallback when no intake exists.
+ *
+ * IDENTITY RESOLUTION, newest-arbitrary-first is not allowed here:
+ * - api/inbound.js stores first-party intake under an id derived from the
+ *   email, so a resubmission REPLACES the previous row: at most one canonical
+ *   row per email, always the latest the customer gave us. A legacy outreach
+ *   row (the ks:leads blob) with the same email is a stale snapshot from
+ *   before first-party intake, not a competing identity, so canonical rows
+ *   deterministically win over it.
+ * - Several canonical rows can still mean conflicting identities (hand-written
+ *   store entries). Rows that agree on every seeded field are one content
+ *   decision and collapse; rows that disagree must NOT be disambiguated by
+ *   storage order, because seeding the wrong one puts the wrong business on a
+ *   paying customer's site. Fail closed instead: the error propagates, the
+ *   webhook answers 500 under the existing retry mechanics with no done
+ *   marker and no site write, and the reason lands in the failure ledger.
+ */
+async function savedIntakeFor(email) {
+  const leads = await getLeads();
+  const matches = leads.filter((l) => l && String(l.email || '').trim().toLowerCase() === email);
+  if (!matches.length) return null;
+  const canonical = matches.filter((l) => String(l.id || '').startsWith('inbound-'));
+  const pool = canonical.length ? canonical : matches;
+
+  const distinct = [];
+  for (const row of pool) if (!distinct.some((d) => intakeIdentityKey(d) === intakeIdentityKey(row))) distinct.push(row);
+  if (distinct.length > 1) throw new Error('ambiguous_saved_intake');
+  return distinct[0];
+}
+
 /**
  * THE ONE THAT MATTERS. A payment link, the basket, or the panel all end here.
  * The panel path also calls switch.js link(), which is harmless: both do the
@@ -182,6 +232,23 @@ async function onCheckout(session, event) {
     || (session.customer_details && session.customer_details.email)
     || '',
   ).trim().toLowerCase();
+
+  // MONEY SAFETY, before anything is written. checkout.session.completed can
+  // arrive with payment_status 'unpaid' — async payment methods settle after
+  // the session completes. Provisioning on that would hand out paid content
+  // before the money exists. Record it durably and wait: Stripe follows with
+  // checkout.session.async_payment_succeeded (handled above), which runs this
+  // same provisioning exactly once. A missing payment_status is treated as
+  // 'paid' so subscription sessions from older integrations behave as before.
+  if (String(session.payment_status || 'paid') !== 'paid') {
+    await recordBillingEvent({
+      id: event.id, type: 'payment.pending', email, customerId: customer,
+      amountCents: session.amount_total || 0, currency: session.currency || '',
+      status: session.payment_status || 'unpaid', sourceId: session.id || '',
+      at: event.created ? new Date(event.created * 1000).toISOString() : '',
+    });
+    return;
+  }
 
   if (!email) {
     await recordBillingEvent({
@@ -220,10 +287,32 @@ async function onCheckout(session, event) {
   });
 
   // A payment-link buyer may never have used the homepage. Give them a real P0
-  // site immediately using Stripe's collected name as the best available fact.
-  let siteName = account.site || account.name || String(session.customer_details && session.customer_details.name || '').trim();
+  // site immediately. WHAT GOES ON IT comes from their saved intake when they
+  // gave us one — the fields they typed about their own business — which also
+  // beats the name Stripe collected. With no intake, the best available fact
+  // is Stripe's collected name, exactly as before. ensureCustomerSite itself
+  // keeps this safe on retries: customer content wins on a brand new record,
+  // empty scalars are filled only when empty, and content on an existing
+  // record is never touched.
+  const intake = await savedIntakeFor(email);
+  let siteName = (intake && String(intake.name || '').trim())
+    || account.site || account.name || String(session.customer_details && session.customer_details.name || '').trim();
   if (!siteName) siteName = email.split('@')[0].replace(/[._-]+/g, ' ');
-  const ensured = await ensureCustomerSite({ email, business: siteName, source: 'stripe-payment' });
+  const ensured = await ensureCustomerSite({
+    email,
+    business: siteName,
+    phone: (intake && intake.phone) || '',
+    trade: (intake && intake.trade) || '',
+    city: (intake && intake.city) || '',
+    state: (intake && intake.state) || '',
+    street: (intake && intake.street) || '',
+    zip: (intake && intake.zip) || '',
+    emailPublic: (intake && intake.publicEmail) || '',
+    services: intake && Array.isArray(intake.services) ? intake.services : null,
+    hours: intake && Array.isArray(intake.hours) ? intake.hours : null,
+    about: (intake && intake.about) || '',
+    source: 'stripe-payment',
+  });
   if (!account.site || !account.name) account = await upsertAccount({ email, site: account.site || ensured.site.business, name: account.name || ensured.site.business });
 
   const recurring = customer ? await phasesFor(customer) : [];
