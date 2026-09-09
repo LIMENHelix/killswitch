@@ -26,7 +26,7 @@ import os from 'node:os';
 import { spawn } from 'node:child_process';
 
 const ROOT = path.join(import.meta.dirname, '..');
-const WIDTHS = (process.env.KS_WIDTHS || "320,375,768,1440").split(",").map(Number);
+const WIDTHS = (process.env.KS_WIDTHS || "320,375,390,768,1440").split(",").map(Number);
 
 const PAGES = process.argv[2] ? [process.argv[2]] : [
   // every hand-written page
