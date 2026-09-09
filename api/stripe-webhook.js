@@ -174,17 +174,50 @@ async function handleEvent(event) {
   return null;
 }
 
+// The fields a paid site is actually seeded from. Two intake rows that agree
+// on ALL of these are the same content decision, whichever one is picked; a
+// disagreement on any of them is a conflicting business identity.
+const INTAKE_IDENTITY_FIELDS = ['name', 'phone', 'trade', 'street', 'city', 'state', 'zip', 'publicEmail', 'about'];
+
+function intakeIdentityKey(lead) {
+  const parts = INTAKE_IDENTITY_FIELDS.map((k) => String((lead && lead[k]) || '').trim());
+  parts.push(JSON.stringify(Array.isArray(lead && lead.services) ? lead.services : []));
+  parts.push(JSON.stringify(Array.isArray(lead && lead.hours) ? lead.hours : []));
+  return parts.join('');
+}
+
 /**
  * SAVED INTAKE is the authoritative content source for a paid customer's site.
  * The /start intake record is the customer's own words about their own
  * business, so it beats anything the webhook payload happens to carry, and the
  * caller's session fields are only ever a fallback when no intake exists.
- * Legacy lead rows carry a subset of these fields; absent ones read as empty.
+ *
+ * IDENTITY RESOLUTION, newest-arbitrary-first is not allowed here:
+ * - api/inbound.js stores first-party intake under an id derived from the
+ *   email, so a resubmission REPLACES the previous row: at most one canonical
+ *   row per email, always the latest the customer gave us. A legacy outreach
+ *   row (the ks:leads blob) with the same email is a stale snapshot from
+ *   before first-party intake, not a competing identity, so canonical rows
+ *   deterministically win over it.
+ * - Several canonical rows can still mean conflicting identities (hand-written
+ *   store entries). Rows that agree on every seeded field are one content
+ *   decision and collapse; rows that disagree must NOT be disambiguated by
+ *   storage order, because seeding the wrong one puts the wrong business on a
+ *   paying customer's site. Fail closed instead: the error propagates, the
+ *   webhook answers 500 under the existing retry mechanics with no done
+ *   marker and no site write, and the reason lands in the failure ledger.
  */
 async function savedIntakeFor(email) {
   const leads = await getLeads();
-  const lead = leads.find((l) => l && String(l.email || '').trim().toLowerCase() === email);
-  return lead || null;
+  const matches = leads.filter((l) => l && String(l.email || '').trim().toLowerCase() === email);
+  if (!matches.length) return null;
+  const canonical = matches.filter((l) => String(l.id || '').startsWith('inbound-'));
+  const pool = canonical.length ? canonical : matches;
+
+  const distinct = [];
+  for (const row of pool) if (!distinct.some((d) => intakeIdentityKey(d) === intakeIdentityKey(row))) distinct.push(row);
+  if (distinct.length > 1) throw new Error('ambiguous_saved_intake');
+  return distinct[0];
 }
 
 /**

@@ -1410,6 +1410,98 @@ check('the about line is the neutral seeded sentence, nothing more',
   legacySite.about === 'Old Town Bakery is a bakery in Independence, MO.', legacySite.about);
 
 // ---------------------------------------------------------------------------
+// Intake identity resolution must be deterministic, and a same-email conflict
+// must fail closed rather than seed the wrong business onto a paying site.
+console.log('\n17c. Intake identity is deterministic and fails closed on conflict');
+
+// C: two intake rows for one email that agree on every seeded field are one
+// content decision and collapse; the result is the same content, not an error.
+const DUPEMAIL = 'dupe@example.com';
+seed();
+const dupeRow = (id) => JSON.stringify(intakeLead(DUPEMAIL, { name: 'Dupe Plumbing' }));
+KV.set('ks:leads:inbound', { 'inbound-row-a': dupeRow(), 'inbound-row-b': dupeRow() });
+w = await hook({ type: 'checkout.session.completed', id: 'evt_dupe', data: { object: paidSession(DUPEMAIL, { customer_details: { email: DUPEMAIL, name: 'Dupe Plumbing' } }) } });
+check('identical duplicate intake rows collapse and provision normally', w.code === 200, 'got ' + w.code);
+check('with the expected content', JSON.parse(KV.get('ks:site:dupe-plumbing')).about === 'Family owned, we answer the phone ourselves.');
+
+// D: two intake rows for one email that CONFLICT must not be silently picked
+// between. The webhook fails closed: retryable 500, no done marker, no site.
+const AMBIG = 'ambiguity@example.com';
+seed();
+KV.set('ks:leads:inbound', {
+  'inbound-row-a': JSON.stringify(intakeLead(AMBIG, { name: 'Ambiguity One Plumbing' })),
+  'inbound-row-b': JSON.stringify(intakeLead(AMBIG, { name: 'Ambiguity Two HVAC', about: 'A different business entirely.' })),
+});
+w = await hook({ type: 'checkout.session.completed', id: 'evt_ambig', data: { object: paidSession(AMBIG) } });
+check('conflicting intake rows fail closed with a retryable 500', w.code === 500, 'got ' + w.code);
+check('no site is created for an ambiguous intake', KV.get('ks:site:ambiguity-one-plumbing') == null && !(KV.get('ks:siteemail') || {})[AMBIG]);
+check('the failure names the reason in the durable ledger',
+  (await listBillingEvents({ limit: 20 })).some((e) => e.id === 'failed:evt_ambig' && /ambiguous_saved_intake/.test(e.reason || '')));
+// E: the retry after the ambiguous failure is still safe — same error, still
+// no site, no half-written content, no duplicate anything.
+w = await hook({ type: 'checkout.session.completed', id: 'evt_ambig', data: { object: paidSession(AMBIG) } });
+check('retrying the ambiguous event fails the same closed way', w.code === 500, 'got ' + w.code);
+check('and still creates nothing', KV.get('ks:site:ambiguity-one-plumbing') == null && KV.get('ks:site:ambiguity-two-hvac') == null && !(KV.get('ks:siteemail') || {})[AMBIG]);
+
+// The canonical first-party row deterministically beats a stale legacy row:
+// different origin, pre-intake snapshot, not a competing identity.
+const MIXED = 'mixed@example.com';
+seed();
+await saveLeads([{ id: 'L9', email: MIXED, name: 'Legacy Wrong Business', trade: 'bakery', phone: '913-555-0100', city: 'Independence', state: 'MO', street: '', zip: '', hours: [], about: 'An old outreach note.' }]);
+await appendInboundLead(intakeLead(MIXED, { name: 'Mixed Canonical Plumbing' }));
+w = await hook({ type: 'checkout.session.completed', id: 'evt_mixed', data: { object: paidSession(MIXED, { customer_details: { email: MIXED, name: 'Mixed Canonical Plumbing' } }) } });
+check('a canonical intake row beats a stale legacy row with the same email', w.code === 200, 'got ' + w.code);
+check('and the seeded content is the canonical one', JSON.parse(KV.get('ks:site:mixed-canonical-plumbing')).about === 'Family owned, we answer the phone ourselves.');
+
+// H: async_payment_succeeded delivered twice provisions once and no more.
+const ASYNC2 = 'async2@example.com';
+seed();
+await appendInboundLead(intakeLead(ASYNC2, { name: 'Async Two Shop' }));
+const async2Session = { id: 'cs_async2', mode: 'payment', customer: 'cus_async2', amount_total: 14900,
+  customer_details: { email: ASYNC2, name: 'Stripe Name' },
+  line_items: { data: [{ description: 'Online Booking & Scheduling', price: { id: 'price_once_booking', metadata: {} } }] } };
+w = await hook({ type: 'checkout.session.completed', id: 'evt_a2_unpaid', data: { object: { ...async2Session, payment_status: 'unpaid' } } });
+check('the unpaid completion is still a no-op first', w.code === 200 && KV.get('ks:site:async-two-shop') == null);
+w = await hook({ type: 'checkout.session.async_payment_succeeded', id: 'evt_a2_ok', data: { object: { ...async2Session, payment_status: 'paid' } } });
+check('the first async success provisions', w.code === 200 && JSON.parse(KV.get('ks:site:async-two-shop')).about === 'Family owned, we answer the phone ourselves.', 'got ' + w.code);
+w = await hook({ type: 'checkout.session.async_payment_succeeded', id: 'evt_a2_ok', data: { object: { ...async2Session, payment_status: 'paid' } } });
+check('a second delivery of the same async event is a duplicate no-op', w.code === 200 && w.body.duplicate === true, 'got ' + w.code);
+check('still exactly one site with one effective seed',
+  (KV.get('ks:siteemail') || {})[ASYNC2] === 'async-two-shop' && KV.get('ks:site:async-two-shop-2') == null
+  && JSON.parse(KV.get('ks:site:async-two-shop')).about === 'Family owned, we answer the phone ourselves.');
+check('and exactly one completed money + lifecycle record for it',
+  (await listBillingEvents({ limit: 20 })).filter((e) => e.type === 'payment.completed' && e.sourceId === 'cs_async2').length === 1
+  && (await billingLifecycleEvents(ASYNC2)).filter((e) => e.type === 'payment.completed').length === 1);
+
+// I: the complete delayed-payment sequence, run twice end to end:
+// completed(unpaid) -> async success -> replay completed -> replay async.
+const SEQ = 'seq@example.com';
+seed();
+await appendInboundLead(intakeLead(SEQ, { name: 'Seq Shop' }));
+const seqSession = { id: 'cs_seq', mode: 'payment', customer: 'cus_seq', amount_total: 14900,
+  customer_details: { email: SEQ, name: 'Stripe Name' },
+  line_items: { data: [{ description: 'Online Booking & Scheduling', price: { id: 'price_once_booking', metadata: {} } }] } };
+const seqRun = [
+  { type: 'checkout.session.completed', id: 'evt_seq_1', payment_status: 'unpaid' },
+  { type: 'checkout.session.async_payment_succeeded', id: 'evt_seq_2', payment_status: 'paid' },
+  { type: 'checkout.session.completed', id: 'evt_seq_1', payment_status: 'unpaid' },
+  { type: 'checkout.session.async_payment_succeeded', id: 'evt_seq_2', payment_status: 'paid' },
+];
+for (let run = 0; run < 2; run++) {
+  for (const step of seqRun) {
+    w = await hook({ type: step.type, id: step.id, data: { object: { ...seqSession, payment_status: step.payment_status } } });
+    if (w.code !== 200) break;
+  }
+  check('sequence run ' + (run + 1) + ' completes with every delivery accepted', w.code === 200, 'got ' + w.code);
+}
+check('two full runs still end at exactly one live site', (KV.get('ks:siteemail') || {})[SEQ] === 'seq-shop' && KV.get('ks:site:seq-shop-2') == null);
+check('with the intake content intact', JSON.parse(KV.get('ks:site:seq-shop')).about === 'Family owned, we answer the phone ourselves.');
+check('and exactly one pending + one completed money record',
+  (await listBillingEvents({ limit: 20 })).filter((e) => e.sourceId === 'cs_seq' && e.type === 'payment.pending').length === 1
+  && (await listBillingEvents({ limit: 20 })).filter((e) => e.sourceId === 'cs_seq' && e.type === 'payment.completed').length === 1);
+check('and exactly one lifecycle payment.completed', (await billingLifecycleEvents(SEQ)).filter((e) => e.type === 'payment.completed').length === 1);
+
+// ---------------------------------------------------------------------------
 // P4: the two claims that had no code behind them.
 console.log('\n18. Daily backups and around-the-clock watching');
 
