@@ -173,11 +173,33 @@ check('a missing mail key fails closed, item stays queued', r.body.sent === 0 &&
 process.env.RESEND_API_KEY = 're_stub';
 r = await runCron();
 check('once the key is back, the same item sends once', r.body.sent === 1);
-// unauthorised cron call
+// unauthorised cron call, every side of every auth path
+console.log('\nCRON AUTH FAILS CLOSED, BOTH SIDES OF EVERY PATH');
+const authCall = async (req) => {
+  const res = { code: 0, body: null };
+  res.status = (c) => { res.code = c; return res; };
+  res.json = (o) => { res.body = o; return res; };
+  await cronFollowups(req, res);
+  return res;
+};
+const savedCron = process.env.CRON_SECRET, savedAdmin = process.env.ADMIN_KEY, savedSwitch = process.env.SWITCH_TOKEN;
+delete process.env.CRON_SECRET; delete process.env.ADMIN_KEY; delete process.env.SWITCH_TOKEN;
 seed();
-const res401 = { code: 0, body: null }; res401.status = (c) => { res401.code = c; return res401; }; res401.json = (o) => { res401.body = o; return res401; };
-await cronFollowups({ method: 'GET', headers: {}, query: { token: 'wrong' } }, res401);
-check('the cron endpoint itself still fails closed without the secret', res401.code === 401, res401.code + ' ' + JSON.stringify(res401.body));
+check('A. secret absent + credential absent -> 401', (await authCall({ method: 'GET', headers: {}, query: {} })).code === 401);
+check('B. secret absent + wrong credential -> 401', (await authCall({ method: 'GET', headers: { authorization: 'Bearer nope' }, query: { token: 'wrong' } })).code === 401);
+process.env.CRON_SECRET = 'cronsecret';
+check('C. secret present + no credential -> 401', (await authCall({ method: 'GET', headers: {}, query: {} })).code === 401);
+check('D. secret present + wrong credential -> 401', (await authCall({ method: 'GET', headers: { authorization: 'Bearer wrong' }, query: { token: 'wrong' } })).code === 401);
+check('E. valid Bearer CRON_SECRET -> authorized', (await authCall({ method: 'GET', headers: { authorization: 'Bearer cronsecret' }, query: {} })).code === 200);
+process.env.ADMIN_KEY = 'admin1';
+check('F1. operator token equal to a CONFIGURED ADMIN_KEY -> authorized', (await authCall({ method: 'GET', headers: {}, query: { token: 'admin1' } })).code === 200);
+delete process.env.ADMIN_KEY;
+check('F2. same operator token with ADMIN_KEY unset -> 401 (no undefined===undefined)', (await authCall({ method: 'GET', headers: {}, query: { token: 'admin1' } })).code === 401);
+// restore: CRON_SECRET matters for every later section
+if (savedCron === undefined) delete process.env.CRON_SECRET; else process.env.CRON_SECRET = savedCron;
+if (savedAdmin === undefined) delete process.env.ADMIN_KEY; else process.env.ADMIN_KEY = savedAdmin;
+if (savedSwitch === undefined) delete process.env.SWITCH_TOKEN; else process.env.SWITCH_TOKEN = savedSwitch;
+// G. preview produces zero external sends: covered by the ENVIRONMENT GATES section above
 
 console.log('\nEXISTING P6 FOLLOW-UP BEHAVIOUR UNCHANGED');
 const { queueFollowUps } = await import('../lib/automation.js');

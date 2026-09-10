@@ -18,8 +18,14 @@ import { sendPanelLink } from '../lib/onboard.js';
 
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
-  const given = (req.headers && req.headers.authorization === 'Bearer ' + secret)
-    || (req.query && (req.query.token === process.env.ADMIN_KEY || req.query.token === process.env.SWITCH_TOKEN));
+  const bearer = (req.headers && req.headers.authorization) || '';
+  const qtok = (req.query && req.query.token) || '';
+  // Fail closed on BOTH sides of every path: a configured secret AND the
+  // matching caller credential must both be present. `undefined === undefined`
+  // must never authorize, so each env var is checked truthy before comparing.
+  const given = (!!secret && bearer === 'Bearer ' + secret)
+    || (!!process.env.ADMIN_KEY && qtok === process.env.ADMIN_KEY)
+    || (!!process.env.SWITCH_TOKEN && qtok === process.env.SWITCH_TOKEN);
   if (!secret || !given) { res.status(401).json({ error: 'unauthorized' }); return; }
 
   let items = [];
