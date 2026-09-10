@@ -10,6 +10,11 @@
 // the honest behaviour is that switching it off stops the sending.
 import { claimItem, deadLetter, dueItems, releaseItem, retire, sendItem } from '../lib/automation.js';
 import { getSite, has } from '../lib/sites.js';
+import { getAccount } from '../lib/store.js';
+import { getSuppression } from '../lib/suppression.js';
+import { panelToken } from '../lib/panel-auth.js';
+import { publicOrigin } from '../lib/origin.js';
+import { sendPanelLink } from '../lib/onboard.js';
 
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
@@ -31,6 +36,45 @@ export default async function handler(req, res) {
     if (site === undefined) {
       site = await getSite(item.slug).catch(() => null);
       siteCache.set(item.slug, site);
+    }
+
+    // THE FREE-SITE CLAIM REMINDER is not a P6 feature: it nudges an owner who
+    // was handed a live free site and never opened their panel. Eligibility is
+    // re-derived from current durable truth at send time, because any of these
+    // can change while the item waited its three days:
+    //   claimed/paid/suppressed/site-gone → terminal skip with a recorded reason,
+    //   anything else → the existing authenticated panel link goes out once.
+    if (item.step === 'claimremind') {
+      const skip = async (reason) => {
+        await retire(item.id, new Date().toISOString());
+        out.skipped++;
+        out.reasons[reason] = (out.reasons[reason] || 0) + 1;
+      };
+      if (!site || !site.published) { await skip('site_gone'); continue; }
+      let account = null;
+      try { account = await getAccount(String(item.to || '').trim().toLowerCase()); }
+      catch (e) { console.error('[cron-followups] claim account', item.id, e); }
+      if (!account) { await skip('no_owner'); continue; }
+      if (account.engagedAt) { await skip('engaged'); continue; }
+      const paid = account.stripeCustomerId
+        || (Array.isArray(account.owned) && account.owned.length)
+        || (Array.isArray(account.plan) && account.plan.some((p) => p !== 'P0'))
+        || (site.modules || []).some((p) => p !== 'P0');
+      if (paid) { await skip('paid'); continue; }
+      let suppressed = null;
+      try { suppressed = await getSuppression({ email: account.email }); }
+      catch (e) { console.error('[cron-followups] claim suppression', item.id, e); }
+      if (suppressed) { await skip('suppressed'); continue; }
+
+      const tok = await panelToken(account.email);
+      const portalUrl = publicOrigin() + '/panel?e=' + encodeURIComponent(account.email) + (tok ? '&t=' + tok : '');
+      const sent = tok ? await sendPanelLink({ email: account.email, portalUrl }) : false;
+      if (sent) { await retire(item.id, new Date().toISOString()); out.sent++; }
+      else {
+        out.failed++;
+        out.reasons.panel_link = (out.reasons.panel_link || 0) + 1;
+      }
+      continue;
     }
 
     // Module off, or the site is gone: drop it rather than leaving it to retry

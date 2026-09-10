@@ -19,6 +19,7 @@ import { ensureCustomerSite } from '../lib/autonomy.js';
 import { publicOrigin } from '../lib/origin.js';
 import { normalizeAttribution } from '../lib/attribution.js';
 import { recordLifecycle } from '../lib/lifecycle.js';
+import { queueClaimReminder } from '../lib/automation.js';
 import crypto from 'node:crypto';
 
 // The four paid modules /start offers as "starting with" checkboxes. Anything
@@ -228,6 +229,17 @@ export default async function handler(req, res) {
   if (out.error) {
     res.status(400).json({ error: out.error });
     return;
+  }
+
+  // ONE bounded claim reminder, scheduled only when delivery really happened:
+  // the welcome mail went out AND their site is live and joined. Eligibility
+  // (engaged/paid/suppressed/site-gone) is re-derived at send time in
+  // cron-followups; queueClaimReminder itself dedupes, so a repeat signup
+  // never stacks a second reminder. Fire-and-forget: a queue write must never
+  // block a signup that already succeeded.
+  if (out.emailed && out.link && out.link.linked && provisioned && provisioned.site && provisioned.site.published) {
+    queueClaimReminder(provisioned.site, { email })
+      .catch((e) => console.error('[inbound] claim reminder', e));
   }
 
   // Log the lead so reps can see it on their board (no assignment yet,

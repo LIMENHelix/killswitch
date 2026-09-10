@@ -123,6 +123,14 @@ async function readState(account) {
         } catch (e) { console.error('[switch] auto-claim', rec.slug, e); }
       }
       live = { slug: rec.slug, path: '/s/' + rec.slug, published: !!rec.published, claimed: !!rec.claimed };
+      // THE ENGAGEMENT STAMP the free-site claim reminder stands down on. The
+      // first panel open is the owner claiming their site in every sense that
+      // matters; until then no durable signal distinguished "delivered" from
+      // "never looked". Written once, never reset.
+      if (!account.engagedAt) {
+        try { await upsertAccount({ email: account.email, engagedAt: new Date().toISOString() }); }
+        catch (e) { console.error('[switch] engagement stamp', e); }
+      }
     }
   } catch (e) { console.error('[switch] site lookup', e); }
 
