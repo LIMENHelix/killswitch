@@ -210,6 +210,57 @@ check('the budget-exhausted item is not re-enqueued or resent', r.body.due === 0
 check('the retry-budget dead-letter is auditable with its reason',
   (await listDeadLetters(10)).some((d) => d.reason === 'retry_budget_exhausted'));
 
+console.log('\nTERMINAL LEDGERS ARE AUTHORITATIVE: RESIDUE NEVER RESURRECTS');
+const TID = 'river-auto:claim:owner@riverauto.test';
+// A. SENT written, crash before DEL ITEM: marker + SENT, no queue member
+seed(); await putSite(); await upsertAccount({ email: SITE.email, plan: ['P0'], tokenNonce: 'nonce123' });
+KV.set('ks:auto:sent', { [TID]: '2026-09-10T00:00:00Z' });
+KV.set('ks:auto:i:' + TID, JSON.stringify({ id: TID, slug: 'river-auto', step: 'claimremind', due: Date.now() - 1000, to: SITE.email, business: SITE.business }));
+r = await runCron();
+check('SENT+ITEM residue: the cron does not send it again', r.body.sent === 0 && resendCalls.length === 0);
+check('SENT+ITEM residue: the next schedule cleans the marker, never re-queues',
+  await queueClaimReminder(await getSite('river-auto'), { email: SITE.email }) === false
+  && !KV.has('ks:auto:i:' + TID) && Object.keys(KV.get('ks:auto:q') || {}).length === 0);
+// B. SENT written + ITEM deleted, crash before ZREM: phantom queue member
+seed(); await putSite(); await upsertAccount({ email: SITE.email, plan: ['P0'], tokenNonce: 'nonce123' });
+KV.set('ks:auto:sent', { [TID]: '2026-09-10T00:00:00Z' });
+KV.set('ks:auto:q', { [TID]: Date.now() - 1000 });
+r = await runCron();
+check('SENT+queue residue: the phantom member is cleaned, not processed',
+  r.body.sent === 0 && resendCalls.length === 0 && Object.keys(KV.get('ks:auto:q') || {}).length === 0);
+// C. clean terminal (SENT only): a later schedule must not recreate the id
+seed(); await putSite();
+KV.set('ks:auto:sent', { [TID]: '2026-09-10T00:00:00Z' });
+check('a cleanly terminal id is never re-scheduled',
+  await queueClaimReminder(await getSite('river-auto'), { email: SITE.email }) === false
+  && !KV.has('ks:auto:i:' + TID) && Object.keys(KV.get('ks:auto:q') || {}).length === 0);
+// D. DEAD residue: dead-lettered work is not resurrected by a later schedule
+seed(); await putSite();
+KV.set('ks:auto:dead', { [TID]: JSON.stringify({ item: { id: TID }, reason: 'resend_400', at: '2026-09-10T00:00:00Z' }) });
+KV.set('ks:auto:i:' + TID, JSON.stringify({ id: TID, slug: 'river-auto', step: 'claimremind', due: Date.now() - 1000, to: SITE.email }));
+check('a dead-lettered id is never re-scheduled and its residue is cleaned',
+  await queueClaimReminder(await getSite('river-auto'), { email: SITE.email }) === false
+  && !KV.has('ks:auto:i:' + TID) && Object.keys(KV.get('ks:auto:q') || {}).length === 0);
+// E. a real eligibility skip retires terminally and cannot resurrect
+seed(); await putSite(); await upsertAccount({ email: SITE.email, plan: ['P0'], tokenNonce: 'n', engagedAt: new Date().toISOString() });
+await queueClaimReminder(await getSite('river-auto'), { email: SITE.email });
+q2 = KV.get('ks:auto:q'); q2[Object.keys(q2)[0]] = Date.now() - 1000; KV.set('ks:auto:q', q2);
+r = await runCron();
+check('an eligibility skip retires into the SENT ledger', r.body.reasons.engaged === 1 && Object.keys(KV.get('ks:auto:sent') || {}).length === 1);
+check('a skipped id cannot be resurrected by a later schedule',
+  await queueClaimReminder(await getSite('river-auto'), { email: SITE.email }) === false
+  && (await dueItems(Date.now() + 99999)).length === 0);
+// F. concurrent racing schedulers: one item, one member, original due
+seed(); await putSite();
+const raced = await Promise.all([
+  queueClaimReminder(await getSite('river-auto'), { email: SITE.email }),
+  queueClaimReminder(await getSite('river-auto'), { email: SITE.email }),
+]);
+const racedDue = await dueItems(Date.now() + 4 * 86400000);
+check('concurrent schedules: exactly one of them queues a new item', raced.filter(Boolean).length === 1);
+check('concurrent schedules: one queue member, original due intact',
+  racedDue.length === 1 && racedDue[0].id === TID && racedDue[0].due - Date.now() > 2 * 86400000);
+
 console.log('\nENVIRONMENT GATES');
 // lib/kv.js isolates preview deployments in a ks:env:preview: keyspace and
 // sendPanelLink/lib refuse live mail there (externalSideEffectsAllowed), so a
@@ -284,6 +335,40 @@ KV.set('ks:auto:i:' + orphanAck, JSON.stringify({
 await queueFollowUps(await getSite('river-auto'), { name: 'Pat', handle: 'pat@x.test', kind: 'message' });
 check('an orphaned P6 marker is healed by the next schedule too',
   (await dueItems(Date.now() + 99999)).some((i) => i.id === orphanAck));
+// terminal P6 work cannot resurrect either — the ledgers are shared
+seed();
+await upsertSite({ ...SITE, modules: ['P0', 'P6'] });
+await upsertAccount({ email: SITE.email, plan: ['P0', 'P6'], tokenNonce: 'n' });
+check('a P6 enquiry still queues both steps', (await queueFollowUps(await getSite('river-auto'), { name: 'Pat', handle: 'pat@x.test', kind: 'message' })) === 2);
+q2 = KV.get('ks:auto:q'); for (const k of Object.keys(q2)) q2[k] = Date.now() - 1000; KV.set('ks:auto:q', q2);
+r = await runCron();
+check('the P6 steps are delivered through the same cron', r.body.sent >= 1);
+check('a delivered P6 step cannot be re-queued by a repeat enquiry',
+  (await queueFollowUps(await getSite('river-auto'), { name: 'Pat', handle: 'pat@x.test', kind: 'message' })) === 0
+  && (await dueItems(Date.now() + 99999)).filter((i) => i.step === 'ack' || i.step === 'review').length === 0);
+// skipped P6 (module off): terminal skip, then no resurrection
+seed(); await putSite();
+await upsertAccount({ email: SITE.email, plan: ['P0'], tokenNonce: 'n' });
+await queueFollowUps(await getSite('river-auto'), { name: 'Pat', handle: 'pat@x.test', kind: 'message' });
+q2 = KV.get('ks:auto:q'); for (const k of Object.keys(q2)) q2[k] = Date.now() - 1000; KV.set('ks:auto:q', q2);
+r = await runCron();
+check('a module-off P6 item is terminally skipped', r.body.reasons.module_off === 2);
+check('a skipped P6 item cannot resurrect',
+  (await queueFollowUps(await getSite('river-auto'), { name: 'Pat', handle: 'pat@x.test', kind: 'message' })) === 0
+  && (await dueItems(Date.now() + 99999)).length === 0);
+// dead-lettered P6: hard rejection, then no resurrection
+seed();
+await upsertSite({ ...SITE, modules: ['P0', 'P6'] });
+await upsertAccount({ email: SITE.email, plan: ['P0', 'P6'], tokenNonce: 'n' });
+await queueFollowUps(await getSite('river-auto'), { name: 'Pat', handle: 'pat@x.test', kind: 'message' });
+q2 = KV.get('ks:auto:q'); for (const k of Object.keys(q2)) q2[k] = Date.now() - 1000; KV.set('ks:auto:q', q2);
+resendFail = 400;
+r = await runCron();
+check('a hard-rejected P6 item dead-letters', r.body.dead >= 1);
+resendFail = null;
+check('a dead-lettered P6 item cannot resurrect',
+  (await queueFollowUps(await getSite('river-auto'), { name: 'Pat', handle: 'pat@x.test', kind: 'message' })) === 0
+  && (await dueItems(Date.now() + 99999)).length === 0);
 
 console.log(fail ? `\n${pass} passed, ${fail} FAILED` : `\n${pass} passed, 0 failed`);
 process.exit(fail ? 1 : 0);
