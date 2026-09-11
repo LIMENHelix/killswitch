@@ -8,13 +8,24 @@
 // P6. Checked at send time, not at queue time, because someone can switch the
 // module off in the three days between an enquiry and its review request, and
 // the honest behaviour is that switching it off stops the sending.
-import { claimItem, deadLetter, dueItems, releaseItem, retire, sendItem } from '../lib/automation.js';
+import { claimItem, deadLetter, dueItems, MAX_SEND_ATTEMPTS, recordAttempt, releaseItem, retire, sendItem } from '../lib/automation.js';
 import { getSite, has } from '../lib/sites.js';
+import { getAccount } from '../lib/store.js';
+import { getSuppression } from '../lib/suppression.js';
+import { panelToken } from '../lib/panel-auth.js';
+import { publicOrigin } from '../lib/origin.js';
+import { sendPanelLink } from '../lib/onboard.js';
 
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
-  const given = (req.headers && req.headers.authorization === 'Bearer ' + secret)
-    || (req.query && (req.query.token === process.env.ADMIN_KEY || req.query.token === process.env.SWITCH_TOKEN));
+  const bearer = (req.headers && req.headers.authorization) || '';
+  const qtok = (req.query && req.query.token) || '';
+  // Fail closed on BOTH sides of every path: a configured secret AND the
+  // matching caller credential must both be present. `undefined === undefined`
+  // must never authorize, so each env var is checked truthy before comparing.
+  const given = (!!secret && bearer === 'Bearer ' + secret)
+    || (!!process.env.ADMIN_KEY && qtok === process.env.ADMIN_KEY)
+    || (!!process.env.SWITCH_TOKEN && qtok === process.env.SWITCH_TOKEN);
   if (!secret || !given) { res.status(401).json({ error: 'unauthorized' }); return; }
 
   let items = [];
@@ -31,6 +42,65 @@ export default async function handler(req, res) {
     if (site === undefined) {
       site = await getSite(item.slug).catch(() => null);
       siteCache.set(item.slug, site);
+    }
+
+    // THE FREE-SITE CLAIM REMINDER is not a P6 feature: it nudges an owner who
+    // was handed a live free site and never opened their panel. Eligibility is
+    // re-derived from current durable truth at send time, because any of these
+    // can change while the item waited its three days:
+    //   claimed/paid/suppressed/site-gone → terminal skip with a recorded reason,
+    //   anything else → the existing authenticated panel link goes out once.
+    if (item.step === 'claimremind') {
+      const skip = async (reason) => {
+        await retire(item.id, new Date().toISOString());
+        out.skipped++;
+        out.reasons[reason] = (out.reasons[reason] || 0) + 1;
+      };
+      if (!site || !site.published) { await skip('site_gone'); continue; }
+      let account = null;
+      try { account = await getAccount(String(item.to || '').trim().toLowerCase()); }
+      catch (e) { console.error('[cron-followups] claim account', item.id, e); }
+      if (!account) { await skip('no_owner'); continue; }
+      if (account.engagedAt) { await skip('engaged'); continue; }
+      const paid = account.stripeCustomerId
+        || (Array.isArray(account.owned) && account.owned.length)
+        || (Array.isArray(account.plan) && account.plan.some((p) => p !== 'P0'))
+        || (site.modules || []).some((p) => p !== 'P0');
+      if (paid) { await skip('paid'); continue; }
+      let suppressed = null;
+      try { suppressed = await getSuppression({ email: account.email }); }
+      catch (e) { console.error('[cron-followups] claim suppression', item.id, e); }
+      if (suppressed) { await skip('suppressed'); continue; }
+
+      const tok = await panelToken(account.email);
+      const portalUrl = publicOrigin() + '/panel?e=' + encodeURIComponent(account.email) + (tok ? '&t=' + tok : '');
+      // The provider idempotency identity is the queue id: a retry after
+      // "provider accepted but this function died before retiring" must dedupe
+      // at Resend instead of delivering a second identical reminder.
+      const r = tok
+        ? await sendPanelLink({ email: account.email, portalUrl, idempotencyKey: 'ks-claimremind/' + item.id }, { report: true })
+        : { sent: false, reason: 'panel_link' };
+      if (r.sent) { await retire(item.id, new Date().toISOString()); out.sent++; continue; }
+      out.failed++;
+      out.reasons[r.reason] = (out.reasons[r.reason] || 0) + 1;
+      if (r.reason && r.reason.startsWith('resend_4')) {
+        // Permanent provider rejection (bad address): terminal, same policy as P6.
+        await deadLetter(item, r.reason);
+        await retire(item.id, new Date().toISOString());
+        out.dead++;
+      } else if (r.reason === 'threw' || (r.reason && r.reason.startsWith('resend_5'))) {
+        // Transient: bounded retry, then terminal dead-letter — never an
+        // indefinite five-minute loop.
+        const attempts = await recordAttempt(item);
+        if (attempts >= MAX_SEND_ATTEMPTS) {
+          await deadLetter({ ...item, attempts }, 'retry_budget_exhausted');
+          await retire(item.id, new Date().toISOString());
+          out.dead++;
+        }
+      }
+      // preview_side_effects_disabled / no_api_key: configuration, not the
+      // recipient — leave queued exactly like the P6 path does.
+      continue;
     }
 
     // Module off, or the site is gone: drop it rather than leaving it to retry

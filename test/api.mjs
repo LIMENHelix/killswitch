@@ -157,7 +157,7 @@ const lobCards = [];
 const anthropicCalls = [];
 let siteWriterReply = null;
 
-const { panelToken, signPanel, verifyPanel, revokePanelTokens } = await import('../lib/panel-auth.js');
+const { panelToken, signPanel, verifyPanel, revokePanelTokens, __setPanelClock, LEGACY_GRACE_UNTIL } = await import('../lib/panel-auth.js');
 const support = (await import('../api/support.js')).default;
 const switchApi = (await import('../api/switch.js')).default;
 
@@ -1817,12 +1817,19 @@ check('a new link can be issued after revoking', await verifyPanel(EMAIL, reissu
 check('and the revoked one stays dead', !(await verifyPanel(EMAIL, TOK)));
 
 // ---- legacy grace ----
+// The cutoff is a fixed production constant; the clock seam freezes time so
+// both sides of the boundary are proven regardless of when the suite runs.
 seed();
 const legacy = (await import('node:crypto')).createHmac('sha256', process.env.KS_PANEL_SECRET)
   .update(EMAIL).digest('hex').slice(0, 40);
+__setPanelClock(() => LEGACY_GRACE_UNTIL - 1000); // one second BEFORE the cutoff
 check('a link sent before this change still works during the grace period',
   await verifyPanel(EMAIL, legacy));
 check('a forged legacy token does not', !(await verifyPanel(EMAIL, 'f'.repeat(40))));
+__setPanelClock(() => LEGACY_GRACE_UNTIL); // AT the cutoff: stops working
+check('at the cutoff the legacy token is refused',
+  !(await verifyPanel(EMAIL, legacy)));
+__setPanelClock(null); // restore real time
 
 // ---- verify NEVER writes, and NEVER throws ----
 seed();
