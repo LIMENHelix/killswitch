@@ -56,7 +56,7 @@ globalThis.fetch = async (url, opts = {}) => {
     return { ok: true, status: 200, json: async () => ({ result: run(args) }) };
   }
   if (u.startsWith('https://api.resend.com')) {
-    resendCalls.push(JSON.parse(opts.body));
+    resendCalls.push({ ...JSON.parse(opts.body), headers: opts.headers });
     if (resendFail) return { ok: false, status: resendFail, json: async () => ({}), text: async () => 'stub' };
     return { ok: true, status: 200, json: async () => ({ id: 're_stub' }) };
   }
@@ -93,6 +93,27 @@ check('a second schedule for the same owner is a no-op', await queueClaimReminde
 check('a junk email queues nothing', await queueClaimReminder(await getSite('river-auto'), { email: 'not-an-email' }) === false);
 check('scheduling works before the account exists (send-time gate decides)', true);
 
+// CRASH-WINDOW SELF-HEAL: SET NX and ZADD are independent writes, so a partial
+// failure can leave the durable marker WITHOUT a queue entry — a state dueItems
+// cannot see, which would suppress the reminder forever. Re-scheduling must
+// repair the queue entry from the marker itself, keeping its ORIGINAL due.
+seed(); await putSite();
+const orphanId = 'river-auto:claim:owner@riverauto.test';
+const orphanDue = Date.now() - 1000;
+KV.set('ks:auto:i:' + orphanId, JSON.stringify({
+  id: orphanId, slug: 'river-auto', step: 'claimremind',
+  due: orphanDue, to: SITE.email, business: SITE.business,
+}));
+check('a marker orphaned by a partial write is healed by the next schedule',
+  await queueClaimReminder(await getSite('river-auto'), { email: SITE.email }) === false
+  && (await dueItems(Date.now() + 99999)).length === 1);
+const healed = await dueItems(Date.now() + 99999);
+check('the repair preserves the ORIGINAL due time (no clock re-base)',
+  healed.length === 1 && Math.abs(healed[0].due - orphanDue) < 2);
+check('a healthy re-schedule does not touch the queue entry at all',
+  await queueClaimReminder(await getSite('river-auto'), { email: SITE.email }) === false
+  && (await dueItems(Date.now() + 99999))[0].due === healed[0].due);
+
 console.log('\nSEND: PANEL LINK ONCE, SKIP REASONS RECORDED');
 seed(); await putSite(); await upsertAccount({ email: SITE.email, plan: ['P0'], tokenNonce: 'nonce123', createdAt: new Date().toISOString(), source: 'test' });
 await queueClaimReminder(await getSite('river-auto'), { email: SITE.email });
@@ -103,6 +124,8 @@ const q = KV.get('ks:auto:q'); const id = Object.keys(q)[0]; q[id] = Date.now() 
 r = await runCron();
 check('the due reminder sends the existing panel link once', r.code === 200 && r.body.sent === 1 && resendCalls.length === 1);
 check('the email is the panel link to the right owner', resendCalls[0].to[0] === SITE.email && /\/panel\?e=/.test(resendCalls[0].html) && /&amp;t=/.test(resendCalls[0].html), resendCalls[0] && resendCalls[0].html.slice(0, 220));
+check('the provider idempotency key is the stable per-item identity',
+  resendCalls[0].headers['Idempotency-Key'] === 'ks-claimremind/' + id);
 check('a repeat run has nothing left to send', (await runCron()).body.sent === 0);
 check('the send is recorded in the existing SENT ledger', (await dueItems(Date.now() + 99999)).length === 0);
 
@@ -150,6 +173,42 @@ check('a transient mail failure leaves the item queued and reports failure', r.c
 resendFail = null;
 r = await runCron();
 check('the retry after recovery sends exactly once', r.code === 200 && r.body.sent === 1 && resendCalls.length === 2);
+check('the idempotency identity is identical across the failure and the retry',
+  resendCalls[0].headers['Idempotency-Key'] === resendCalls[1].headers['Idempotency-Key']);
+
+console.log('\nBOUNDED FAILURE: PERMANENT REJECTS AND EXHAUSTED RETRIES DEAD-LETTER');
+// permanent provider rejection (4xx) -> terminal dead-letter, item removed
+seed(); await putSite(); await upsertAccount({ email: SITE.email, plan: ['P0'], tokenNonce: 'nonce123' });
+await queueClaimReminder(await getSite('river-auto'), { email: SITE.email });
+q2 = KV.get('ks:auto:q'); q2[Object.keys(q2)[0]] = Date.now() - 1000; KV.set('ks:auto:q', q2);
+resendFail = 400;
+r = await runCron();
+check('a permanent provider rejection dead-letters the item and clears the queue',
+  r.body.dead === 1 && (await dueItems(Date.now() + 99999)).length === 0);
+check('the dead-letter record names the provider rejection reason',
+  (await listDeadLetters(10)).some((d) => String(d.reason).startsWith('resend_4')));
+resendFail = null;
+let callsBefore = resendCalls.length;
+r = await runCron();
+check('a dead-lettered item is never re-enqueued or resent', r.body.due === 0 && r.body.sent === 0 && resendCalls.length === callsBefore);
+// retry budget: consecutive transient failures are bounded, then terminal
+seed(); await putSite(); await upsertAccount({ email: SITE.email, plan: ['P0'], tokenNonce: 'nonce123' });
+await queueClaimReminder(await getSite('river-auto'), { email: SITE.email });
+q2 = KV.get('ks:auto:q'); q2[Object.keys(q2)[0]] = Date.now() - 1000; KV.set('ks:auto:q', q2);
+resendFail = 500;
+r = await runCron();
+check('the first transient failure retries, item queued, attempt recorded', r.body.failed === 1 && (await dueItems(Date.now() + 99999)).length === 1);
+r = await runCron();
+check('the second transient failure still retries', r.body.failed === 1 && (await dueItems(Date.now() + 99999)).length === 1);
+r = await runCron();
+check('the third consecutive transient failure dead-letters (no infinite loop)',
+  r.body.dead === 1 && (await dueItems(Date.now() + 99999)).length === 0);
+resendFail = null;
+callsBefore = resendCalls.length;
+r = await runCron();
+check('the budget-exhausted item is not re-enqueued or resent', r.body.due === 0 && r.body.sent === 0 && resendCalls.length === callsBefore);
+check('the retry-budget dead-letter is auditable with its reason',
+  (await listDeadLetters(10)).some((d) => d.reason === 'retry_budget_exhausted'));
 
 console.log('\nENVIRONMENT GATES');
 // lib/kv.js isolates preview deployments in a ks:env:preview: keyspace and
@@ -213,6 +272,18 @@ process.env.RESEND_API_KEY = 're_stub';
 r = await runCron();
 check('a paid P6 site still gets its acknowledgement through the same cron', r.code === 200 && r.body.sent >= 1 && resendCalls.some((c) => /Thanks for getting in touch/.test(c.subject)));
 check('claim reminders and P6 items use separate id namespaces', (await listDeadLetters(10)).length === 0);
+// the same crash-window self-heal covers the P6 queue: an orphaned ack marker
+// is repaired by the next enquiry from the same person, not suppressed
+seed();
+await upsertSite({ ...SITE, modules: ['P0', 'P6'] });
+const orphanAck = 'river-auto:pat@x.test:ack';
+KV.set('ks:auto:i:' + orphanAck, JSON.stringify({
+  id: orphanAck, slug: 'river-auto', step: 'ack', due: Date.now() - 1000,
+  to: 'pat@x.test', name: 'Pat', business: SITE.business, kind: 'message',
+}));
+await queueFollowUps(await getSite('river-auto'), { name: 'Pat', handle: 'pat@x.test', kind: 'message' });
+check('an orphaned P6 marker is healed by the next schedule too',
+  (await dueItems(Date.now() + 99999)).some((i) => i.id === orphanAck));
 
 console.log(fail ? `\n${pass} passed, ${fail} FAILED` : `\n${pass} passed, 0 failed`);
 process.exit(fail ? 1 : 0);

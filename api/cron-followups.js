@@ -8,7 +8,7 @@
 // P6. Checked at send time, not at queue time, because someone can switch the
 // module off in the three days between an enquiry and its review request, and
 // the honest behaviour is that switching it off stops the sending.
-import { claimItem, deadLetter, dueItems, releaseItem, retire, sendItem } from '../lib/automation.js';
+import { claimItem, deadLetter, dueItems, MAX_SEND_ATTEMPTS, recordAttempt, releaseItem, retire, sendItem } from '../lib/automation.js';
 import { getSite, has } from '../lib/sites.js';
 import { getAccount } from '../lib/store.js';
 import { getSuppression } from '../lib/suppression.js';
@@ -74,12 +74,32 @@ export default async function handler(req, res) {
 
       const tok = await panelToken(account.email);
       const portalUrl = publicOrigin() + '/panel?e=' + encodeURIComponent(account.email) + (tok ? '&t=' + tok : '');
-      const sent = tok ? await sendPanelLink({ email: account.email, portalUrl }) : false;
-      if (sent) { await retire(item.id, new Date().toISOString()); out.sent++; }
-      else {
-        out.failed++;
-        out.reasons.panel_link = (out.reasons.panel_link || 0) + 1;
+      // The provider idempotency identity is the queue id: a retry after
+      // "provider accepted but this function died before retiring" must dedupe
+      // at Resend instead of delivering a second identical reminder.
+      const r = tok
+        ? await sendPanelLink({ email: account.email, portalUrl, idempotencyKey: 'ks-claimremind/' + item.id }, { report: true })
+        : { sent: false, reason: 'panel_link' };
+      if (r.sent) { await retire(item.id, new Date().toISOString()); out.sent++; continue; }
+      out.failed++;
+      out.reasons[r.reason] = (out.reasons[r.reason] || 0) + 1;
+      if (r.reason && r.reason.startsWith('resend_4')) {
+        // Permanent provider rejection (bad address): terminal, same policy as P6.
+        await deadLetter(item, r.reason);
+        await retire(item.id, new Date().toISOString());
+        out.dead++;
+      } else if (r.reason === 'threw' || (r.reason && r.reason.startsWith('resend_5'))) {
+        // Transient: bounded retry, then terminal dead-letter — never an
+        // indefinite five-minute loop.
+        const attempts = await recordAttempt(item);
+        if (attempts >= MAX_SEND_ATTEMPTS) {
+          await deadLetter({ ...item, attempts }, 'retry_budget_exhausted');
+          await retire(item.id, new Date().toISOString());
+          out.dead++;
+        }
       }
+      // preview_side_effects_disabled / no_api_key: configuration, not the
+      // recipient — leave queued exactly like the P6 path does.
       continue;
     }
 
