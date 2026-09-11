@@ -325,6 +325,29 @@
       <div class="ap-last" id="apLast"></div>
     </section>
 
+    <!-- DISCOVERY (K4): bounded autonomous prospect discovery + ranking.
+         Upstream only — this panel can NEVER mail, draft, publish or call from
+         here. It shows what the discovery loop found and lets the owner arm or
+         disarm it. -->
+    <section class="autopanel" id="discpanel">
+      <div class="ap-head">
+        <div class="ap-title">Discovery <span class="ap-state off" id="discState">OFF</span></div>
+      </div>
+      <div class="ap-sub" id="discSub">Off. When armed, a cron discovers businesses from Google Places, dedupes them, excludes customers and suppressed contacts, ranks what is left, and stops. It never contacts anyone.</div>
+      <div class="tiles" id="discTiles"></div>
+      <div class="ap-last" id="discLast"></div>
+      <div id="discTopWrap"></div>
+      <div class="ap-grid ownerOnly" id="discCfgWrap" hidden>
+        <label class="ap-f">Places calls / run<input type="number" id="discPerRun" min="0" step="1" class="f" placeholder="0"></label>
+        <label class="ap-f">Places calls / day<input type="number" id="discDaily" min="0" step="10" class="f" placeholder="0"></label>
+        <label class="ap-f">Plan slots / run<input type="number" id="discSlots" min="0" step="1" class="f" placeholder="0"></label>
+        <label class="ap-f" style="grid-column:1/-1">Plan (one "trade | city" per line)<textarea id="discPlan" class="f" rows="4" placeholder="plumbers | Kansas City, MO"></textarea></label>
+        <label class="switch"><input type="checkbox" id="discEnabled"><span class="slider"></span></label>
+        <button class="btn sm" id="discSave">Save discovery settings</button>
+      </div>
+      <div class="ap-last" id="discMsg"></div>
+    </section>
+
     <div class="bar">
       <input class="f" id="q" placeholder="Search business...">
       <select id="fTrade"><option value="">All trades</option></select>
@@ -472,6 +495,7 @@ async function boot(){
   fillFilters(); render();
   if(ROLE==='owner') loadCfg();
   loadFunnel();
+  loadDisc();
 }
 
 // ---- LASER funnel ----
@@ -543,6 +567,55 @@ let SPENT=0; // postage already spent; the ceiling is measured against it
 // no extra Upstash read. The server recomputes it authoritatively on setconfig.
 function recomputeSpent(){ SPENT=+((LEADS.filter(isMailed).length)*COST).toFixed(2); }
 async function loadCfg(){ recomputeSpent(); const r=await api('config'); if(r.ok){ CFG=r.d.config||CFG; paintCfg(); } }
+
+// ---- discovery (K4) ----
+let DISC={};
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]}); }
+async function loadDisc(){
+  const r=await api('disc-status'); if(!r.ok) return;
+  DISC=r.d;
+  $('discState').textContent=DISC.enabled?'ON':'OFF';
+  $('discState').className='ap-state '+(DISC.enabled?'on':'off');
+  $('discSub').textContent=DISC.enabled
+    ? ('Armed. '+DISC.planCount+' plan slot'+(DISC.planCount===1?'':'s')+', up to '+DISC.perRunCap+' Places calls per run and '+DISC.dailyCap+' per day. Ranked candidates are below — working them is still your call.')
+    : 'Off. When armed, a cron discovers businesses from Google Places, dedupes them, excludes customers and suppressed contacts, ranks what is left, and stops. It never contacts anyone.';
+  const c=DISC.counts||{};
+  $('discTiles').innerHTML=''
+    +'<div class="tile"><b>'+(DISC.candidateCount||0)+'</b><span>candidates</span></div>'
+    +'<div class="tile"><b>'+(c.ranked||0)+'</b><span>ranked</span></div>'
+    +'<div class="tile"><b>'+(c.excluded||0)+'</b><span>excluded</span></div>'
+    +'<div class="tile"><b>'+(DISC.callsToday||0)+'</b><span>Places calls today</span></div>';
+  const lr=DISC.lastRun;
+  $('discLast').textContent=lr
+    ? ('Last run '+lr.id+' — '+lr.status+(lr.capStop?', stopped: '+lr.capStop:'')+', '+lr.calls+' call'+(lr.calls===1?'':'s')+', '+lr.newCount+' new, '+lr.updatedCount+' updated, '+lr.rankedCount+' ranked, '+lr.excludedCount+' excluded'+(lr.error?', error: '+lr.error:''))
+    : 'No discovery run yet.';
+  if(ROLE==='owner'){ $('discCfgWrap').hidden=false;
+    if(document.activeElement!==$('discPerRun')) $('discPerRun').value=DISC.perRunCap||'';
+    if(document.activeElement!==$('discDaily')) $('discDaily').value=DISC.dailyCap||'';
+    if(document.activeElement!==$('discSlots')) $('discSlots').value=DISC.slotsPerRun||'';
+    if(document.activeElement!==$('discPlan')) $('discPlan').value=(DISC.plan||[]).map(function(s){return s.trade+' | '+s.city}).join('\n');
+    if(document.activeElement!==$('discEnabled')) $('discEnabled').checked=!!DISC.enabled;
+  }
+  const cr=await api('disc-candidates',{limit:25});
+  if(cr.ok){
+    const rows=(cr.d.candidates||[]);
+    $('discTopWrap').innerHTML='<h2 style="margin:14px 0 6px;font-size:15px">Top candidates</h2>'
+      +'<table class="plays"><thead><tr><th>Business</th><th>Where</th><th>Web presence</th><th>Score</th><th>Why / status</th></tr></thead><tbody>'
+      +rows.map(function(c){
+        const why=c.status==='excluded'
+          ?('excluded: '+esc(c.excludeReason))
+          :(Object.keys(c.parts||{}).map(function(k){return k+' '+Math.round((c.parts[k]||0)*100)+'%'}).join(' · '));
+        return '<tr><td class="k">'+esc(c.name)+'</td><td>'+esc(c.city)+'</td><td>'+esc(c.webStatus)+'</td>'
+          +'<td class="n">'+(c.status==='excluded'?'—':c.score)+'</td><td>'+why+'</td></tr>';
+      }).join('')+'</tbody></table>';
+  }
+}
+$('discSave').onclick=async()=>{
+  const plan=$('discPlan').value.split('\n').map(function(l){const i=l.indexOf('|');return i>0?{trade:l.slice(0,i).trim(),city:l.slice(i+1).trim()}:null}).filter(Boolean);
+  const r=await api('disc-setconfig',{enabled:$('discEnabled').checked,perRunCap:+$('discPerRun').value||0,dailyCap:+$('discDaily').value||0,slotsPerRun:+$('discSlots').value||0,plan:plan});
+  $('discMsg').textContent=r.ok?'Discovery settings saved.':('Not saved: '+((r.d&&r.d.message)||(r.d&&r.d.error)||'error'));
+  await loadDisc();
+};
 function paintCfg(){
   $('apEnabled').checked=!!CFG.enabled;
   if(document.activeElement!==$('apCap')) $('apCap').value=CFG.dailyCap||'';
@@ -844,6 +917,7 @@ async function refresh(){
     const t=new Date(); $('liveLabel').textContent='Live · updated '+t.toLocaleTimeString(); }
   if(ROLE==='owner') loadCfg();
   loadFunnel();
+  loadDisc();
 }
 setInterval(refresh,20000);
 

@@ -1,10 +1,14 @@
 import { classify, segment } from '../lib/web-presence.js';
 import { identify, isOwner } from '../lib/roles.js';
+import { placesSearch, parseAddr } from '../lib/discovery.js';
 
 // Killswitch Websites lead finder — server-side Google Places (New) search.
 // GOOGLE_PLACES_API_KEY is a Sensitive Vercel var (can't be pulled locally), so
 // the search runs here where the key lives and returns no-website business leads
-// as JSON. Called by _outreach/pull.py. Gated by SWITCH_TOKEN. Unlinked.
+// as JSON. Called by _outreach/pull.py and the /master finder panel. Gated by
+// SWITCH_TOKEN or an owner key. Unlinked and stateless: this endpoint renders
+// leads for a human and persists nothing (autonomous persistence lives in
+// lib/discovery.js / api/cron-discovery.js, never here).
 
 const TRADES = {
   plumber: 'plumbers', electrician: 'electricians', hvac: 'hvac companies',
@@ -16,43 +20,9 @@ const TRADES = {
   cleaning: 'cleaning services', 'pet groomer': 'pet grooming',
   florist: 'florists', bakery: 'bakeries', 'gym/fitness': 'gyms',
 };
-// We were paying for a Places call and asking for six fields. The same call
-// carries what makes a generated site worth looking at: their real hours, their
-// category, whether they are still trading, and the reputation numbers that make
-// the opening line of a call true. `reviews` and `photos` are deliberately left
-// out: they are the most expensive fields and we do not republish third-party
-// review text on a business's own site.
-//
-// ⚠ COST: the field mask decides which Places SKU the request bills at. rating
-// and userRatingCount move it off the cheapest tier. Watch the first bill after
-// deploying this rather than assuming the old per-request cost still holds.
-const FIELDMASK = [
-  'places.id', 'places.displayName', 'places.formattedAddress', 'places.addressComponents',
-  'places.nationalPhoneNumber', 'places.websiteUri',
-  'places.businessStatus',            // drops permanently-closed shops automatically
-  'places.regularOpeningHours',       // the business publishes these itself
-  'places.primaryTypeDisplayName',    // what they actually are, in Google's words
-  'places.editorialSummary',          // Google's description, NOT the owner's
-  'places.rating', 'places.userRatingCount',
-  'nextPageToken',
-].join(',');
-
-function parseAddr(components) {
-  const g = {};
-  for (const c of components || []) {
-    const t = c.types || [];
-    if (t.includes('street_number')) g.num = c.longText || '';
-    else if (t.includes('route')) g.route = c.longText || '';
-    else if (t.includes('locality')) g.city = c.longText || '';
-    else if (t.includes('postal_town') && !g.city) g.city = c.longText || '';
-    else if (t.includes('administrative_area_level_1')) g.state = c.shortText || '';
-    else if (t.includes('postal_code')) g.zip = c.longText || '';
-  }
-  return {
-    street: [g.num, g.route].filter(Boolean).join(' ').trim(),
-    city: g.city || '', state: g.state || '', zip: g.zip || '',
-  };
-}
+// The field mask (and its cost warning) now lives next to the search itself in
+// lib/discovery.js, shared with the autonomous loop so the two paths cannot
+// drift apart on what a Places call asks for (or bills).
 
 // Places gives "Monday: 8:00 AM – 6:00 PM". The site template wants {d,h}, and
 // consecutive identical days collapse into one line the way a real sign reads.
@@ -75,17 +45,9 @@ function parseHours(oh) {
   })).slice(0, 7);
 }
 
-async function search(query, key, pageToken) {
-  const body = { textQuery: query, pageSize: 20 };
-  if (pageToken) body.pageToken = pageToken;
-  const r = await fetch('https://places.googleapis.com/v1/places:searchText', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': FIELDMASK },
-    body: JSON.stringify(body),
-  });
-  if (!r.ok) { throw new Error('places ' + r.status + ': ' + (await r.text()).slice(0, 200)); }
-  return r.json();
-}
+// lib/discovery.js owns the request itself, including the server-side timeout
+// this handler lacked before (a hanging Places call could hold a serverless
+// invocation open indefinitely).
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).json({ error: 'method' }); return; }
@@ -116,7 +78,7 @@ export default async function handler(req, res) {
     const seenHost = new Set();
     let pageToken = null, pages = 0;
     do {
-      const d = await search(query, key, pageToken);
+      const d = await placesSearch({ query, key, pageToken });
       for (const p of d.places || []) {
         // Permanently closed shops used to be excluded by hand, one at a time.
         if (p.businessStatus && p.businessStatus !== 'OPERATIONAL') { skipped.closed++; continue; }
@@ -146,6 +108,7 @@ export default async function handler(req, res) {
         }
 
         leads.push({
+          placeId: p.id || '',           // canonical identity, so seeded rows can be deduped later
           trade, name,
           phone: p.nationalPhoneNumber || '',
           ...parseAddr(p.addressComponents),

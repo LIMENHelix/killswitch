@@ -24,8 +24,9 @@ import { getSite, upsertSite } from '../lib/sites.js';
 import { getFunnel, setStage, summarize, toPlays, migrateFrom, migrateStage, STAGES } from '../lib/funnel.js';
 import { wilsonLower, allocate } from '../lib/laser.js';
 import { getSuppressionState, matchSuppression, suppressContact, liftSuppression, listSuppressions } from '../lib/suppression.js';
+import { discStatus, listRankedCandidates, listRuns, getDiscConfig, saveDiscConfig, validateDiscConfigPatch } from '../lib/discovery.js';
 
-const OWNER_ONLY = new Set(['setconfig', 'run-autopilot', 'mail', 'seed', 'unsuppress', 'suppression-list']);
+const OWNER_ONLY = new Set(['setconfig', 'run-autopilot', 'mail', 'seed', 'unsuppress', 'suppression-list', 'disc-setconfig']);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).json({ error: 'method' }); return; }
@@ -157,6 +158,25 @@ export default async function handler(req, res) {
     }
     if (action === 'run-autopilot') {
       res.status(200).json({ ok: true, result: await runAutopilot('manual') }); return;
+    }
+    // K4 discovery — read-only views for both roles; only the owner can touch
+    // the config. These endpoints expose candidate facts and run ledgers, never
+    // credentials: the Places key never leaves the server, and config caps/plan
+    // are operator-supplied values, not secrets.
+    if (action === 'disc-status') {
+      res.status(200).json({ ok: true, ...(await discStatus()), role: who.role }); return;
+    }
+    if (action === 'disc-candidates') {
+      res.status(200).json({ ok: true, candidates: await listRankedCandidates(body.limit) }); return;
+    }
+    if (action === 'disc-runs') {
+      res.status(200).json({ ok: true, runs: await listRuns(body.limit) }); return;
+    }
+    if (action === 'disc-setconfig') {
+      const checked = validateDiscConfigPatch(await getDiscConfig(), body);
+      if (checked.error) { res.status(400).json({ error: checked.error, message: checked.message }); return; }
+      await saveDiscConfig(checked.config);
+      res.status(200).json({ ok: true, config: checked.config }); return;
     }
     if (action === 'seed') {
       const leads = Array.isArray(body.leads) ? body.leads : [];
