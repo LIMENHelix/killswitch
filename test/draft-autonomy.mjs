@@ -57,6 +57,35 @@ const evalScript = (a) => {
     KV.set(keys[2], cursorJson);
     return 'COMPLETED';
   }
+  // K5 lease + completion primitives
+  if (script.includes('draft_lease_renew_v1')) {
+    if (KV.get(keys[0]) === argv[0]) { EXP.set(keys[0], Date.now() + Number(argv[1])); return 'OK'; }
+    return 'LOST';
+  }
+  if (script.includes('draft_lease_release_v1')) {
+    if (KV.get(keys[0]) === argv[0]) { KV.delete(keys[0]); EXP.delete(keys[0]); return 1; }
+    return 0;
+  }
+  if (script.includes('draft_complete_v1')) {
+    const [owner, runId, runJson] = argv;
+    if (KV.get(keys[0]) !== owner) return 'LEASE_LOST';
+    const h = KV.get(keys[1]) || {}; h[runId] = runJson; KV.set(keys[1], h);
+    return 'COMPLETED';
+  }
+  if (script.includes('draft_commit_v1')) {
+    const [placeId, slug, siteJson, indexJson, candidateJson] = argv;
+    const placeIdx = KV.get(keys[2]) || {};
+    if (placeIdx[placeId] !== undefined) return ['EXISTING', placeIdx[placeId]];
+    if (KV.get(keys[0]) !== undefined) return ['COLLISION', slug];
+    const idx = KV.get(keys[1]) || {};
+    if (idx[slug] !== undefined) return ['COLLISION', slug];
+    KV.set(keys[0], siteJson);
+    idx[slug] = indexJson; KV.set(keys[1], idx);
+    placeIdx[placeId] = slug; KV.set(keys[2], placeIdx);
+    const cands = KV.get(keys[3]) || {};
+    cands[placeId] = candidateJson; KV.set(keys[3], cands);
+    return ['OK', slug];
+  }
   throw new Error('unexpected eval script');
 };
 
@@ -70,7 +99,15 @@ globalThis.fetch = async (url, opts = {}) => {
       if (cmd === 'EVAL') return evalScript(a);
       if (cmd === 'GET') return KV.has(key) ? KV.get(key) : null;
       if (cmd === 'SET' && a[3] === 'NX') { if (KV.has(key)) return null; const px = a.indexOf('PX', 3), ex = a.indexOf('EX', 3); const ti = px > -1 ? px : ex; if (ti > -1) EXP.set(key, Date.now() + (a[ti] === 'PX' ? Number(a[ti + 1]) : Number(a[ti + 1]) * 1000)); KV.set(key, f); return 'OK'; }
-      if (cmd === 'SET') { const px = a.indexOf('PX', 3), ex = a.indexOf('EX', 3); const ti = px > -1 ? px : ex; if (ti > -1) EXP.set(key, Date.now() + (a[ti] === 'PX' ? Number(a[ti + 1]) : Number(a[ti + 1]) * 1000)); else EXP.delete(key); KV.set(key, v === undefined ? f : v); return 'OK'; }
+      if (cmd === 'SET') {
+        const px = a.indexOf('PX', 3), ex = a.indexOf('EX', 3);
+        const ti = px > -1 ? px : ex;
+        if (ti > -1) EXP.set(key, Date.now() + (a[ti] === 'PX' ? Number(a[ti + 1]) : Number(a[ti + 1]) * 1000));
+        else EXP.delete(key);
+        // Value is always at index 2; PX/EX are modifiers after it.
+        KV.set(key, f);
+        return 'OK';
+      }
       if (cmd === 'HSET') { const h = KV.get(key) || {}; h[f] = v; KV.set(key, h); return 1; }
       if (cmd === 'HGET') { const h = KV.get(key) || {}; return h[f] == null ? null : h[f]; }
       if (cmd === 'HGETALL') { const h = KV.get(key) || {}; const flat = []; for (const [k, val] of Object.entries(h)) flat.push(k, val); return flat; }
@@ -84,7 +121,7 @@ globalThis.fetch = async (url, opts = {}) => {
   throw new Error('unexpected fetch ' + u);
 };
 
-const { cmd } = await import('../lib/kv.js');
+const { cmd, parseHash } = await import('../lib/kv.js');
 const disc = await import('../lib/discovery.js');
 const draftAuto = await import('../lib/draft-autonomy.js');
 const sites = await import('../lib/sites.js');
@@ -377,6 +414,238 @@ console.log('\nE2E: RANKED -> DRAFT -> OPERATOR -> ZERO SIDE EFFECT');
   check('E2E. ranked -> draft -> operator', r1.run.drafted === 1 && st.draftedCount === 1 && runs.length === 1);
   const r2 = await draftAuto.runDraftAutonomy();
   check('E2E2. run twice -> one effective site', r2.reason === 'caught_up' && (await sites.listSites()).length === 1);
+}
+
+// ---- DURABILITY: CANONICAL placeId -> SLUG FAULT MATRIX ----
+console.log('\nDURABILITY: placeId -> SLUG FAULT MATRIX');
+{
+  // Helpers for direct state inspection/manipulation.
+  const siteBodiesForPlace = async (placeId) => {
+    const idx = parseHash(await cmd(['HGETALL', 'ks:siteidx']));
+    const slugs = Object.keys(idx).filter((s) => {
+      const body = KV.get('ks:site:' + s);
+      if (!body) return false;
+      try { return JSON.parse(body).placeId === placeId; } catch { return false; }
+    });
+    // Also scan direct site keys (bounded to what we created in this test).
+    for (const k of KV.keys()) {
+      if (!k.startsWith('ks:site:')) continue;
+      const s = k.slice('ks:site:'.length);
+      if (slugs.includes(s)) continue;
+      try { if (JSON.parse(KV.get(k)).placeId === placeId) slugs.push(s); } catch {}
+    }
+    return [...new Set(slugs)];
+  };
+
+  // A. Mapping written, body missing -> retry completes same slug.
+  {
+    seed();
+    await saveCand(candidate('ChIJ_A'));
+    await draftAuto.saveDraftConfig({ enabled: true, draftsPerRun: 5, minScore: 0 });
+    const lead = draftAuto.candidateToLead(candidate('ChIJ_A'));
+    const rec = (await import('../lib/draft-site.js')).draftFromLead(lead, new Set());
+    await cmd(['HSET', 'ks:draft:place', 'ChIJ_A', rec.slug]);
+    const r = await draftAuto.runDraftAutonomy();
+    const bodies = await siteBodiesForPlace('ChIJ_A');
+    check('FA. mapping-only -> retry completes same slug', r.run.drafted === 1 && bodies.length === 1 && bodies[0] === rec.slug);
+  }
+
+  // B. Site body written, siteidx missing -> retry repairs index, one site.
+  {
+    seed();
+    await saveCand(candidate('ChIJ_A'));
+    await draftAuto.saveDraftConfig({ enabled: true, draftsPerRun: 5, minScore: 0 });
+    const lead = draftAuto.candidateToLead(candidate('ChIJ_A'));
+    const rec = (await import('../lib/draft-site.js')).draftFromLead(lead, new Set());
+    const site = { ...rec, placeId: 'ChIJ_A', published: false, claimed: false, modules: ['P0'], source: 'draft-autonomy', leadId: 'ChIJ_A' };
+    await cmd(['SET', 'ks:site:' + rec.slug, JSON.stringify(site)]);
+    await cmd(['HSET', 'ks:draft:place', 'ChIJ_A', rec.slug]);
+    // siteidx intentionally empty
+    const r = await draftAuto.runDraftAutonomy();
+    const bodies = await siteBodiesForPlace('ChIJ_A');
+    const idx = parseHash(await cmd(['HGETALL', 'ks:siteidx']));
+    check('FB. body-only -> retry repairs index', r.run.linked === 1 && bodies.length === 1 && idx[rec.slug] !== undefined);
+  }
+
+  // C. Siteidx written, candidate linkage missing -> retry repairs linkage.
+  {
+    seed();
+    await saveCand(candidate('ChIJ_A'));
+    await draftAuto.saveDraftConfig({ enabled: true, draftsPerRun: 5, minScore: 0 });
+    const lead = draftAuto.candidateToLead(candidate('ChIJ_A'));
+    const rec = (await import('../lib/draft-site.js')).draftFromLead(lead, new Set());
+    const site = { ...rec, placeId: 'ChIJ_A', published: false, claimed: false, modules: ['P0'], source: 'draft-autonomy', leadId: 'ChIJ_A' };
+    await cmd(['SET', 'ks:site:' + rec.slug, JSON.stringify(site)]);
+    await cmd(['HSET', 'ks:siteidx', rec.slug, JSON.stringify((await import('../lib/sites.js')).summary(site))]);
+    await cmd(['HSET', 'ks:draft:place', 'ChIJ_A', rec.slug]);
+    // candidate linkage intentionally missing
+    const r = await draftAuto.runDraftAutonomy();
+    const c = (await disc.getCandidates())['ChIJ_A'];
+    const bodies = await siteBodiesForPlace('ChIJ_A');
+    check('FC. index-only -> retry repairs candidate linkage', r.run.linked === 1 && c.draftSlug === rec.slug && bodies.length === 1);
+  }
+
+  // D. Candidate linked, run ledger missing -> replay does not duplicate.
+  {
+    seed();
+    await saveCand(candidate('ChIJ_A'));
+    await draftAuto.saveDraftConfig({ enabled: true, draftsPerRun: 5, minScore: 0 });
+    await draftAuto.runDraftAutonomy();
+    await cmd(['HDEL', 'ks:draft:runs', 'draft-run-' + new Date().toISOString().slice(0, 10).replace(/-/g, '')]);
+    const r = await draftAuto.runDraftAutonomy();
+    const bodies = await siteBodiesForPlace('ChIJ_A');
+    check('FD. candidate linked/run ledger missing -> replay idempotent', (r.reason === 'completed' || r.reason === 'caught_up') && bodies.length === 1);
+  }
+
+  // E. Run crashes after all writes -> site truth valid, retry idempotent.
+  {
+    seed();
+    await saveCand(candidate('ChIJ_A'));
+    await draftAuto.saveDraftConfig({ enabled: true, draftsPerRun: 5, minScore: 0 });
+    await draftAuto.runDraftAutonomy();
+    // Simulate crash: wipe only the run ledger.
+    await cmd(['DEL', 'ks:draft:runs']);
+    const r = await draftAuto.runDraftAutonomy();
+    const bodies = await siteBodiesForPlace('ChIJ_A');
+    check('FE. post-write crash -> retry idempotent', (r.reason === 'completed' || r.reason === 'caught_up') && bodies.length === 1);
+  }
+}
+
+// ---- SITE INDEX REPAIR PRIMITIVE ----
+console.log('\nSITE INDEX REPAIR PRIMITIVE');
+{
+  seed();
+  const lead = draftAuto.candidateToLead(candidate('ChIJ_A'));
+  const rec = (await import('../lib/draft-site.js')).draftFromLead(lead, new Set());
+  const site = { ...rec, placeId: 'ChIJ_A', published: false, claimed: false, modules: ['P0'], source: 'draft-autonomy', leadId: 'ChIJ_A' };
+  await cmd(['SET', 'ks:site:' + rec.slug, JSON.stringify(site)]);
+  // index missing
+  const ok = await sites.repairSiteIndex(rec.slug);
+  const idx = parseHash(await cmd(['HGETALL', 'ks:siteidx']));
+  check('FF. repairSiteIndex restores missing index', ok === true && idx[rec.slug] !== undefined);
+  await cmd(['HDEL', 'ks:siteidx', rec.slug]);
+  const ok2 = await sites.repairSiteIndex('does-not-exist');
+  check('FG. repairSiteIndex no-op for missing site', ok2 === false);
+}
+
+// ---- CONCURRENT SAME-CANDIDATE RACE (no outer lease) ----
+console.log('\nCONCURRENT SAME-CANDIDATE RACE');
+{
+  seed();
+  await saveCand(candidate('ChIJ_A'));
+  const ctx = {
+    taken: await sites.existingSlugs(),
+    placeIndex: {},
+    siteList: [],
+  };
+  const now = new Date().toISOString();
+  const [a, b] = await Promise.all([
+    draftAuto._draftCandidate(candidate('ChIJ_A'), ctx, now),
+    draftAuto._draftCandidate(candidate('ChIJ_A'), ctx, now),
+  ]);
+  const placeIdx = parseHash(await cmd(['HGETALL', 'ks:draft:place']));
+  const bodies = [];
+  for (const k of KV.keys()) {
+    if (!k.startsWith('ks:site:')) continue;
+    try { if (JSON.parse(KV.get(k)).placeId === 'ChIJ_A') bodies.push(k.slice('ks:site:'.length)); } catch {}
+  }
+  const c = (await disc.getCandidates())['ChIJ_A'];
+  check('FH. concurrent race: one canonical slug', Object.keys(placeIdx).length === 1 && placeIdx['ChIJ_A'] !== undefined);
+  check('FI. concurrent race: one site body', bodies.length === 1);
+  check('FJ. concurrent race: candidate linked', c.draftSlug === placeIdx['ChIJ_A']);
+}
+
+// ---- LEASE RENEWAL / STALE WORKER ----
+console.log('\nLEASE RENEWAL / STALE WORKER');
+{
+  seed();
+  const ownerA = 'own-aaaaaaaaaaaaaaaa';
+  const ownerB = 'own-bbbbbbbbbbbbbbbb';
+  // A acquires, renews, B cannot steal.
+  await cmd(['SET', 'ks:draft:lease', ownerA, 'PX', '10000']);
+  check('FK. healthy owner can renew', await draftAuto._renewLease(ownerA, 10000));
+  check('FL. stale owner cannot renew', !(await draftAuto._renewLease(ownerB, 10000)));
+  check('FM. stale owner cannot release', !(await draftAuto._releaseLease(ownerB)));
+  // Lease expires; B acquires; A cannot release/complete.
+  await cmd(['SET', 'ks:draft:lease', ownerB, 'PX', '10000']);
+  check('FN. stale owner cannot release successor lease', !(await draftAuto._releaseLease(ownerA)));
+  const completeRes = await draftAuto._completeRun({ owner: ownerA, runId: 'draft-run-test', run: { id: 'draft-run-test', status: 'completed' } });
+  check('FO. stale owner cannot complete run', completeRes === false);
+}
+
+// ---- STALE WORKER CANNOT DUPLICATE DRAFT ----
+console.log('\nSTALE WORKER CANNOT DUPLICATE DRAFT');
+{
+  seed();
+  await saveCand(candidate('ChIJ_A'));
+  await draftAuto.saveDraftConfig({ enabled: true, draftsPerRun: 5, minScore: 0 });
+  const ownerA = 'own-aaaaaaaaaaaaaaaa';
+  const ownerB = 'own-bbbbbbbbbbbbbbbb';
+  let releaseA;
+  const gate = new Promise((res) => { releaseA = res; });
+  // A acquires the lease itself and blocks inside the candidate loop.
+  const runA = draftAuto.runDraftAutonomy({ owner: ownerA, beforeCandidate: async () => { await gate; } });
+  // Wait until A has acquired the lease, then flip it to B (simulating expiry + B takeover).
+  while (KV.get('ks:draft:lease') !== ownerA) await new Promise((s) => setTimeout(s, 5));
+  await cmd(['SET', 'ks:draft:lease', ownerB, 'PX', '10000']);
+  releaseA();
+  const rA = await runA;
+  // B took over the lease; clear it so B can acquire cleanly in runDraftAutonomy.
+  await cmd(['DEL', 'ks:draft:lease']);
+  // B now runs to completion.
+  const rB = await draftAuto.runDraftAutonomy({ owner: ownerB });
+  const bodies = [];
+  for (const k of KV.keys()) {
+    if (!k.startsWith('ks:site:')) continue;
+    try { if (JSON.parse(KV.get(k)).placeId === 'ChIJ_A') bodies.push(k); } catch {}
+  }
+  check('FP. stale worker + successor run -> one site body', bodies.length === 1);
+  check('FQ. successor run completes', rB.reason === 'completed' || rB.reason === 'caught_up');
+  check('FP2. stale worker run reports failure', rA.reason === 'failed');
+}
+
+// ---- K4 -> K5 -> K4 -> K5 CROSS-STAGE SEQUENCE ----
+console.log('\nK4 -> K5 -> K4 -> K5 CROSS-STAGE SEQUENCE');
+{
+  seed();
+  const placeId = 'ChIJ_CROSS';
+  const cand = candidate(placeId, { name: 'Cross Stage Auto', phone: '816-555-0999', score: 1.5 });
+  await saveCand(cand);
+  await draftAuto.saveDraftConfig({ enabled: true, draftsPerRun: 5, minScore: 0 });
+
+  // K5 creates one draft.
+  const r1 = await draftAuto.runDraftAutonomy();
+  const c1 = (await disc.getCandidates())[placeId];
+  const site1 = await sites.getSite(c1.draftSlug);
+
+  // K4 rediscovers same placeId: refresh facts and re-derive exclusion.
+  // Critically, K5 linkage fields must be preserved.
+  const refreshed = {
+    ...c1,
+    name: 'Cross Stage Auto', lastSeenAt: new Date().toISOString(),
+    queries: [...c1.queries, { trade: 'plumber', city: 'Kansas City', at: new Date().toISOString() }],
+    status: 'excluded',
+    excludeReason: 'existing_site',
+    excludeDetail: 'an existing site or draft already exists',
+    score: 0,
+    parts: {},
+  };
+  await cmd(['HSET', 'ks:disc:cands', placeId, JSON.stringify(refreshed)]);
+
+  // K5 runs again (clear prior run ledger so this run actually executes).
+  await cmd(['DEL', 'ks:draft:runs']);
+  const r2 = await draftAuto.runDraftAutonomy();
+  const c2 = (await disc.getCandidates())[placeId];
+  const bodies = [];
+  for (const k of KV.keys()) {
+    if (!k.startsWith('ks:site:')) continue;
+    try { if (JSON.parse(KV.get(k)).placeId === placeId) bodies.push(k); } catch {}
+  }
+  check('FR. cross-stage: one site total', bodies.length === 1);
+  check('FS. cross-stage: same draftSlug preserved', c2.draftSlug === c1.draftSlug);
+  check('FT. cross-stage: no second draft', (r2.run || {}).drafted === 0);
+  check('FU. cross-stage: still unpublished', site1.published === false && site1.claimed === false);
+  check('FV. cross-stage: no entitlement', site1.modules.join(',') === 'P0' && !site1.email);
 }
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
