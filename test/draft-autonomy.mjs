@@ -76,6 +76,14 @@ const evalScript = (a) => {
     // KEYS: 1=lease, 2=site body, 3=siteidx, 4=place index, 5=candidates hash, 6=effects hash, 7=run counter
     // ARGV: 1=owner, 2=placeId, 3=slug, 4=siteJSON, 5=indexJSON, 6=candidateJSON, 7=effectType, 8=runId, 9=draftsPerRun
     if (KV.get(keys[0]) !== argv[0]) return 'LEASE_LOST';
+    const dp = Number(argv[8]);
+    if (!Number.isFinite(dp) || dp !== Math.floor(dp) || dp <= 0) return 'INVALID_CAP';
+    const rcRaw = KV.get(keys[6]);
+    let rc = 0;
+    if (rcRaw !== undefined) {
+      rc = Number(rcRaw);
+      if (!Number.isFinite(rc) || rc !== Math.floor(rc) || rc < 0) return 'CORRUPT_COUNTER';
+    }
     const placeIdx = KV.get(keys[3]) || {};
     const existingSlug = placeIdx[argv[1]];
     if (existingSlug) {
@@ -86,8 +94,7 @@ const evalScript = (a) => {
       if (idx[argv[2]] !== undefined) return ['COLLISION', argv[2]];
     }
     if (argv[6] === 'new') {
-      const rc = Number(KV.get(keys[6]) || '0');
-      if (rc >= Number(argv[8])) return 'CAP_REACHED';
+      if (rc >= dp) return 'CAP_REACHED';
       KV.set(keys[6], String(rc + 1));
       const effects = KV.get(keys[5]) || {};
       effects[argv[1]] = 'new';
@@ -109,8 +116,32 @@ const evalScript = (a) => {
     // KEYS: 1=lease, 2=place index, 3=candidates hash
     // ARGV: 1=owner, 2=placeId, 3=slug, 4=candidateJSON
     if (KV.get(keys[0]) !== argv[0]) return 'LEASE_LOST';
-    const placeIdx = KV.get(keys[1]) || {}; placeIdx[argv[1]] = argv[2]; KV.set(keys[1], placeIdx);
+    const placeIdx = KV.get(keys[1]) || {};
+    const existing = placeIdx[argv[1]];
+    if (existing !== undefined && existing !== argv[2]) return ['MAPPING_CONFLICT', existing];
+    placeIdx[argv[1]] = argv[2]; KV.set(keys[1], placeIdx);
     const cands = KV.get(keys[2]) || {}; cands[argv[1]] = argv[3]; KV.set(keys[2], cands);
+    return 'OK';
+  }
+  if (script.includes('draft_candidate_update_v1')) {
+    // KEYS: 1=lease, 2=candidates hash
+    // ARGV: 1=owner, 2=placeId, 3=candidateJSON
+    if (KV.get(keys[0]) !== argv[0]) return 'LEASE_LOST';
+    const cands = KV.get(keys[1]) || {}; cands[argv[1]] = argv[2]; KV.set(keys[1], cands);
+    return 'OK';
+  }
+  if (script.includes('draft_repair_index_v1')) {
+    // KEYS: 1=lease, 2=siteidx
+    // ARGV: 1=owner, 2=slug, 3=indexJSON
+    if (KV.get(keys[0]) !== argv[0]) return 'LEASE_LOST';
+    const idx = KV.get(keys[1]) || {}; idx[argv[1]] = argv[2]; KV.set(keys[1], idx);
+    return 'OK';
+  }
+  if (script.includes('draft_run_status_v1')) {
+    // KEYS: 1=lease, 2=runs hash
+    // ARGV: 1=owner, 2=runId, 3=runJSON
+    if (KV.get(keys[0]) !== argv[0]) return 'LEASE_LOST';
+    const runs = KV.get(keys[1]) || {}; runs[argv[1]] = argv[2]; KV.set(keys[1], runs);
     return 'OK';
   }
   throw new Error('unexpected eval script');
@@ -873,6 +904,120 @@ console.log('\nDURABLE RUN CAP');
       Number(rc) === 1 &&
       Object.values(effects.effects).filter((v) => v === 'new').length === 1 &&
       Object.values(effects.effects).filter((v) => v === 'repair').length === 1);
+  }
+}
+
+// ---- RESIDUAL FENCING CLOSURE ----
+console.log('\nRESIDUAL FENCING CLOSURE');
+{
+  // Stale K5 candidate exclusion update blocked.
+  {
+    seed();
+    await saveCand(candidate('ChIJ_A'));
+    await draftAuto.saveDraftConfig({ enabled: true, draftsPerRun: 5, minScore: 0 });
+    const ownerA = 'own-aaaaaaaaaaaaaaaa';
+    const ownerB = 'own-bbbbbbbbbbbbbbbb';
+    let releaseA;
+    const gate = new Promise((res) => { releaseA = res; });
+    let renewed = false;
+    const runA = draftAuto.runDraftAutonomy({
+      owner: ownerA,
+      beforeCandidate: async () => {
+        if (!renewed) {
+          await draftAuto._renewLease(ownerA, 10000);
+          renewed = true;
+          await gate;
+        }
+      },
+    });
+    while (KV.get('ks:draft:lease') !== ownerA) await new Promise((s) => setTimeout(s, 5));
+    await cmd(['SET', 'ks:draft:lease', ownerB, 'PX', '10000']);
+    releaseA();
+    const rA = await runA;
+    const cAfterA = (await disc.getCandidates())['ChIJ_A'];
+    await cmd(['DEL', 'ks:draft:lease']);
+    const rB = await draftAuto.runDraftAutonomy({ owner: ownerB });
+    const cAfterB = (await disc.getCandidates())['ChIJ_A'];
+    check('GD. stale K5 exclusion update blocked',
+      rA.reason === 'failed' && !cAfterA.draftSlug && cAfterA.draftStatus !== 'excluded' &&
+      rB.reason === 'completed' && cAfterB.draftSlug && cAfterB.draftStatus === 'drafted');
+  }
+
+  // Stale run-ledger fallback write blocked; successor completed ledger protected.
+  {
+    seed();
+    await saveCand(candidate('ChIJ_A'));
+    await draftAuto.saveDraftConfig({ enabled: true, draftsPerRun: 5, minScore: 0 });
+    const ownerA = 'own-aaaaaaaaaaaaaaaa';
+    const ownerB = 'own-bbbbbbbbbbbbbbbb';
+
+    // B completes a run; afterwards the lease is released.
+    const runB = await draftAuto.runDraftAutonomy({ owner: ownerB });
+    const completedRun = (await draftAuto.getDraftRuns())[runIdForToday()];
+
+    // A (stale) attempts to overwrite with a failed record.
+    const overwrite = await draftAuto._recordRunStatus({ owner: ownerA, runId: runIdForToday(), run: { ...completedRun, status: 'failed', error: 'stale overwrite' } });
+    const runAfter = (await draftAuto.getDraftRuns())[runIdForToday()];
+    check('GE. stale owner cannot overwrite completed run ledger',
+      runB.reason === 'completed' && completedRun.status === 'completed' &&
+      overwrite === false && runAfter.status === 'completed' && runAfter.error !== 'stale overwrite');
+  }
+
+  // Canonical mapping immutability.
+  {
+    seed();
+    await cmd(['SET', 'ks:draft:lease', 'own-1']);
+    await cmd(['HSET', 'ks:draft:place', 'ChIJ_A', 'acme-auto']);
+    const link1 = await draftAuto._linkDraft({ owner: 'own-1', placeId: 'ChIJ_A', slug: 'acme-auto', candidate: { placeId: 'ChIJ_A', draftSlug: 'acme-auto' } });
+    const link2 = await draftAuto._linkDraft({ owner: 'own-1', placeId: 'ChIJ_A', slug: 'different-slug', candidate: { placeId: 'ChIJ_A', draftSlug: 'different-slug' } });
+    const placeIdx = parseHash(await cmd(['HGETALL', 'ks:draft:place']));
+    check('GF. same mapping retry idempotent', link1.status === 'OK' && placeIdx['ChIJ_A'] === 'acme-auto');
+    check('GG. conflicting mapping rejected', link2.status === 'MAPPING_CONFLICT' && placeIdx['ChIJ_A'] === 'acme-auto');
+  }
+
+  // Corrupt / invalid cap fail closed.
+  {
+    seed();
+    await saveCand(candidate('ChIJ_A'));
+    await draftAuto.saveDraftConfig({ enabled: true, draftsPerRun: 5, minScore: 0 });
+    const owner = 'own-cap';
+    await cmd(['SET', 'ks:draft:lease', owner]);
+    const ctx = {
+      taken: await sites.existingSlugs(),
+      placeIndex: {},
+      siteList: [],
+      owner,
+      runId: 'draft-run-cap-corrupt',
+      draftsPerRun: 5,
+    };
+
+    // Negative counter.
+    await cmd(['SET', 'ks:draft:rc:draft-run-cap-corrupt', '-1']);
+    const rNeg = await draftAuto._draftCandidate(candidate('ChIJ_A'), ctx, new Date().toISOString());
+    check('GH. negative run counter fails closed', rNeg.action === 'abort');
+    await cmd(['DEL', 'ks:draft:rc:draft-run-cap-corrupt']);
+
+    // Nonnumeric counter.
+    await cmd(['SET', 'ks:draft:rc:draft-run-cap-corrupt', 'abc']);
+    const rNon = await draftAuto._draftCandidate(candidate('ChIJ_A'), ctx, new Date().toISOString());
+    check('GI. nonnumeric run counter fails closed', rNon.action === 'abort');
+    await cmd(['DEL', 'ks:draft:rc:draft-run-cap-corrupt']);
+
+    // Invalid cap (zero).
+    const rZero = await draftAuto._applyDraft({
+      owner, runId: 'draft-run-cap-corrupt', draftsPerRun: 0, placeId: 'ChIJ_A', slug: 'acme-auto',
+      site: { business: 'Acme Auto', slug: 'acme-auto', modules: ['P0'], published: false, claimed: false },
+      candidate: { placeId: 'ChIJ_A' }, effectType: 'new',
+    });
+    check('GJ. invalid draftsPerRun zero fails closed', rZero.status === 'INVALID_CAP');
+
+    // Fractional cap.
+    const rFrac = await draftAuto._applyDraft({
+      owner, runId: 'draft-run-cap-corrupt', draftsPerRun: 1.5, placeId: 'ChIJ_A', slug: 'acme-auto',
+      site: { business: 'Acme Auto', slug: 'acme-auto', modules: ['P0'], published: false, claimed: false },
+      candidate: { placeId: 'ChIJ_A' }, effectType: 'new',
+    });
+    check('GK. fractional draftsPerRun fails closed', rFrac.status === 'INVALID_CAP');
   }
 }
 
