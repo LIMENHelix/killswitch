@@ -32,10 +32,23 @@ const evalScript = (a) => {
     const [callId, dailyCap, runCap, record] = argv;
     const ledger = KV.get(keys[2]) || {};
     if (ledger[callId] !== undefined) return 'ALREADY_RESERVED';
-    const d = parseInt(KV.get(keys[0]) == null ? '0' : KV.get(keys[0]), 10);
-    if (d >= Number(dailyCap)) return 'DAILY_CAP';
-    const r = parseInt(KV.get(keys[1]) == null ? '0' : KV.get(keys[1]), 10);
-    if (r >= Number(runCap)) return 'RUN_CAP';
+    function checkCounter(key) {
+      const raw = KV.get(key);
+      if (raw == null) return 0;
+      const n = Number(raw);
+      if (!Number.isFinite(n) || n !== Math.floor(n) || n < 0) return 'CORRUPT';
+      return n;
+    }
+    const d = checkCounter(keys[0]);
+    if (d === 'CORRUPT') return 'CORRUPT_COUNTER';
+    const r = checkCounter(keys[1]);
+    if (r === 'CORRUPT') return 'CORRUPT_COUNTER';
+    const dc = Number(dailyCap);
+    if (!Number.isFinite(dc) || dc !== Math.floor(dc) || dc <= 0) return 'INVALID_CAP';
+    const rc = Number(runCap);
+    if (!Number.isFinite(rc) || rc !== Math.floor(rc) || rc <= 0) return 'INVALID_CAP';
+    if (d >= dc) return 'DAILY_CAP';
+    if (r >= rc) return 'RUN_CAP';
     KV.set(keys[0], String(d + 1));
     KV.set(keys[1], String(r + 1));
     ledger[callId] = record;
@@ -49,6 +62,15 @@ const evalScript = (a) => {
   if (script.includes('disc_lease_release_v1')) {
     if (KV.get(keys[0]) === argv[0]) { KV.delete(keys[0]); EXP.delete(keys[0]); return 1; }
     return 0;
+  }
+  if (script.includes('disc_complete_v1')) {
+    const [owner, runId, runJson, cursorJson] = argv;
+    if (KV.get(keys[0]) !== owner) return 'LEASE_LOST';
+    const h = KV.get(keys[1]) || {};
+    h[runId] = runJson;
+    KV.set(keys[1], h);
+    KV.set(keys[2], cursorJson);
+    return 'COMPLETED';
   }
   throw new Error('unexpected eval script');
 };
@@ -97,6 +119,7 @@ const seed = () => { KV.clear(); EXP.clear(); placesCalls = 0; placesQueue = [];
 const today = () => new Date().toISOString().slice(0, 10);
 const dayKey = () => 'ks:disc:day:' + today();
 const runIdToday = (slot = 0) => 'run-' + today().replace(/-/g, '') + '-' + slot;
+const callIdToday = (page = 1) => 'call-' + runIdToday() + '-' + disc.queryFingerprint(ARMED.plan[0]) + '-p' + page;
 
 const place = (id, over = {}) => ({
   id,
@@ -161,6 +184,51 @@ const resv = (callId, d, r, runId, day) => disc.reserveCall({ callId, runId: run
   check('I. same callId re-reservation -> ALREADY_RESERVED, counters unchanged', e1.status === 'RESERVED' && e2.status === 'ALREADY_RESERVED' && e3.status === 'ALREADY_RESERVED' && KV.get('ks:disc:rc:run-tE') === '1');
 }
 
+// ---- CORRUPT COUNTER / INVALID CAP FAIL CLOSED ----
+console.log('\nCORRUPT COUNTERS / INVALID CAPS');
+{
+  seed();
+  const ok = await resv('call-F1', 5, 5, 'run-tF');
+  check('A. missing counter -> first reservation succeeds', ok.status === 'RESERVED');
+}
+{
+  seed();
+  KV.set('ks:disc:day:2026-09-10', '-3');
+  const r = await resv('call-F2', 5, 5, 'run-tF2');
+  check('B. negative daily counter -> fail closed', r.status === 'CORRUPT_COUNTER' && r.callId === 'call-F2');
+}
+{
+  seed();
+  KV.set('ks:disc:rc:run-tF3', '-1');
+  const r = await resv('call-F3', 5, 5, 'run-tF3');
+  check('C. negative run counter -> fail closed', r.status === 'CORRUPT_COUNTER');
+}
+{
+  seed();
+  KV.set('ks:disc:day:2026-09-10', 'not-a-number');
+  const r = await resv('call-F4', 5, 5, 'run-tF4');
+  check('D. nonnumeric daily counter -> fail closed', r.status === 'CORRUPT_COUNTER');
+}
+{
+  seed();
+  KV.set('ks:disc:rc:run-tF5', '1.5');
+  const r = await resv('call-F5', 5, 5, 'run-tF5');
+  check('E. nonnumeric run counter -> fail closed', r.status === 'CORRUPT_COUNTER');
+}
+{
+  seed();
+  const r1 = await resv('call-F6', 0, 5, 'run-tF6');
+  const r2 = await resv('call-F7', 5, -1, 'run-tF7');
+  const r3 = await resv('call-F8', 2.5, 5, 'run-tF8');
+  check('F. fractional/invalid cap -> fail closed', r1.status === 'INVALID_CAP' && r2.status === 'INVALID_CAP' && r3.status === 'INVALID_CAP');
+}
+{
+  seed(); await arm(ARMED);
+  KV.set(dayKey(), 'not-a-number');
+  const r = await runCron();
+  check('G. corrupt state causes zero provider calls', r.body.reason === 'failed' && r.body.run.stopReason === 'corrupt_counter' && placesCalls === 0);
+}
+
 // ---- GATES: DEFAULT OFF, FAIL CLOSED ----
 console.log('\nGATES: DEFAULT OFF, FAIL CLOSED');
 seed();
@@ -206,7 +274,7 @@ seed(); await arm(ARMED);
 placesFail = 'timeout';
 r = await runCron();
 let calls = await callLedger();
-check('F. timeout -> run failed, call outcome timeout, STILL counted', r.body.reason === 'failed' && /timeout/.test(r.body.run.error) && calls['call-' + runIdToday() + '-p1'].outcome === 'timeout');
+check('F. timeout -> run failed, call outcome timeout, STILL counted', r.body.reason === 'failed' && /timeout/.test(r.body.run.error) && calls[callIdToday(1)].outcome === 'timeout');
 check('F2. timeout reservation remains in daily + run counters', KV.get(dayKey()) === '1' && KV.get('ks:disc:rc:' + runIdToday()) === '1');
 check('V. failed run does NOT advance the cursor', JSON.parse(KV.get('ks:disc:cursor')).index === 0);
 
@@ -223,11 +291,11 @@ seed(); await arm(ARMED);
 placesFail = { status: 500 };
 r = await runCron();
 calls = await callLedger();
-check('G. upstream 5xx -> outcome upstream_5xx, reservation counted', calls['call-' + runIdToday() + '-p1'].outcome === 'upstream_5xx' && KV.get(dayKey()) === '1');
+check('G. upstream 5xx -> outcome upstream_5xx, reservation counted', calls[callIdToday(1)].outcome === 'upstream_5xx' && KV.get(dayKey()) === '1');
 seed(); await arm(ARMED);
 placesQueue = ['malformed'];
 r = await runCron();
-check('H. malformed response -> outcome malformed_response, counted, not empty-success', r.body.reason === 'failed' && (await callLedger())['call-' + runIdToday() + '-p1'].outcome === 'malformed_response');
+check('H. malformed response -> outcome malformed_response, counted, not empty-success', r.body.reason === 'failed' && (await callLedger())[callIdToday(1)].outcome === 'malformed_response');
 
 seed(); await arm(ARMED);
 let firstFetch = true;
@@ -267,6 +335,104 @@ check('M. worker B after lease expiry CANNOT repeat A\'s reserved logical call',
 check('M2. exactly one reservation exists despite two workers', KV.get(dayKey()) === '1');
 check('N. stale worker A cannot advance the cursor after losing the lease', resA.reason === 'failed' && JSON.parse(KV.get('ks:disc:cursor')).index === 0);
 check('N2. A\'s late-arriving response did not mark the slot completed', Object.values(await disc.getRuns())[0].status === 'failed');
+
+// ---- QUERY FINGERPRINT + CONFIG MUTATION FENCING ----
+console.log('\nQUERY FINGERPRINT + CONFIG MUTATION FENCING');
+{
+  const fp1 = disc.queryFingerprint({ trade: 'plumbers', city: 'Kansas City, MO' });
+  const fp2 = disc.queryFingerprint({ trade: ' Plumbers ', city: ' kansas city, mo ' });
+  const fp3 = disc.queryFingerprint({ trade: 'electricians', city: 'Kansas City, MO' });
+  const fp4 = disc.queryFingerprint({ trade: 'plumbers', city: 'Overland Park, KS' });
+  check('A(fp). same semantic query -> identical fingerprint', fp1 === fp2);
+  check('B(fp). different trade -> different fingerprint', fp1 !== fp3);
+  check('C(fp). different city -> different fingerprint', fp1 !== fp4);
+}
+{
+  seed(); await arm(ARMED);
+  placesFail = 'timeout';
+  const r1 = await runCron();
+  check('D(fp). failed run leaves cursor unmoved and ledger records queryFp', r1.body.reason === 'failed' && JSON.parse(KV.get('ks:disc:cursor')).index === 0 && (await disc.getRuns())[runIdToday()].queryFp === disc.queryFingerprint(ARMED.plan[0]));
+  placesFail = null;
+  // Mutate plan at same slot index.
+  await arm({ ...ARMED, plan: [{ trade: 'electricians', city: 'Kansas City, MO' }] });
+  const callsBefore = placesCalls;
+  const r2 = await runCron();
+  check('E(fp). plan reorder/trade change during incomplete run -> config_changed, zero new spend', r2.body.reason === 'failed' && r2.body.run.stopReason === 'config_changed' && placesCalls === callsBefore);
+}
+{
+  seed(); await arm(ARMED);
+  placesFail = 'timeout';
+  await runCron();
+  placesFail = null;
+  // Geography change at same slot.
+  await arm({ ...ARMED, plan: [{ trade: 'plumbers', city: 'Overland Park, KS' }] });
+  const r = await runCron();
+  check('F(fp). geography change during incomplete run -> config_changed, zero new spend', r.body.reason === 'failed' && r.body.run.stopReason === 'config_changed' && r.body.run.calls === 0);
+}
+{
+  seed(); await arm(ARMED);
+  placesFail = 'timeout';
+  await runCron();
+  placesFail = null;
+  await arm(ARMED); // unchanged
+  const callsBefore = placesCalls;
+  const r = await runCron();
+  check('G(fp). unchanged-plan retry -> ALREADY_RESERVED, no duplicate spend', r.body.reason === 'failed' && r.body.run.stopReason === 'ambiguous_prior_call' && placesCalls === callsBefore);
+}
+
+// ---- ATOMIC LEASE-FENCED COMPLETION ----
+console.log('\nATOMIC LEASE-FENCED COMPLETION');
+{
+  seed();
+  const owner = 'own-COMPLETE';
+  await disc.acquireLease(owner, 60000);
+  const cursor0 = { index: 0, updatedAt: '', failures: {} };
+  KV.set('ks:disc:cursor', JSON.stringify(cursor0));
+  const run = { id: runIdToday(), status: 'completed', calls: 1 };
+  const ok = await disc.completeRun({ owner, runId: run.id, run, cursor: { index: 1, updatedAt: '', failures: {} } });
+  check('A(comp). owner completes atomically -> run + cursor written', ok && JSON.parse(KV.get('ks:disc:cursor')).index === 1 && (await disc.getRuns())[run.id].status === 'completed');
+}
+{
+  seed();
+  await disc.acquireLease('owner-A', 60000);
+  const bad = await disc.completeRun({ owner: 'owner-B', runId: runIdToday(), run: { id: runIdToday(), status: 'completed' }, cursor: { index: 1, updatedAt: '', failures: {} } });
+  check('B(comp). non-owner completion denied, zero mutation', bad === false && KV.get('ks:disc:cursor') == null);
+}
+{
+  seed();
+  const owner = 'owner-REPLAY';
+  await disc.acquireLease(owner, 60000);
+  KV.set('ks:disc:cursor', JSON.stringify({ index: 0, updatedAt: '', failures: {} }));
+  const run = { id: runIdToday(), status: 'completed', calls: 1 };
+  const cursor = { index: 1, updatedAt: '', failures: {} };
+  await disc.completeRun({ owner, runId: run.id, run, cursor });
+  const ok2 = await disc.completeRun({ owner, runId: run.id, run, cursor });
+  check('C(comp). response-loss finalization retry -> cursor advances exactly once', ok2 && JSON.parse(KV.get('ks:disc:cursor')).index === 1);
+}
+{
+  seed(); await arm(ARMED);
+  placesQueue = [onePlace(place('ChIJ_X'))];
+  const r1 = await runCron();
+  check('D(comp). first run completes', r1.body.reason === 'completed' && placesCalls === 1);
+  const r2 = await runCron();
+  check('D2(comp). completed run replay -> caught_up, zero new spend', r2.body.reason === 'caught_up' && placesCalls === 1);
+}
+
+// ---- RESET CURSOR PRESERVES FINANCIAL TRUTH ----
+console.log('\nRESET CURSOR PRESERVES FINANCIAL TRUTH');
+{
+  seed(); await arm(ARMED);
+  placesQueue = [onePlace(place('ChIJ_R'))];
+  await runCron();
+  const beforeCalls = Object.keys(await disc.getCallLedger()).length;
+  const beforeRuns = Object.keys(await disc.getRuns()).length;
+  const beforeDay = KV.get(dayKey());
+  await adminCall('disc-setconfig', 'admintok', { resetCursor: true });
+  check('reset preserves call ledger', Object.keys(await disc.getCallLedger()).length === beforeCalls);
+  check('reset preserves run ledger', Object.keys(await disc.getRuns()).length === beforeRuns);
+  check('reset preserves daily counter', KV.get(dayKey()) === beforeDay);
+  check('reset cursor index to 0', JSON.parse(KV.get('ks:disc:cursor')).index === 0);
+}
 
 // ---- UTC MIDNIGHT + RECONCILIATION ----
 console.log('\nUTC ACCOUNTING: MIDNIGHT BOUNDARY + RECONCILIATION');
