@@ -24,7 +24,7 @@ import { getSite, upsertSite } from '../lib/sites.js';
 import { getFunnel, setStage, summarize, toPlays, migrateFrom, migrateStage, STAGES } from '../lib/funnel.js';
 import { wilsonLower, allocate } from '../lib/laser.js';
 import { getSuppressionState, matchSuppression, suppressContact, liftSuppression, listSuppressions } from '../lib/suppression.js';
-import { discStatus, listRankedCandidates, listRuns, getDiscConfig, saveDiscConfig, validateDiscConfigPatch } from '../lib/discovery.js';
+import { discStatus, listRankedCandidates, listRuns, listCalls, getDiscConfig, saveDiscConfig, validateDiscConfigPatch, resetDiscCursor } from '../lib/discovery.js';
 
 const OWNER_ONLY = new Set(['setconfig', 'run-autopilot', 'mail', 'seed', 'unsuppress', 'suppression-list', 'disc-setconfig']);
 
@@ -172,11 +172,16 @@ export default async function handler(req, res) {
     if (action === 'disc-runs') {
       res.status(200).json({ ok: true, runs: await listRuns(body.limit) }); return;
     }
+    if (action === 'disc-calls') {
+      // Call-level money audit: reservation outcomes per logical paid call.
+      res.status(200).json({ ok: true, calls: await listCalls(body.limit) }); return;
+    }
     if (action === 'disc-setconfig') {
       const checked = validateDiscConfigPatch(await getDiscConfig(), body);
       if (checked.error) { res.status(400).json({ error: checked.error, message: checked.message }); return; }
       await saveDiscConfig(checked.config);
-      res.status(200).json({ ok: true, config: checked.config }); return;
+      if (body.resetCursor) await resetDiscCursor();
+      res.status(200).json({ ok: true, config: checked.config, cursorReset: !!body.resetCursor }); return;
     }
     if (action === 'seed') {
       const leads = Array.isArray(body.leads) ? body.leads : [];
