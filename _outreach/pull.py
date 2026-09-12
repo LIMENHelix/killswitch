@@ -7,7 +7,7 @@ no-website businesses it returns, and merges them into leads.csv, preserving any
 
 Run:   python pull.py                          # default KC-metro cities
        KS_CITIES="Dallas, TX;Austin, TX" python pull.py
-Env:   SWITCH_TOKEN (defaults to the known desk token), KS_BASE (site url),
+Env:   SWITCH_TOKEN (required, no default), KS_BASE (site url),
        KS_LEADS_OUT (write somewhere other than leads.csv, for testing)
 """
 import os, csv, json, time, urllib.request, urllib.error
@@ -15,7 +15,9 @@ import os, csv, json, time, urllib.request, urllib.error
 HERE = os.path.dirname(os.path.abspath(__file__))
 LEADS = os.environ.get("KS_LEADS_OUT") or os.path.join(HERE, "leads.csv")
 BASE = os.environ.get("KS_BASE", "https://killswitchwebsites.com").rstrip("/")
-TOKEN = os.environ.get("SWITCH_TOKEN", "sw_kcbrain_7Q2f9x")
+TOKEN = os.environ.get("SWITCH_TOKEN")
+if not TOKEN:
+    raise SystemExit("SWITCH_TOKEN is required in the environment; there is no built-in default.")
 
 TRADES = ["plumber", "electrician", "hvac", "roofer", "landscaper", "painter",
           "salon/barber", "nails/beauty", "dentist", "clinic/doctor", "auto repair",
