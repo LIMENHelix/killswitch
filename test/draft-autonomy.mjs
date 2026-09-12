@@ -72,19 +72,46 @@ const evalScript = (a) => {
     const h = KV.get(keys[1]) || {}; h[runId] = runJson; KV.set(keys[1], h);
     return 'COMPLETED';
   }
-  if (script.includes('draft_commit_v1')) {
-    const [placeId, slug, siteJson, indexJson, candidateJson] = argv;
-    const placeIdx = KV.get(keys[2]) || {};
-    if (placeIdx[placeId] !== undefined) return ['EXISTING', placeIdx[placeId]];
-    if (KV.get(keys[0]) !== undefined) return ['COLLISION', slug];
-    const idx = KV.get(keys[1]) || {};
-    if (idx[slug] !== undefined) return ['COLLISION', slug];
-    KV.set(keys[0], siteJson);
-    idx[slug] = indexJson; KV.set(keys[1], idx);
-    placeIdx[placeId] = slug; KV.set(keys[2], placeIdx);
-    const cands = KV.get(keys[3]) || {};
-    cands[placeId] = candidateJson; KV.set(keys[3], cands);
-    return ['OK', slug];
+  if (script.includes('draft_apply_v1')) {
+    // KEYS: 1=lease, 2=site body, 3=siteidx, 4=place index, 5=candidates hash, 6=effects hash, 7=run counter
+    // ARGV: 1=owner, 2=placeId, 3=slug, 4=siteJSON, 5=indexJSON, 6=candidateJSON, 7=effectType, 8=runId, 9=draftsPerRun
+    if (KV.get(keys[0]) !== argv[0]) return 'LEASE_LOST';
+    const placeIdx = KV.get(keys[3]) || {};
+    const existingSlug = placeIdx[argv[1]];
+    if (existingSlug) {
+      if (argv[6] === 'new') return ['EXISTING', existingSlug, 'new'];
+    } else {
+      if (KV.get(keys[1]) !== undefined) return ['COLLISION', argv[2]];
+      const idx = KV.get(keys[2]) || {};
+      if (idx[argv[2]] !== undefined) return ['COLLISION', argv[2]];
+    }
+    if (argv[6] === 'new') {
+      const rc = Number(KV.get(keys[6]) || '0');
+      if (rc >= Number(argv[8])) return 'CAP_REACHED';
+      KV.set(keys[6], String(rc + 1));
+      const effects = KV.get(keys[5]) || {};
+      effects[argv[1]] = 'new';
+      KV.set(keys[5], effects);
+    } else if (argv[6] === 'repair' && existingSlug === argv[2]) {
+      const effects = KV.get(keys[5]) || {};
+      if (effects[argv[1]] === undefined) {
+        effects[argv[1]] = 'repair';
+        KV.set(keys[5], effects);
+      }
+    }
+    KV.set(keys[1], argv[3]);
+    const idx = KV.get(keys[2]) || {}; idx[argv[2]] = argv[4]; KV.set(keys[2], idx);
+    placeIdx[argv[1]] = argv[2]; KV.set(keys[3], placeIdx);
+    const cands = KV.get(keys[4]) || {}; cands[argv[1]] = argv[5]; KV.set(keys[4], cands);
+    return ['OK', argv[2], argv[6]];
+  }
+  if (script.includes('draft_link_v1')) {
+    // KEYS: 1=lease, 2=place index, 3=candidates hash
+    // ARGV: 1=owner, 2=placeId, 3=slug, 4=candidateJSON
+    if (KV.get(keys[0]) !== argv[0]) return 'LEASE_LOST';
+    const placeIdx = KV.get(keys[1]) || {}; placeIdx[argv[1]] = argv[2]; KV.set(keys[1], placeIdx);
+    const cands = KV.get(keys[2]) || {}; cands[argv[1]] = argv[3]; KV.set(keys[2], cands);
+    return 'OK';
   }
   throw new Error('unexpected eval script');
 };
@@ -169,6 +196,17 @@ const candidate = (id, over = {}) => ({
 });
 
 const saveCand = async (c) => { await cmd(['HSET', 'ks:disc:cands', c.placeId, JSON.stringify(c)]); };
+
+const bodiesForPlace = (placeId) => {
+  const slugs = [];
+  for (const k of KV.keys()) {
+    if (!k.startsWith('ks:site:')) continue;
+    try { if (JSON.parse(KV.get(k)).placeId === placeId) slugs.push(k.slice('ks:site:'.length)); } catch {}
+  }
+  return slugs;
+};
+
+const runIdForToday = () => 'draft-run-' + new Date().toISOString().slice(0, 10).replace(/-/g, '');
 
 // ---- CONFIG / GATES ----
 console.log('\nCONFIG / DEFAULT-OFF GATES');
@@ -419,24 +457,6 @@ console.log('\nE2E: RANKED -> DRAFT -> OPERATOR -> ZERO SIDE EFFECT');
 // ---- DURABILITY: CANONICAL placeId -> SLUG FAULT MATRIX ----
 console.log('\nDURABILITY: placeId -> SLUG FAULT MATRIX');
 {
-  // Helpers for direct state inspection/manipulation.
-  const siteBodiesForPlace = async (placeId) => {
-    const idx = parseHash(await cmd(['HGETALL', 'ks:siteidx']));
-    const slugs = Object.keys(idx).filter((s) => {
-      const body = KV.get('ks:site:' + s);
-      if (!body) return false;
-      try { return JSON.parse(body).placeId === placeId; } catch { return false; }
-    });
-    // Also scan direct site keys (bounded to what we created in this test).
-    for (const k of KV.keys()) {
-      if (!k.startsWith('ks:site:')) continue;
-      const s = k.slice('ks:site:'.length);
-      if (slugs.includes(s)) continue;
-      try { if (JSON.parse(KV.get(k)).placeId === placeId) slugs.push(s); } catch {}
-    }
-    return [...new Set(slugs)];
-  };
-
   // A. Mapping written, body missing -> retry completes same slug.
   {
     seed();
@@ -446,7 +466,7 @@ console.log('\nDURABILITY: placeId -> SLUG FAULT MATRIX');
     const rec = (await import('../lib/draft-site.js')).draftFromLead(lead, new Set());
     await cmd(['HSET', 'ks:draft:place', 'ChIJ_A', rec.slug]);
     const r = await draftAuto.runDraftAutonomy();
-    const bodies = await siteBodiesForPlace('ChIJ_A');
+    const bodies = bodiesForPlace('ChIJ_A');
     check('FA. mapping-only -> retry completes same slug', r.run.drafted === 1 && bodies.length === 1 && bodies[0] === rec.slug);
   }
 
@@ -462,7 +482,7 @@ console.log('\nDURABILITY: placeId -> SLUG FAULT MATRIX');
     await cmd(['HSET', 'ks:draft:place', 'ChIJ_A', rec.slug]);
     // siteidx intentionally empty
     const r = await draftAuto.runDraftAutonomy();
-    const bodies = await siteBodiesForPlace('ChIJ_A');
+    const bodies = bodiesForPlace('ChIJ_A');
     const idx = parseHash(await cmd(['HGETALL', 'ks:siteidx']));
     check('FB. body-only -> retry repairs index', r.run.linked === 1 && bodies.length === 1 && idx[rec.slug] !== undefined);
   }
@@ -481,7 +501,7 @@ console.log('\nDURABILITY: placeId -> SLUG FAULT MATRIX');
     // candidate linkage intentionally missing
     const r = await draftAuto.runDraftAutonomy();
     const c = (await disc.getCandidates())['ChIJ_A'];
-    const bodies = await siteBodiesForPlace('ChIJ_A');
+    const bodies = bodiesForPlace('ChIJ_A');
     check('FC. index-only -> retry repairs candidate linkage', r.run.linked === 1 && c.draftSlug === rec.slug && bodies.length === 1);
   }
 
@@ -493,7 +513,7 @@ console.log('\nDURABILITY: placeId -> SLUG FAULT MATRIX');
     await draftAuto.runDraftAutonomy();
     await cmd(['HDEL', 'ks:draft:runs', 'draft-run-' + new Date().toISOString().slice(0, 10).replace(/-/g, '')]);
     const r = await draftAuto.runDraftAutonomy();
-    const bodies = await siteBodiesForPlace('ChIJ_A');
+    const bodies = bodiesForPlace('ChIJ_A');
     check('FD. candidate linked/run ledger missing -> replay idempotent', (r.reason === 'completed' || r.reason === 'caught_up') && bodies.length === 1);
   }
 
@@ -506,7 +526,7 @@ console.log('\nDURABILITY: placeId -> SLUG FAULT MATRIX');
     // Simulate crash: wipe only the run ledger.
     await cmd(['DEL', 'ks:draft:runs']);
     const r = await draftAuto.runDraftAutonomy();
-    const bodies = await siteBodiesForPlace('ChIJ_A');
+    const bodies = bodiesForPlace('ChIJ_A');
     check('FE. post-write crash -> retry idempotent', (r.reason === 'completed' || r.reason === 'caught_up') && bodies.length === 1);
   }
 }
@@ -533,10 +553,15 @@ console.log('\nCONCURRENT SAME-CANDIDATE RACE');
 {
   seed();
   await saveCand(candidate('ChIJ_A'));
+  const owner = 'own-test';
+  await cmd(['SET', 'ks:draft:lease', owner]);
   const ctx = {
     taken: await sites.existingSlugs(),
     placeIndex: {},
     siteList: [],
+    owner,
+    runId: 'draft-run-test',
+    draftsPerRun: 5,
   };
   const now = new Date().toISOString();
   const [a, b] = await Promise.all([
@@ -544,11 +569,7 @@ console.log('\nCONCURRENT SAME-CANDIDATE RACE');
     draftAuto._draftCandidate(candidate('ChIJ_A'), ctx, now),
   ]);
   const placeIdx = parseHash(await cmd(['HGETALL', 'ks:draft:place']));
-  const bodies = [];
-  for (const k of KV.keys()) {
-    if (!k.startsWith('ks:site:')) continue;
-    try { if (JSON.parse(KV.get(k)).placeId === 'ChIJ_A') bodies.push(k.slice('ks:site:'.length)); } catch {}
-  }
+  const bodies = bodiesForPlace('ChIJ_A');
   const c = (await disc.getCandidates())['ChIJ_A'];
   check('FH. concurrent race: one canonical slug', Object.keys(placeIdx).length === 1 && placeIdx['ChIJ_A'] !== undefined);
   check('FI. concurrent race: one site body', bodies.length === 1);
@@ -594,11 +615,7 @@ console.log('\nSTALE WORKER CANNOT DUPLICATE DRAFT');
   await cmd(['DEL', 'ks:draft:lease']);
   // B now runs to completion.
   const rB = await draftAuto.runDraftAutonomy({ owner: ownerB });
-  const bodies = [];
-  for (const k of KV.keys()) {
-    if (!k.startsWith('ks:site:')) continue;
-    try { if (JSON.parse(KV.get(k)).placeId === 'ChIJ_A') bodies.push(k); } catch {}
-  }
+  const bodies = bodiesForPlace('ChIJ_A');
   check('FP. stale worker + successor run -> one site body', bodies.length === 1);
   check('FQ. successor run completes', rB.reason === 'completed' || rB.reason === 'caught_up');
   check('FP2. stale worker run reports failure', rA.reason === 'failed');
@@ -636,16 +653,227 @@ console.log('\nK4 -> K5 -> K4 -> K5 CROSS-STAGE SEQUENCE');
   await cmd(['DEL', 'ks:draft:runs']);
   const r2 = await draftAuto.runDraftAutonomy();
   const c2 = (await disc.getCandidates())[placeId];
-  const bodies = [];
-  for (const k of KV.keys()) {
-    if (!k.startsWith('ks:site:')) continue;
-    try { if (JSON.parse(KV.get(k)).placeId === placeId) bodies.push(k); } catch {}
-  }
+  const bodies = bodiesForPlace(placeId);
   check('FR. cross-stage: one site total', bodies.length === 1);
   check('FS. cross-stage: same draftSlug preserved', c2.draftSlug === c1.draftSlug);
   check('FT. cross-stage: no second draft', (r2.run || {}).drafted === 0);
   check('FU. cross-stage: still unpublished', site1.published === false && site1.claimed === false);
   check('FV. cross-stage: no entitlement', site1.modules.join(',') === 'P0' && !site1.email);
+}
+
+// ---- LEASE-FENCED MUTATION MODEL ----
+console.log('\nLEASE-FENCED MUTATION MODEL');
+{
+  // Stale-after-renew fresh commit blocked.
+  {
+    seed();
+    await saveCand(candidate('ChIJ_A'));
+    await draftAuto.saveDraftConfig({ enabled: true, draftsPerRun: 5, minScore: 0 });
+    const ownerA = 'own-aaaaaaaaaaaaaaaa';
+    const ownerB = 'own-bbbbbbbbbbbbbbbb';
+    let releaseA;
+    const gate = new Promise((res) => { releaseA = res; });
+    let renewed = false;
+    const runA = draftAuto.runDraftAutonomy({
+      owner: ownerA,
+      beforeCandidate: async () => {
+        if (!renewed) {
+          await draftAuto._renewLease(ownerA, 10000);
+          renewed = true;
+          await gate;
+        }
+      },
+    });
+    while (KV.get('ks:draft:lease') !== ownerA) await new Promise((s) => setTimeout(s, 5));
+    await cmd(['SET', 'ks:draft:lease', ownerB, 'PX', '10000']);
+    releaseA();
+    const rA = await runA;
+    const bodiesAfterA = bodiesForPlace('ChIJ_A');
+    await cmd(['DEL', 'ks:draft:lease']);
+    const rB = await draftAuto.runDraftAutonomy({ owner: ownerB });
+    const bodiesAfterB = bodiesForPlace('ChIJ_A');
+    check('FW. stale-after-renew fresh commit blocked',
+      rA.reason === 'failed' && bodiesAfterA.length === 0 && rB.reason === 'completed' && bodiesAfterB.length === 1);
+  }
+
+  // Stale lease on repair: mapping+body exist, index missing.
+  {
+    seed();
+    await saveCand(candidate('ChIJ_A'));
+    await draftAuto.saveDraftConfig({ enabled: true, draftsPerRun: 5, minScore: 0 });
+    const lead = draftAuto.candidateToLead(candidate('ChIJ_A'));
+    const rec = (await import('../lib/draft-site.js')).draftFromLead(lead, new Set());
+    const site = { ...rec, placeId: 'ChIJ_A', published: false, claimed: false, modules: ['P0'], source: 'draft-autonomy', leadId: 'ChIJ_A' };
+    await cmd(['SET', 'ks:site:' + rec.slug, JSON.stringify(site)]);
+    await cmd(['HSET', 'ks:draft:place', 'ChIJ_A', rec.slug]);
+    const ownerA = 'own-aaaaaaaaaaaaaaaa';
+    const ownerB = 'own-bbbbbbbbbbbbbbbb';
+    let releaseA;
+    const gate = new Promise((res) => { releaseA = res; });
+    let renewed = false;
+    const runA = draftAuto.runDraftAutonomy({
+      owner: ownerA,
+      beforeCandidate: async () => {
+        if (!renewed) {
+          await draftAuto._renewLease(ownerA, 10000);
+          renewed = true;
+          await gate;
+        }
+      },
+    });
+    while (KV.get('ks:draft:lease') !== ownerA) await new Promise((s) => setTimeout(s, 5));
+    await cmd(['SET', 'ks:draft:lease', ownerB, 'PX', '10000']);
+    releaseA();
+    const rA = await runA;
+    const idxAfterA = parseHash(await cmd(['HGETALL', 'ks:siteidx']));
+    const cAfterA = (await disc.getCandidates())['ChIJ_A'];
+    await cmd(['DEL', 'ks:draft:lease']);
+    const rB = await draftAuto.runDraftAutonomy({ owner: ownerB });
+    const idxAfterB = parseHash(await cmd(['HGETALL', 'ks:siteidx']));
+    const cAfterB = (await disc.getCandidates())['ChIJ_A'];
+    check('FX. stale lease repair-index blocked',
+      rA.reason === 'failed' && idxAfterA[rec.slug] === undefined && !cAfterA.draftSlug &&
+      rB.reason === 'completed' && idxAfterB[rec.slug] !== undefined && cAfterB.draftSlug === rec.slug);
+  }
+
+  // Stale lease on repair: mapping+body+index exist, candidate linkage missing.
+  {
+    seed();
+    await saveCand(candidate('ChIJ_A'));
+    await draftAuto.saveDraftConfig({ enabled: true, draftsPerRun: 5, minScore: 0 });
+    const lead = draftAuto.candidateToLead(candidate('ChIJ_A'));
+    const rec = (await import('../lib/draft-site.js')).draftFromLead(lead, new Set());
+    const site = { ...rec, placeId: 'ChIJ_A', published: false, claimed: false, modules: ['P0'], source: 'draft-autonomy', leadId: 'ChIJ_A' };
+    await cmd(['SET', 'ks:site:' + rec.slug, JSON.stringify(site)]);
+    await cmd(['HSET', 'ks:siteidx', rec.slug, JSON.stringify((await import('../lib/sites.js')).summary(site))]);
+    await cmd(['HSET', 'ks:draft:place', 'ChIJ_A', rec.slug]);
+    const ownerA = 'own-aaaaaaaaaaaaaaaa';
+    const ownerB = 'own-bbbbbbbbbbbbbbbb';
+    let releaseA;
+    const gate = new Promise((res) => { releaseA = res; });
+    let renewed = false;
+    const runA = draftAuto.runDraftAutonomy({
+      owner: ownerA,
+      beforeCandidate: async () => {
+        if (!renewed) {
+          await draftAuto._renewLease(ownerA, 10000);
+          renewed = true;
+          await gate;
+        }
+      },
+    });
+    while (KV.get('ks:draft:lease') !== ownerA) await new Promise((s) => setTimeout(s, 5));
+    await cmd(['SET', 'ks:draft:lease', ownerB, 'PX', '10000']);
+    releaseA();
+    const rA = await runA;
+    const cAfterA = (await disc.getCandidates())['ChIJ_A'];
+    await cmd(['DEL', 'ks:draft:lease']);
+    const rB = await draftAuto.runDraftAutonomy({ owner: ownerB });
+    const cAfterB = (await disc.getCandidates())['ChIJ_A'];
+    check('FY. stale lease repair-linkage blocked',
+      rA.reason === 'failed' && !cAfterA.draftSlug &&
+      rB.reason === 'completed' && cAfterB.draftSlug === rec.slug);
+  }
+}
+
+// ---- DURABLE RUN CAP ----
+console.log('\nDURABLE RUN CAP');
+{
+  // Failed-run retry cannot exceed draftsPerRun.
+  {
+    seed();
+    await saveCand(candidate('ChIJ_A', { score: 3.0 }));
+    await saveCand(candidate('ChIJ_B', { name: 'Beta Plumbing', phone: '816-555-0200', score: 2.0 }));
+    await saveCand(candidate('ChIJ_C', { name: 'Gamma HVAC', phone: '816-555-0300', score: 1.0 }));
+    await draftAuto.saveDraftConfig({ enabled: true, draftsPerRun: 2, minScore: 0 });
+    let processed = 0;
+    const runA = draftAuto.runDraftAutonomy({
+      beforeCandidate: async () => {
+        processed++;
+        if (processed > 1) throw new Error('simulated crash after first candidate');
+      },
+    });
+    const rA = await runA;
+    const effectsA = await draftAuto._getRunEffects(runIdForToday());
+    // A drafted exactly one before crashing.
+    check('FZ. crash run created one new effect', rA.reason === 'failed' && effectsA.counter === 1);
+    // Make A ineligible for the retry.
+    const a = (await disc.getCandidates())['ChIJ_A'];
+    await cmd(['HSET', 'ks:disc:cands', 'ChIJ_A', JSON.stringify({ ...a, status: 'excluded', score: 0 })]);
+    const rB = await draftAuto.runDraftAutonomy();
+    const effectsB = await draftAuto._getRunEffects(runIdForToday());
+    const totalSites = (await sites.listSites()).length;
+    check('FZ2. retry respects durable cap', rB.reason === 'completed' && effectsB.counter <= 2 && totalSites <= 2 && rB.run.drafted <= 2);
+  }
+
+  // Concurrent different-place cap race.
+  {
+    seed();
+    await saveCand(candidate('ChIJ_A', { score: 2.0 }));
+    await saveCand(candidate('ChIJ_B', { name: 'Beta Plumbing', phone: '816-555-0200', score: 1.0 }));
+    await draftAuto.saveDraftConfig({ enabled: true, draftsPerRun: 1, minScore: 0 });
+    const owner = 'own-cap-race';
+    await cmd(['SET', 'ks:draft:lease', owner]);
+    const ctx = {
+      taken: await sites.existingSlugs(),
+      placeIndex: {},
+      siteList: [],
+      owner,
+      runId: 'draft-run-cap-race',
+      draftsPerRun: 1,
+    };
+    const now = new Date().toISOString();
+    const [a, b] = await Promise.all([
+      draftAuto._draftCandidate(candidate('ChIJ_A', { score: 2.0 }), ctx, now),
+      draftAuto._draftCandidate(candidate('ChIJ_B', { name: 'Beta Plumbing', phone: '816-555-0200', score: 1.0 }), ctx, now),
+    ]);
+    const effects = await draftAuto._getRunEffects('draft-run-cap-race');
+    const totalBodies = bodiesForPlace('ChIJ_A').length + bodiesForPlace('ChIJ_B').length;
+    check('GA. cap race: exactly one new draft',
+      effects.counter === 1 && Object.values(effects.effects).filter((v) => v === 'new').length === 1 &&
+      totalBodies === 1 &&
+      ((a.action === 'drafted' && b.action === 'cap_reached') || (b.action === 'drafted' && a.action === 'cap_reached')));
+  }
+
+  // Different placeId same-slug collision.
+  {
+    seed();
+    await saveCand(candidate('ChIJ_A', { city: '', score: 2.0 }));
+    await saveCand(candidate('ChIJ_B', { city: '', score: 1.0 }));
+    await draftAuto.saveDraftConfig({ enabled: true, draftsPerRun: 5, minScore: 0 });
+    const r = await draftAuto.runDraftAutonomy();
+    const placeIdx = parseHash(await cmd(['HGETALL', 'ks:draft:place']));
+    const aBodies = bodiesForPlace('ChIJ_A');
+    const bBodies = bodiesForPlace('ChIJ_B');
+    const slugs = new Set([placeIdx['ChIJ_A'], placeIdx['ChIJ_B']]);
+    check('GB. same-name different place -> two distinct slugs',
+      r.run.drafted === 2 && slugs.size === 2 && aBodies.length === 1 && bBodies.length === 1 &&
+      aBodies[0] !== bBodies[0]);
+  }
+
+  // Durable run-effect reconciliation.
+  {
+    seed();
+    await saveCand(candidate('ChIJ_A', { score: 2.0 }));
+    await saveCand(candidate('ChIJ_B', { name: 'Beta Plumbing', phone: '816-555-0200', score: 1.0 }));
+    // Pre-create a site for B so the run links it (repair) and drafts A (new).
+    const leadB = draftAuto.candidateToLead(candidate('ChIJ_B', { name: 'Beta Plumbing', phone: '816-555-0200' }));
+    const recB = (await import('../lib/draft-site.js')).draftFromLead(leadB, new Set());
+    const siteB = { ...recB, placeId: 'ChIJ_B', published: false, claimed: false, modules: ['P0'], source: 'draft-autonomy', leadId: 'ChIJ_B' };
+    await cmd(['SET', 'ks:site:' + recB.slug, JSON.stringify(siteB)]);
+    await cmd(['HSET', 'ks:siteidx', recB.slug, JSON.stringify((await import('../lib/sites.js')).summary(siteB))]);
+    await cmd(['HSET', 'ks:draft:place', 'ChIJ_B', recB.slug]);
+    await draftAuto.saveDraftConfig({ enabled: true, draftsPerRun: 5, minScore: 0 });
+    const r = await draftAuto.runDraftAutonomy();
+    const runId = runIdForToday();
+    const effects = await draftAuto._getRunEffects(runId);
+    const rc = await cmd(['GET', 'ks:draft:rc:' + runId]);
+    check('GC. durable effects reconcile with ledger',
+      r.run.drafted === 1 && r.run.linked === 1 &&
+      Number(rc) === 1 &&
+      Object.values(effects.effects).filter((v) => v === 'new').length === 1 &&
+      Object.values(effects.effects).filter((v) => v === 'repair').length === 1);
+  }
 }
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
