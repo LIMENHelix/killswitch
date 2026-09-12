@@ -7,7 +7,8 @@
     { "path": "/api/cron-followups", "schedule": "*/5 * * * *" },
     { "path": "/api/cron-maintenance", "schedule": "15 * * * *" },
     { "path": "/api/cron-scorecard", "schedule": "0 14,15 * * 1" },
-    { "path": "/api/cron-discovery", "schedule": "37 4,10,16,22 * * *" }
+    { "path": "/api/cron-discovery", "schedule": "37 4,10,16,22 * * *" },
+    { "path": "/api/cron-draft", "schedule": "53 5,11,17,23 * * *" }
   ],
   "headers": [
     {

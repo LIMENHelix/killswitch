@@ -25,8 +25,9 @@ import { getFunnel, setStage, summarize, toPlays, migrateFrom, migrateStage, STA
 import { wilsonLower, allocate } from '../lib/laser.js';
 import { getSuppressionState, matchSuppression, suppressContact, liftSuppression, listSuppressions } from '../lib/suppression.js';
 import { discStatus, listRankedCandidates, listRuns, listCalls, getDiscConfig, saveDiscConfig, validateDiscConfigPatch, resetDiscCursor } from '../lib/discovery.js';
+import { draftAutonomyStatus, listDraftRuns, getDraftConfig, saveDraftConfig, validateDraftConfigPatch } from '../lib/draft-autonomy.js';
 
-const OWNER_ONLY = new Set(['setconfig', 'run-autopilot', 'mail', 'seed', 'unsuppress', 'suppression-list', 'disc-setconfig']);
+const OWNER_ONLY = new Set(['setconfig', 'run-autopilot', 'mail', 'seed', 'unsuppress', 'suppression-list', 'disc-setconfig', 'draft-setconfig']);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).json({ error: 'method' }); return; }
@@ -182,6 +183,19 @@ export default async function handler(req, res) {
       await saveDiscConfig(checked.config);
       if (body.resetCursor) await resetDiscCursor();
       res.status(200).json({ ok: true, config: checked.config, cursorReset: !!body.resetCursor }); return;
+    }
+    // K5 draft autonomy — read-only views for both roles; only owner can arm.
+    if (action === 'draft-status') {
+      res.status(200).json({ ok: true, ...(await draftAutonomyStatus()), role: who.role }); return;
+    }
+    if (action === 'draft-runs') {
+      res.status(200).json({ ok: true, runs: await listDraftRuns(body.limit) }); return;
+    }
+    if (action === 'draft-setconfig') {
+      const checked = validateDraftConfigPatch(await getDraftConfig(), body);
+      if (checked.error) { res.status(400).json({ error: checked.error, message: checked.message }); return; }
+      await saveDraftConfig(checked.config);
+      res.status(200).json({ ok: true, config: checked.config }); return;
     }
     if (action === 'seed') {
       const leads = Array.isArray(body.leads) ? body.leads : [];
