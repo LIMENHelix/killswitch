@@ -144,10 +144,16 @@ export function setupKvStub() {
       if (get(keys[0]) !== owner) return 'LEASE_LOST';
       const effects = get(keys[1]) || {};
       const cur = effects[effectId];
-      if (cur) {
-        const cs = (String(cur).match(/"status":"(\w+)"/) || [])[1];
-        const ns = (String(patchJSON).match(/"status":"(\w+)"/) || [])[1];
-        if (cs !== ns && ['accepted', 'dead', 'rejected'].includes(cs)) return 'TERMINAL_LOCKED';
+      if (cur !== undefined) {
+        // Mirror the production Lua: structural parse, top-level status only.
+        // Never a regex/first-textual match — embedded lead snapshots may
+        // carry their own status field. Fail closed with zero mutation.
+        let parsed;
+        try { parsed = JSON.parse(cur); } catch { return 'CORRUPT_EFFECT'; }
+        if (!parsed || typeof parsed !== 'object' || typeof parsed.status !== 'string') return 'CORRUPT_EFFECT';
+        const VALID = ['reserved', 'attempting', 'accepted', 'retryable', 'unknown', 'dead', 'rejected'];
+        if (!VALID.includes(parsed.status)) return 'CORRUPT_EFFECT';
+        if (['accepted', 'dead', 'rejected'].includes(parsed.status)) return 'TERMINAL_LOCKED';
       }
       effects[effectId] = patchJSON;
       set(keys[1], effects);

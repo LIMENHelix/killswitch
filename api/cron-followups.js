@@ -50,7 +50,7 @@ export async function drainFollowups() {
       if (account.engagedAt) { await skip('engaged'); continue; }
       const paid = account.stripeCustomerId
         || (Array.isArray(account.owned) && account.owned.length)
-        || (Array.isArray(account.plan) && account.plan.some((p) => p && p !== 'P0'))
+        || (Array.isArray(account.plan) && account.plan.some((p) => p !== 'P0'))
         || (site.modules || []).some((p) => p !== 'P0');
       if (paid) { await skip('paid'); continue; }
       let suppressed = null;

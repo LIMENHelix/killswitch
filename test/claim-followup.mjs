@@ -143,6 +143,15 @@ await queueClaimReminder(await getSite('river-auto'), { email: SITE.email });
 q2 = KV.get('ks:auto:q'); q2[Object.keys(q2)[0]] = Date.now() - 1000; KV.set('ks:auto:q', q2);
 r = await runCron();
 check('owner became a paying customer -> skipped as paid', r.body.reasons.paid === 1 && resendCalls.length === 0);
+// Regression for the exact pre-PR paid predicate: a plan array containing a
+// falsy entry still counts as paid (`(p) => p !== 'P0'`), because '' !== 'P0'.
+// The out-of-scope variant `(p) => p && p !== 'P0'` would treat this owner as
+// not paid and SEND the reminder. Do not reinterpret the product rule.
+seed(); await putSite(); await upsertAccount({ email: SITE.email, plan: [''], tokenNonce: 'n' });
+await queueClaimReminder(await getSite('river-auto'), { email: SITE.email });
+q2 = KV.get('ks:auto:q'); q2[Object.keys(q2)[0]] = Date.now() - 1000; KV.set('ks:auto:q', q2);
+r = await runCron();
+check('a plan array with a falsy entry is still paid (pre-PR predicate) -> skipped as paid', r.body.reasons.paid === 1 && resendCalls.length === 0);
 // suppressed after scheduling
 seed(); await putSite(); await upsertAccount({ email: SITE.email, plan: ['P0'], tokenNonce: 'n' });
 await suppressContact({ email: SITE.email }, { reason: 'test', actor: 'test' });

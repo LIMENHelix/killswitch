@@ -226,10 +226,81 @@ const revive = await updateEffect({ owner: owner10, effectId: resTerm.effectId, 
 check('accepted -> attempting is refused as TERMINAL_LOCKED', !revive.ok && revive.status === 'TERMINAL_LOCKED');
 check('stored record is still accepted', (await getEffect(resTerm.effectId)).status === STATUS.ACCEPTED);
 const sameTerm = await updateEffect({ owner: owner10, effectId: resTerm.effectId, patch: { status: STATUS.ACCEPTED, providerRef: 'psc_1' } });
-check('rewriting the same terminal state stays idempotent', sameTerm.ok);
+check('even a same-status rewrite of a terminal effect is locked', !sameTerm.ok && sameTerm.status === 'TERMINAL_LOCKED');
 const deadPath = await updateEffect({ owner: owner10, effectId: resTerm.effectId, patch: { status: STATUS.DEAD, terminalReason: 'x' } });
 check('accepted -> dead is also refused', !deadPath.ok && deadPath.status === 'TERMINAL_LOCKED');
 await releaseLease(owner10);
+
+console.log('\nTERMINAL LOCK READS ONLY THE AUTHORITATIVE TOP-LEVEL STATUS');
+// The embedded lead snapshot may carry its own status field. The lock must
+// look ONLY at the effect's top-level status, never at lead data.
+seed();
+const owner11 = 'own-11';
+await acquireLease(owner11, 60000);
+const leadStatusCases = [
+  { leadStatus: 'ready', top: STATUS.ACCEPTED, attempt: STATUS.ATTEMPTING },
+  { leadStatus: 'retryable', top: STATUS.ACCEPTED, attempt: STATUS.ATTEMPTING },
+  { leadStatus: 'unknown', top: STATUS.DEAD, attempt: STATUS.RETRYABLE },
+  { leadStatus: 'accepted', top: STATUS.REJECTED, attempt: STATUS.UNKNOWN },
+];
+for (let i = 0; i < leadStatusCases.length; i++) {
+  const c = leadStatusCases[i];
+  const eff = baseEffect({
+    canonicalId: 'leadstat-' + i, leadId: 'leadstat-' + i,
+    lead: { id: 'leadstat-' + i, name: 'Shop ' + i, status: c.leadStatus },
+  });
+  const res = await reserveEffect({ owner: owner11, effect: eff, cfg: { ...baseCfg(), perRunCap: 100 } });
+  const term = await updateEffect({ owner: owner11, effectId: res.effectId, patch: { status: c.top, terminalReason: 't' } });
+  check(`lead.status=${c.leadStatus}: effect reaches ${c.top}`, term.ok);
+  const blocked = await updateEffect({ owner: owner11, effectId: res.effectId, patch: { status: c.attempt } });
+  check(`lead.status=${c.leadStatus}: ${c.top} -> ${c.attempt} is BLOCKED`, !blocked.ok && blocked.status === 'TERMINAL_LOCKED');
+  const stored = await getEffect(res.effectId);
+  check(`lead.status=${c.leadStatus}: stored effect remains ${c.top}`, stored.status === c.top && stored.lead.status === c.leadStatus);
+}
+
+console.log('\nCORRUPT EFFECT RECORDS FAIL CLOSED WITH ZERO MUTATION');
+const owner12 = owner11;
+const malformedId = 'oe-malformed';
+const effectsHash = KV.get('ks:outreach:effects') || {};
+effectsHash[malformedId] = '{not json';
+KV.set('ks:outreach:effects', effectsHash);
+const bad1 = await updateEffect({ owner: owner12, effectId: malformedId, patch: { status: STATUS.ATTEMPTING } });
+check('malformed stored JSON fails closed', !bad1.ok);
+check('malformed record is untouched', (KV.get('ks:outreach:effects') || {})[malformedId] === '{not json');
+
+const noStatusId = 'oe-nostatus';
+effectsHash[noStatusId] = JSON.stringify({ effectId: noStatusId, runId: 'r', channel: 'postcard' });
+KV.set('ks:outreach:effects', effectsHash);
+const bad2 = await updateEffect({ owner: owner12, effectId: noStatusId, patch: { status: STATUS.ATTEMPTING } });
+check('missing top-level status fails closed', !bad2.ok && bad2.status === 'CORRUPT_EFFECT');
+check('status-less record is untouched', !JSON.parse((KV.get('ks:outreach:effects') || {})[noStatusId]).status);
+
+const numStatusId = 'oe-numstatus';
+effectsHash[numStatusId] = JSON.stringify({ effectId: numStatusId, status: 5 });
+KV.set('ks:outreach:effects', effectsHash);
+const bad3 = await updateEffect({ owner: owner12, effectId: numStatusId, patch: { status: STATUS.ATTEMPTING } });
+check('non-string top-level status fails closed', !bad3.ok && bad3.status === 'CORRUPT_EFFECT');
+
+const bogusStatusId = 'oe-bogusstatus';
+effectsHash[bogusStatusId] = JSON.stringify({ effectId: bogusStatusId, status: 'bogus' });
+KV.set('ks:outreach:effects', effectsHash);
+const bad4 = await updateEffect({ owner: owner12, effectId: bogusStatusId, patch: { status: STATUS.ATTEMPTING } });
+check('unrecognized top-level status fails closed', !bad4.ok && bad4.status === 'CORRUPT_EFFECT');
+
+console.log('\nLEGITIMATE NONTERMINAL TRANSITIONS STILL WORK');
+const effFlow = baseEffect({ canonicalId: 'flow-1', leadId: 'flow-1', lead: { id: 'flow-1', status: 'ready' } });
+const resFlow = await reserveEffect({ owner: owner12, effect: effFlow, cfg: { ...baseCfg(), perRunCap: 100 } });
+const f1 = await updateEffect({ owner: owner12, effectId: resFlow.effectId, patch: { status: STATUS.ATTEMPTING } });
+check('reserved -> attempting works', f1.ok);
+const f2 = await updateEffect({ owner: owner12, effectId: resFlow.effectId, patch: { status: STATUS.UNKNOWN, attempts: 1 } });
+check('attempting -> unknown works', f2.ok);
+const f3 = await updateEffect({ owner: owner12, effectId: resFlow.effectId, patch: { status: STATUS.ATTEMPTING } });
+check('unknown -> attempting (retry) works', f3.ok);
+const f4 = await updateEffect({ owner: owner12, effectId: resFlow.effectId, patch: { status: STATUS.ACCEPTED, providerRef: 'psc_ok' } });
+check('attempting -> accepted works', f4.ok);
+const f5 = await updateEffect({ owner: owner12, effectId: resFlow.effectId, patch: { status: STATUS.ATTEMPTING } });
+check('accepted is then locked', !f5.ok && f5.status === 'TERMINAL_LOCKED');
+await releaseLease(owner12);
 
 console.log('\nA STALE OWNER CANNOT RELEASE A SUCCESSOR LEASE');
 seed();
