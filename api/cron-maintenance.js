@@ -2,8 +2,8 @@
 // PURELY ADDITIVE. It reads, snapshots and reports. It changes no site, no
 // account and no subscription, so the worst a bug here can do is a noisy email.
 //
-// FAILS CLOSED on CRON_SECRET, same pattern as the other two crons, because an
-// open endpoint that walks every customer site is a free denial-of-service lever.
+// AUTH: CRON_SECRET Bearer only. No query-token fallback. An open endpoint that
+// walks every customer site is a free denial-of-service lever.
 import { runBackup, checkUptime, lastUptime, sweepExpired } from '../lib/backup.js';
 import { listSites } from '../lib/sites.js';
 import { getAccounts, saveAccounts } from '../lib/store.js';
@@ -14,19 +14,11 @@ import { notifyOperator, labelPhases } from '../lib/notify.js';
 import { removeModulesLoud } from '../lib/site-link.js';
 import { publicOrigin } from '../lib/origin.js';
 import { backfillLifecycle } from '../lib/lifecycle.js';
+import { cronAuthorized } from '../lib/cron-auth.js';
 
-export default async function handler(req, res) {
-  const secret = process.env.CRON_SECRET;
-  const bearer = (req.headers && req.headers.authorization) || '';
-  const qtok = (req.query && req.query.token) || '';
-  // Fail closed on BOTH sides of every path: configured secret AND matching
-  // caller credential must both be present — `undefined === undefined` must
-  // never authorize. Same hardening as cron-followups.js.
-  const allowed = (!!secret && bearer === 'Bearer ' + secret)
-    || (!!process.env.ADMIN_KEY && qtok === process.env.ADMIN_KEY)
-    || (!!process.env.SWITCH_TOKEN && qtok === process.env.SWITCH_TOKEN);
-  if (!secret || !allowed) { res.status(401).json({ error: 'unauthorized' }); return; }
-
+// The work, separated from the auth so the owner can also trigger it through
+// /api/admin action:run-maintenance. The cron URL itself stays bearer-only.
+export async function runMaintenance() {
   const out = { backup: null, uptime: null, expired: null, lifecycle: null, errors: [] };
 
   // Older customers existed before the lifecycle ledger. Seed a bounded batch
@@ -114,5 +106,14 @@ export default async function handler(req, res) {
     out.errors.push('uptime');
   }
 
-  res.status(out.errors.length ? 500 : 200).json({ ok: out.errors.length === 0, ...out });
+  return { code: out.errors.length ? 500 : 200, body: { ok: out.errors.length === 0, ...out } };
+}
+
+export default async function handler(req, res) {
+  if (!cronAuthorized(req)) {
+    res.status(401).json({ error: 'unauthorized' });
+    return;
+  }
+  const r = await runMaintenance();
+  res.status(r.code).json(r.body);
 }

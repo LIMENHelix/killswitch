@@ -1,26 +1,24 @@
-// Scheduled autopilot mailer. Vercel cron hits this on a schedule (see
-// vercel.json). It self-gates: does nothing unless autopilot is ON and under
-// the daily cap and budget. Also callable manually with the admin token.
-import { runAutopilot } from '../lib/mailer.js';
-import { identify, isOwner } from '../lib/roles.js';
+// Scheduled K6 prospect-outreach run. Vercel cron hits this on a schedule (see
+// vercel.json). It self-gates: with the K6 outreach config not armed this does
+// exactly nothing — no provider call, no spend.
+//
+// AUTH: CRON_SECRET Bearer only. No query/body token fallback. The cron URL
+// spends real money (Lob postage) and must never be reachable without the
+// project secret. Owner manual triggers use the owner-authenticated
+// /api/admin actions (run-outreach / run-autopilot / mail).
+import { runPostcardOutreach } from '../lib/k6-outreach.js';
+import { cronAuthorized } from '../lib/cron-auth.js';
 
 export const config = { maxDuration: 300 };
 
 export default async function handler(req, res) {
-  // Fails CLOSED. Vercel sends `Authorization: Bearer <CRON_SECRET>` on cron
-  // invocations once CRON_SECRET is set on the project. With no secret set this
-  // endpoint spends real money (Lob postage) for anyone who finds the URL, so a
-  // missing secret means nobody gets in except an admin token.
-  const secret = process.env.CRON_SECRET;
-  const auth = req.headers.authorization || '';
-  const token = (req.query && req.query.token) || '';
-  const okCron = !!secret && auth === `Bearer ${secret}`;
-  // Owner only on the manual path: this spends real postage.
-  const okAdmin = isOwner(identify(token));
-  if (!okCron && !okAdmin) { res.status(401).json({ error: 'unauthorized' }); return; }
+  if (!cronAuthorized(req)) {
+    res.status(401).json({ error: 'unauthorized' });
+    return;
+  }
 
   try {
-    const result = await runAutopilot(okAdmin ? 'manual-cron' : 'cron');
+    const result = await runPostcardOutreach({ clock: () => new Date() });
     res.status(200).json({ ok: true, ...result });
   } catch (e) {
     console.error('[cron-mail]', e);

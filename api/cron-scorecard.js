@@ -1,26 +1,27 @@
 // Monday operating review, delivered at 9 AM America/Chicago year-round.
 // Vercel schedules the two possible UTC hours; the timezone gate below sends at
 // exactly one of them, and a durable marker makes retries idempotent.
+//
+// AUTH: CRON_SECRET Bearer only. No query-token fallback. Manual owner triggers
+// use the owner-authenticated /api/admin action:run-scorecard endpoint.
 import { collectWeeklyScorecard, isReviewWindow, previousCompleteWeek } from '../lib/scorecard.js';
 import { notifyOperator } from '../lib/notify.js';
 import { cmd, pipeline } from '../lib/kv.js';
-import { identify, isOwner } from '../lib/roles.js';
 import { publicOrigin } from '../lib/origin.js';
+import { cronAuthorized } from '../lib/cron-auth.js';
 
 export const config = { maxDuration: 60 };
 
 const usd = (cents) => '$' + ((Number(cents) || 0) / 100).toFixed(2);
 
 export default async function handler(req, res) {
-  const secret = process.env.CRON_SECRET;
-  const auth = req.headers && req.headers.authorization || '';
-  const token = req.query && req.query.token || '';
-  const cron = !!secret && auth === 'Bearer ' + secret;
-  const owner = isOwner(identify(token));
-  if (!cron && !owner) { res.status(401).json({ error: 'unauthorized' }); return; }
+  if (!cronAuthorized(req)) {
+    res.status(401).json({ error: 'unauthorized' });
+    return;
+  }
 
   const now = new Date();
-  if (cron && !isReviewWindow(now)) {
+  if (!isReviewWindow(now)) {
     res.status(200).json({ ok: true, sent: false, reason: 'outside_chicago_review_hour' });
     return;
   }

@@ -14,11 +14,15 @@
 //   config  -> autopilot settings, read only                      (both roles)
 //   update / suppress -> record an outcome or do-not-contact      (both roles)
 //   setconfig / run-autopilot / mail / seed / unsuppress          (owner only)
+//   outreach-status / outreach-runs / outreach-effects            (owner only)
+//   outreach-setconfig / run-outreach / run-scorecard             (owner only)
+//   run-followups / run-maintenance                               (owner only)
 //
-// Nothing mails unless the OWNER posts action:mail with explicit ids.
+// Nothing mails unless the OWNER posts action:mail with explicit ids, and even
+// then only through the armed K6 outreach control plane.
 
 import { configured, getLeads, saveLeads, getConfig, saveConfig, getLeadMeta, setLeadMeta } from '../lib/store.js';
-import { lobSend, runAutopilot, spentToDate, COST } from '../lib/mailer.js';
+import { spentToDate, COST } from '../lib/mailer.js';
 import { identify, isOwner, anyKeyConfigured } from '../lib/roles.js';
 import { getSite, upsertSite } from '../lib/sites.js';
 import { getFunnel, setStage, summarize, toPlays, migrateFrom, migrateStage, STAGES } from '../lib/funnel.js';
@@ -26,8 +30,33 @@ import { wilsonLower, allocate } from '../lib/laser.js';
 import { getSuppressionState, matchSuppression, suppressContact, liftSuppression, listSuppressions } from '../lib/suppression.js';
 import { discStatus, listRankedCandidates, listRuns, listCalls, getDiscConfig, saveDiscConfig, validateDiscConfigPatch, resetDiscCursor } from '../lib/discovery.js';
 import { draftAutonomyStatus, listDraftRuns, getDraftConfig, saveDraftConfig, validateDraftConfigPatch } from '../lib/draft-autonomy.js';
+import { runPostcardOutreach, getOutreachConfig, saveOutreachConfig, outreachConfigArmable, validateOutreachConfigPatch } from '../lib/k6-outreach.js';
+import { listRuns as listOutreachRuns, listEffects, getStatusCounts } from '../lib/outreach-effects.js';
+import { collectWeeklyScorecard, previousCompleteWeek } from '../lib/scorecard.js';
+import { notifyOperator } from '../lib/notify.js';
+import { publicOrigin } from '../lib/origin.js';
+import { cmd, pipeline } from '../lib/kv.js';
+import { drainFollowups } from './cron-followups.js';
+import { runMaintenance } from './cron-maintenance.js';
 
-const OWNER_ONLY = new Set(['setconfig', 'run-autopilot', 'mail', 'seed', 'unsuppress', 'suppression-list', 'disc-setconfig', 'draft-setconfig']);
+const OWNER_ONLY = new Set(['setconfig', 'run-autopilot', 'mail', 'seed', 'unsuppress', 'suppression-list', 'disc-setconfig', 'draft-setconfig', 'outreach-status', 'outreach-setconfig', 'outreach-runs', 'outreach-effects', 'run-outreach', 'run-scorecard', 'run-followups', 'run-maintenance']);
+
+function outreachStatus(cfg) {
+  const armable = outreachConfigArmable(cfg);
+  const blockers = [];
+  if (!armable) {
+    if (!cfg.enabled) blockers.push('disabled');
+    if (!(Number(cfg.perRunCap) > 0)) blockers.push('perRunCap must be > 0');
+    if (!(Number(cfg.dailyCap) > 0)) blockers.push('dailyCap must be > 0');
+    if (!(Number(cfg.lifetimeCap) > 0)) blockers.push('lifetimeCap must be > 0');
+    if (!(Number(cfg.perRunSpendCap) > 0)) blockers.push('perRunSpendCap must be > 0');
+    if (!(Number(cfg.dailySpendCap) > 0)) blockers.push('dailySpendCap must be > 0');
+    if (!Array.isArray(cfg.channels) || cfg.channels.length === 0) blockers.push('at least one supported channel required (postcard)');
+    else if (!cfg.channels.every((c) => ['postcard'].includes(c))) blockers.push('unsupported channel (this build supports: postcard)');
+    if (!['autonomous', 'manual', 'test'].includes(cfg.mode)) blockers.push('mode must be autonomous, manual, or test');
+  }
+  return { armed: armable, blockers };
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).json({ error: 'method' }); return; }
@@ -158,7 +187,22 @@ export default async function handler(req, res) {
       res.status(200).json({ ok: true, config: next, spent }); return;
     }
     if (action === 'run-autopilot') {
-      res.status(200).json({ ok: true, result: await runAutopilot('manual') }); return;
+      // The legacy name for "run the prospect mail batch now". It goes through
+      // the same K6 control plane as everything else: unarmed means no send.
+      const result = await runPostcardOutreach({});
+      if (!result.ran) {
+        res.status(409).json({ error: 'outreach_not_armed', reason: result.reason, message: 'K6 outreach is not armed. Prospect postcard sends stay off until the owner stores a complete outreach config.' });
+        return;
+      }
+      res.status(200).json({ ok: true, result }); return;
+    }
+    if (action === 'run-followups') {
+      const r = await drainFollowups();
+      res.status(r.code).json(r.body); return;
+    }
+    if (action === 'run-maintenance') {
+      const r = await runMaintenance();
+      res.status(r.code).json(r.body); return;
     }
     // K4 discovery — read-only views for both roles; only the owner can touch
     // the config. These endpoints expose candidate facts and run ledgers, never
@@ -196,6 +240,99 @@ export default async function handler(req, res) {
       if (checked.error) { res.status(400).json({ error: checked.error, message: checked.message }); return; }
       await saveDraftConfig(checked.config);
       res.status(200).json({ ok: true, config: checked.config }); return;
+    }
+    // K6 outreach — owner-only config and manual trigger; read-only status/runs/effects for both roles.
+    if (action === 'outreach-status') {
+      const cfg = await getOutreachConfig();
+      const { armed, blockers } = outreachStatus(cfg);
+      res.status(200).json({
+        ok: true,
+        armed,
+        config: {
+          enabled: cfg.enabled,
+          mode: cfg.mode,
+          channels: cfg.channels,
+          perRunCap: cfg.perRunCap,
+          dailyCap: cfg.dailyCap,
+          lifetimeCap: cfg.lifetimeCap,
+          perRunSpendCap: cfg.perRunSpendCap,
+          dailySpendCap: cfg.dailySpendCap,
+        },
+        counts: await getStatusCounts(),
+        runs: await listOutreachRuns(5),
+        blockers,
+        role: who.role,
+      }); return;
+    }
+    if (action === 'outreach-setconfig') {
+      const checked = validateOutreachConfigPatch(await getOutreachConfig(), body);
+      if (checked.error) { res.status(400).json({ error: checked.error, message: checked.message }); return; }
+      await saveOutreachConfig(checked.config);
+      res.status(200).json({ ok: true, config: checked.config }); return;
+    }
+    if (action === 'outreach-runs') {
+      res.status(200).json({ ok: true, runs: await listOutreachRuns(body.limit || 10) }); return;
+    }
+    if (action === 'outreach-effects') {
+      res.status(200).json({ ok: true, effects: await listEffects(body.limit || 50) }); return;
+    }
+    if (action === 'run-outreach') {
+      const result = await runPostcardOutreach({});
+      if (!result.ran) {
+        res.status(409).json({ error: 'outreach_not_armed', reason: result.reason, message: 'K6 outreach is not armed. Store a complete outreach config first.' });
+        return;
+      }
+      res.status(200).json({ ok: true, ...result }); return;
+    }
+    if (action === 'run-scorecard') {
+      const period = previousCompleteWeek(new Date());
+      const sentKey = `ks:scorecard:sent:${period.endDate}`;
+      const claimKey = `ks:scorecard:claim:${period.endDate}`;
+      if (await cmd(['GET', sentKey])) {
+        res.status(200).json({ ok: true, sent: false, duplicate: true, period });
+        return;
+      }
+      const claimed = await cmd(['SET', claimKey, new Date().toISOString(), 'NX', 'EX', '900']);
+      if (claimed !== 'OK') { res.status(200).json({ ok: true, sent: false, busy: true, period }); return; }
+      try {
+        const report = await collectWeeklyScorecard(new Date());
+        const a = report.acquisition, activity = report.activity, economics = report.economics, operations = report.operations;
+        const notify = await notifyOperator({
+          subject: `Weekly Killswitch scorecard - ${report.period.startDate} to ${report.period.endDate}`,
+          heading: 'Your weekly operating scorecard is ready',
+          lines: [
+            `Period: ${report.period.startDate} through ${report.period.endDate} (end exclusive)`,
+            `Valid signups: ${a.validSignups} | claimed sites: ${a.claimedSites} | paid activations: ${a.paidActivations}`,
+            `Signup to claimed: ${a.signupToClaimedRate == null ? 'n/a' : a.signupToClaimedRate + '%'} | claimed to paid: ${a.claimedToPaidRate == null ? 'n/a' : a.claimedToPaidRate + '%'}`,
+            `Calls: ${activity.calls} | bookings: ${activity.bookings} | enquiries: ${activity.enquiries} | suppression requests: ${activity.suppressionRequests}`,
+            `Tracked spend: $${(economics.trackedSpendCents / 100).toFixed(2)} | collected: $${(economics.collectedCents / 100).toFixed(2)} | refunded: $${(economics.refundedCents / 100).toFixed(2)}`,
+            `Payment failures: ${operations.paymentFailures} | disputes: ${operations.disputes} | failed webhooks: ${operations.failedWebhooks}`,
+            `Open work orders: ${operations.openWorkOrders} | blocked customers: ${operations.blockedCustomers} | dead letters: ${operations.deadLetters}`,
+            'Search Console and Vercel Web Analytics remain external dashboard inputs and are not guessed in this email.',
+            'Google Ads remains disabled until a budget and stop-loss are approved.',
+          ],
+          url: publicOrigin() + '/master',
+          urlText: 'Open the full scorecard',
+        });
+        if (!notify.sent) {
+          await cmd(['DEL', claimKey]);
+          res.status(500).json({ error: 'notify_failed', reason: notify.reason });
+          return;
+        }
+        const expirySeconds = 400 * 86400;
+        const nowIso = new Date().toISOString();
+        await pipeline([
+          ['SET', sentKey, nowIso, 'EX', String(expirySeconds)],
+          ['SET', 'ks:scorecard:last', JSON.stringify({ sentAt: nowIso, endDate: period.endDate, report })],
+          ['DEL', claimKey],
+        ]);
+        res.status(200).json({ ok: true, sent: true, report });
+      } catch (e) {
+        await cmd(['DEL', claimKey]).catch(() => {});
+        console.error('[admin] run-scorecard', e);
+        res.status(500).json({ error: String(e.message || e) });
+      }
+      return;
     }
     if (action === 'seed') {
       const leads = Array.isArray(body.leads) ? body.leads : [];
@@ -277,26 +414,20 @@ export default async function handler(req, res) {
     }
 
     if (action === 'mail') {
-      const ids = new Set(body.ids || []);
-      const cap = Math.min(ids.size, 250); // safety ceiling per call
-      const leads = await getLeads();
-      // Read the per-lead notes separately rather than merging them into `leads`:
-      // this array gets written back below, and meta belongs in its own hash.
-      const [meta, suppressionState] = await Promise.all([getLeadMeta(), getSuppressionState()]);
-      let sent = 0, bad = 0, suppressed = 0; const failed = [];
-      let done = 0;
-      for (const l of leads) {
-        if (done >= cap) break;
-        if (!ids.has(l.id) || l.status === 'mailed' || l.status === 'bad_address' || l.lob_id) continue;
-        done++;
-        const r = await lobSend({ ...l, ...(meta[l.id] || {}) }, suppressionState);
-        if (r.id) { l.status = 'mailed'; l.lob_id = r.id; sent++; }
-        else if (r.code === 'failed_deliverability_strictness') { l.status = 'bad_address'; bad++; }
-        else if (r.code === 'suppressed') { suppressed++; }
-        else { failed.push({ name: l.name, error: r.error }); }
+      // Owner-approved prospect postcards. This is the same K6 money path as
+      // the cron: eligibility, suppression, durable effect reservation, caps,
+      // provider idempotency. When K6 outreach is not armed it fails CLOSED —
+      // owner authority initiates the bounded workflow, it does not bypass it.
+      // The 250-id ceiling is a request-size bound on top of the configured
+      // caps, never a replacement for them.
+      const ids = new Set((Array.isArray(body.ids) ? body.ids : []).slice(0, 250));
+      if (!ids.size) { res.status(400).json({ error: 'no_ids' }); return; }
+      const result = await runPostcardOutreach({ idFilter: ids, requestCeiling: 250 });
+      if (!result.ran) {
+        res.status(409).json({ error: 'outreach_not_armed', reason: result.reason, message: 'K6 outreach is not armed. Prospect postcard sends stay off until the owner stores a complete outreach config.' });
+        return;
       }
-      await saveLeads(leads);
-      res.status(200).json({ ok: true, sent, bad, suppressed, failed }); return;
+      res.status(200).json({ ok: true, k6: true, ...result }); return;
     }
     res.status(400).json({ error: 'unknown action' });
   } catch (e) {

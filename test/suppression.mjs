@@ -1,6 +1,6 @@
 // One opt-out must stop every outbound path, not only the channel on which it
 // arrived. Exercises the real admin, mailer and outreach-writer handlers.
-process.env.KV_REST_API_URL = 'https://kv.suppression.test/';
+process.env.KV_REST_API_URL = 'https://kv.suppression.test';
 process.env.KV_REST_API_TOKEN = 'kvtok';
 process.env.ADMIN_KEY = 'owner-key';
 process.env.SWITCH_TOKEN = 'switch-key';
@@ -15,35 +15,19 @@ process.env.KS_FROM_ZIP = '64101';
 delete process.env.RESEND_API_KEY;
 delete process.env.VERCEL_ENV;
 
-const KV = new Map();
+import { setupKvStub } from './helpers/k6-kv.mjs';
+
+const { KV } = setupKvStub();
 let lobCalls = 0;
 let anthropicCalls = 0;
 
+const kvFetch = globalThis.fetch;
 globalThis.fetch = async (url, opts = {}) => {
   const target = String(url);
   const ok = (body) => ({ ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body) });
   if (target === 'https://api.lob.com/v1/postcards') { lobCalls++; return ok({ id: 'psc_' + lobCalls }); }
   if (target === 'https://api.anthropic.com/v1/messages') { anthropicCalls++; throw new Error('suppressed contact reached Anthropic'); }
-  if (!target.startsWith('https://kv.suppression.test')) throw new Error('unexpected network: ' + target);
-  const input = JSON.parse(opts.body);
-  const run = (a) => {
-    const [op, key, field, value] = a;
-    if (op === 'GET') return KV.has(key) ? KV.get(key) : null;
-    if (op === 'SET') { KV.set(key, value === undefined ? field : value); return 'OK'; }
-    if (op === 'HGET') return (KV.get(key) || {})[field] ?? null;
-    if (op === 'HGETALL') {
-      const out = [];
-      for (const [k, v] of Object.entries(KV.get(key) || {})) out.push(k, v);
-      return out;
-    }
-    if (op === 'HSET') { const h = KV.get(key) || {}; h[field] = value; KV.set(key, h); return 1; }
-    if (op === 'HDEL') { const h = KV.get(key) || {}; delete h[field]; KV.set(key, h); return 1; }
-    throw new Error('unsupported ' + op);
-  };
-  const result = target.endsWith('/pipeline')
-    ? input.map((a) => ({ result: run(a) }))
-    : { result: run(input) };
-  return ok(result);
+  return kvFetch(url, opts);
 };
 
 const admin = (await import('../api/admin.js')).default;
@@ -101,14 +85,17 @@ r = await call(admin, { action: 'suppression-list', token: 'owner-key' });
 check('the owner has a real suppression list', r.code === 200 && r.body.suppressions.length === 1);
 
 console.log('\nEVERY OUTBOUND PATH STOPS BEFORE SPEND OR GENERATION');
-r = await call(admin, { action: 'setconfig', token: 'owner-key', enabled: true, dailyCap: 1, budgetCeiling: 5 });
-check('the test autopilot can be armed', r.code === 200 && r.body.config.enabled === true, JSON.stringify(r.body));
-r = await call(admin, { action: 'run-autopilot', token: 'owner-key' });
-check('scheduled-style autopilot skips the suppressed contact', r.code === 200 && r.body.result.mailed === 0 && r.body.result.suppressed === 1, JSON.stringify(r.body));
-check('autopilot stops before Lob can charge postage', lobCalls === 0);
 r = await call(admin, { action: 'mail', token: 'owner-key', ids: [lead.id] });
-check('manual postcard approval skips the contact', r.code === 200 && r.body.sent === 0 && r.body.suppressed === 1, JSON.stringify(r.body));
+check('manual prospect mail fails closed while K6 is unarmed', r.code === 409 && r.body.error === 'outreach_not_armed', JSON.stringify(r.body));
+check('unarmed means Lob is never called', lobCalls === 0);
+r = await call(admin, { action: 'outreach-setconfig', token: 'owner-key', enabled: true, mode: 'test', channels: ['postcard'], perRunCap: 5, dailyCap: 5, lifetimeCap: 5, perRunSpendCap: 500, dailySpendCap: 500 });
+check('the owner can arm a complete synthetic K6 config', r.code === 200 && r.body.config.enabled === true, JSON.stringify(r.body));
+r = await call(admin, { action: 'run-autopilot', token: 'owner-key' });
+check('the K6 run skips the suppressed contact', r.code === 200 && r.body.result.sent === 0, JSON.stringify(r.body));
 check('suppression stops Lob before money can leave', lobCalls === 0);
+r = await call(admin, { action: 'mail', token: 'owner-key', ids: [lead.id] });
+check('manual postcard approval skips the suppressed contact too', r.code === 200 && r.body.sent === 0, JSON.stringify(r.body));
+check('still no Lob spend', lobCalls === 0);
 r = await call(switchBrain, {
   token: 'switch-key', name: lead.name, email: 'owner@quiet.example', phone: '9135550123', trade: lead.trade,
 });
@@ -124,6 +111,12 @@ check('the audit record remains after lifting', history.length === 1 && history[
 r = await call(admin, { action: 'mail', token: 'owner-key', ids: [lead.id] });
 check('outreach is available only after the lift', r.code === 200 && r.body.sent === 1, JSON.stringify(r.body));
 check('the permitted postcard reaches Lob exactly once', lobCalls === 1);
+
+console.log('\nA REP CANNOT TOUCH THE K6 CONTROLS');
+r = await call(admin, { action: 'outreach-setconfig', token: 'rep-key', enabled: false });
+check('a rep cannot change the outreach config', r.code === 403);
+r = await call(admin, { action: 'run-outreach', token: 'rep-key' });
+check('a rep cannot trigger an outreach run', r.code === 403);
 
 console.log('\n' + passed + ' passed, ' + failed + ' failed\n');
 process.exit(failed ? 1 : 0);

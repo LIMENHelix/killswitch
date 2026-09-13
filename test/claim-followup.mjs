@@ -302,9 +302,9 @@ check('C. secret present + no credential -> 401', (await authCall({ method: 'GET
 check('D. secret present + wrong credential -> 401', (await authCall({ method: 'GET', headers: { authorization: 'Bearer wrong' }, query: { token: 'wrong' } })).code === 401);
 check('E. valid Bearer CRON_SECRET -> authorized', (await authCall({ method: 'GET', headers: { authorization: 'Bearer cronsecret' }, query: {} })).code === 200);
 process.env.ADMIN_KEY = 'admin1';
-check('F1. operator token equal to a CONFIGURED ADMIN_KEY -> authorized', (await authCall({ method: 'GET', headers: {}, query: { token: 'admin1' } })).code === 200);
+check('F1. query token equal to a CONFIGURED ADMIN_KEY -> 401 (cron endpoints accept Bearer CRON_SECRET only)', (await authCall({ method: 'GET', headers: {}, query: { token: 'admin1' } })).code === 401);
 delete process.env.ADMIN_KEY;
-check('F2. same operator token with ADMIN_KEY unset -> 401 (no undefined===undefined)', (await authCall({ method: 'GET', headers: {}, query: { token: 'admin1' } })).code === 401);
+check('F2. query token with ADMIN_KEY unset -> 401 (no undefined===undefined)', (await authCall({ method: 'GET', headers: {}, query: { token: 'admin1' } })).code === 401);
 // restore: CRON_SECRET matters for every later section
 if (savedCron === undefined) delete process.env.CRON_SECRET; else process.env.CRON_SECRET = savedCron;
 if (savedAdmin === undefined) delete process.env.ADMIN_KEY; else process.env.ADMIN_KEY = savedAdmin;
