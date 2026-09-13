@@ -348,6 +348,24 @@
       <div class="ap-last" id="discMsg"></div>
     </section>
 
+    <!-- DRAFT AUTONOMY (K5): ranked candidates → one unpublished site draft each.
+         Still no contact, no publish, no customer entitlement. -->
+    <section class="autopanel" id="draftpanel">
+      <div class="ap-head">
+        <div class="ap-title">Draft autonomy <span class="ap-state off" id="draftState">OFF</span></div>
+      </div>
+      <div class="ap-sub" id="draftSub">Off. When armed, a cron turns ranked discovery candidates into unpublished site drafts, one per business. Drafts are not published and nobody is contacted.</div>
+      <div class="tiles" id="draftTiles"></div>
+      <div class="ap-last" id="draftLast"></div>
+      <div class="ap-grid ownerOnly" id="draftCfgWrap" hidden>
+        <label class="ap-f">Drafts / run<input type="number" id="draftPerRun" min="0" step="1" class="f" placeholder="0"></label>
+        <label class="ap-f">Minimum score<input type="number" id="draftMinScore" min="0" step="0.1" class="f" placeholder="0"></label>
+        <label class="switch"><input type="checkbox" id="draftEnabled"><span class="slider"></span></label>
+        <button class="btn sm" id="draftSave">Save draft settings</button>
+      </div>
+      <div class="ap-last" id="draftMsg"></div>
+    </section>
+
     <div class="bar">
       <input class="f" id="q" placeholder="Search business...">
       <select id="fTrade"><option value="">All trades</option></select>
@@ -495,7 +513,7 @@ async function boot(){
   fillFilters(); render();
   if(ROLE==='owner') loadCfg();
   loadFunnel();
-  loadDisc();
+  loadDisc(); loadDraft();
 }
 
 // ---- LASER funnel ----
@@ -616,6 +634,36 @@ $('discSave').onclick=async()=>{
   $('discMsg').textContent=r.ok?'Discovery settings saved.':('Not saved: '+((r.d&&r.d.message)||(r.d&&r.d.error)||'error'));
   await loadDisc();
 };
+
+// ---- draft autonomy (K5) ----
+let DRAFT={};
+async function loadDraft(){
+  const r=await api('draft-status'); if(!r.ok) return;
+  DRAFT=r.d;
+  $('draftState').textContent=DRAFT.enabled?'ON':'OFF';
+  $('draftState').className='ap-state '+(DRAFT.enabled?'on':'off');
+  $('draftSub').textContent=DRAFT.enabled
+    ? ('Armed. Up to '+DRAFT.draftsPerRun+' draft'+(DRAFT.draftsPerRun===1?'':'s')+' per run, minimum score '+DRAFT.minScore+'. '+DRAFT.rankedCount+' ranked, '+DRAFT.draftedCount+' already drafted.')
+    : 'Off. When armed, a cron turns ranked discovery candidates into unpublished site drafts, one per business. Drafts are not published and nobody is contacted.';
+  $('draftTiles').innerHTML=''
+    +'<div class="tile"><b>'+(DRAFT.rankedCount||0)+'</b><span>ranked</span></div>'
+    +'<div class="tile"><b>'+(DRAFT.draftedCount||0)+'</b><span>drafted</span></div>';
+  const lr=DRAFT.lastRun;
+  $('draftLast').textContent=lr
+    ? ('Last run '+lr.id+' — '+lr.status+(lr.capStop?', stopped: '+lr.capStop:'')+', '+lr.considered+' considered, '+lr.eligible+' eligible, '+lr.drafted+' drafted, '+lr.linked+' linked, '+lr.skipped+' skipped'+(lr.error?', error: '+lr.error:''))
+    : 'No draft run yet.';
+  if(ROLE==='owner'){ $('draftCfgWrap').hidden=false;
+    if(document.activeElement!==$('draftPerRun')) $('draftPerRun').value=DRAFT.draftsPerRun||'';
+    if(document.activeElement!==$('draftMinScore')) $('draftMinScore').value=DRAFT.minScore||'';
+    if(document.activeElement!==$('draftEnabled')) $('draftEnabled').checked=!!DRAFT.enabled;
+  }
+}
+$('draftSave').onclick=async()=>{
+  const r=await api('draft-setconfig',{enabled:$('draftEnabled').checked,draftsPerRun:+$('draftPerRun').value||0,minScore:parseFloat($('draftMinScore').value)||0});
+  $('draftMsg').textContent=r.ok?'Draft settings saved.':('Not saved: '+((r.d&&r.d.message)||(r.d&&r.d.error)||'error'));
+  await loadDraft();
+};
+
 function paintCfg(){
   $('apEnabled').checked=!!CFG.enabled;
   if(document.activeElement!==$('apCap')) $('apCap').value=CFG.dailyCap||'';
@@ -917,7 +965,7 @@ async function refresh(){
     const t=new Date(); $('liveLabel').textContent='Live · updated '+t.toLocaleTimeString(); }
   if(ROLE==='owner') loadCfg();
   loadFunnel();
-  loadDisc();
+  loadDisc(); loadDraft();
 }
 setInterval(refresh,20000);
 
