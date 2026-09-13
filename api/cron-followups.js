@@ -1,13 +1,7 @@
 // Drains the P6 follow-up queue. Vercel cron, every five minutes.
 //
-// FAILS CLOSED, following the same pattern api/cron-mail.js had to be fixed to
-// use: without this the URL is a public trigger that can make us send real email
-// on demand. CRON_SECRET is already set on Production for the mailer.
-//
-// A follow-up is only ever sent for a site whose owner is CURRENTLY paying for
-// P6. Checked at send time, not at queue time, because someone can switch the
-// module off in the three days between an enquiry and its review request, and
-// the honest behaviour is that switching it off stops the sending.
+// FAILS CLOSED on CRON_SECRET Bearer only. No query-token fallback. This cron
+// sends real email; the URL must not be triggerable without the project secret.
 import { claimItem, deadLetter, dueItems, MAX_SEND_ATTEMPTS, recordAttempt, releaseItem, retire, sendItem } from '../lib/automation.js';
 import { getSite, has } from '../lib/sites.js';
 import { getAccount } from '../lib/store.js';
@@ -15,22 +9,14 @@ import { getSuppression } from '../lib/suppression.js';
 import { panelToken } from '../lib/panel-auth.js';
 import { publicOrigin } from '../lib/origin.js';
 import { sendPanelLink } from '../lib/onboard.js';
+import { cronAuthorized } from '../lib/cron-auth.js';
 
-export default async function handler(req, res) {
-  const secret = process.env.CRON_SECRET;
-  const bearer = (req.headers && req.headers.authorization) || '';
-  const qtok = (req.query && req.query.token) || '';
-  // Fail closed on BOTH sides of every path: a configured secret AND the
-  // matching caller credential must both be present. `undefined === undefined`
-  // must never authorize, so each env var is checked truthy before comparing.
-  const given = (!!secret && bearer === 'Bearer ' + secret)
-    || (!!process.env.ADMIN_KEY && qtok === process.env.ADMIN_KEY)
-    || (!!process.env.SWITCH_TOKEN && qtok === process.env.SWITCH_TOKEN);
-  if (!secret || !given) { res.status(401).json({ error: 'unauthorized' }); return; }
-
+// The work, separated from the auth so the owner can also trigger it through
+// /api/admin action:run-followups. The cron URL itself stays bearer-only.
+export async function drainFollowups() {
   let items = [];
   try { items = await dueItems(Date.now()); }
-  catch (e) { console.error('[cron-followups] read', e); res.status(500).json({ error: 'queue_unreadable' }); return; }
+  catch (e) { console.error('[cron-followups] read', e); return { code: 500, body: { error: 'queue_unreadable' } }; }
 
   const out = { due: items.length, sent: 0, skipped: 0, busy: 0, dead: 0, failed: 0, reasons: {} };
   const siteCache = new Map();
@@ -132,5 +118,14 @@ export default async function handler(req, res) {
     }
   }
 
-  res.status(out.failed > out.dead ? 500 : 200).json({ ok: out.failed <= out.dead, ...out });
+  return { code: out.failed > out.dead ? 500 : 200, body: { ok: out.failed <= out.dead, ...out } };
+}
+
+export default async function handler(req, res) {
+  if (!cronAuthorized(req)) {
+    res.status(401).json({ error: 'unauthorized' });
+    return;
+  }
+  const r = await drainFollowups();
+  res.status(r.code).json(r.body);
 }

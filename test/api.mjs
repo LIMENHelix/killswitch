@@ -367,7 +367,7 @@ check('rep can read the board', r.code === 200 && r.body.role === 'rep' && r.bod
 r = await call(admin, { action: 'list', token: 'not_a_key' });
 check('a wrong key gets nothing', r.code === 401);
 
-for (const act of ['mail', 'setconfig', 'run-autopilot', 'seed']) {
+for (const act of ['mail', 'setconfig', 'run-autopilot', 'seed', 'outreach-setconfig', 'run-outreach', 'run-scorecard', 'run-followups', 'run-maintenance']) {
   r = await call(admin, { action: act, token: 'r_dana_key', ids: ['L1'], enabled: true, budgetCeiling: 999, leads: [] });
   check('rep is refused: ' + act, r.code === 403 && r.body.error === 'forbidden', 'got ' + r.code);
 }

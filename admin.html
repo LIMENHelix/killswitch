@@ -366,6 +366,33 @@
       <div class="ap-last" id="draftMsg"></div>
     </section>
 
+    <!-- K6 OUTREACH: autonomous prospect contact. Owner-only config; manual trigger here, cron otherwise. -->
+    <section class="autopanel ownerOnly" id="outreachpanel">
+      <div class="ap-head">
+        <div class="ap-title">K6 outreach <span class="ap-state off" id="outreachState">OFF</span></div>
+      </div>
+      <div class="ap-sub" id="outreachSub">Off. When armed, the autonomous outreach loop sends postcards to in-queue leads, bounded by caps and spend limits.</div>
+      <div class="ap-last">Supported transport: postcard (Lob). Channels, mode, and caps are unset until the owner saves them here — nothing mails while they are blank.</div>
+      <div class="tiles" id="outreachTiles"></div>
+      <div class="ap-last" id="outreachBlockers"></div>
+      <div class="ap-last" id="outreachLast"></div>
+      <div class="ap-grid ownerOnly" id="outreachCfgWrap" hidden>
+        <label class="switch"><input type="checkbox" id="outreachEnabled"><span class="slider"></span></label>
+        <label class="ap-f">Mode<select id="outreachMode" class="f"><option value="autonomous">autonomous</option><option value="manual">manual</option><option value="test">test</option></select></label>
+        <label class="ap-f" style="grid-column:1/-1">Channels (one per line)<textarea id="outreachChannels" class="f" rows="2" placeholder="postcard"></textarea></label>
+        <label class="ap-f">Per-run cap<input type="number" id="outreachPerRun" min="0" step="1" class="f" placeholder="0"></label>
+        <label class="ap-f">Daily cap<input type="number" id="outreachDaily" min="0" step="1" class="f" placeholder="0"></label>
+        <label class="ap-f">Lifetime cap<input type="number" id="outreachLifetime" min="0" step="1" class="f" placeholder="0"></label>
+        <label class="ap-f">Per-run spend cap ¢<input type="number" id="outreachPerRunSpend" min="0" step="1" class="f" placeholder="0"></label>
+        <label class="ap-f">Daily spend cap ¢<input type="number" id="outreachDailySpend" min="0" step="1" class="f" placeholder="0"></label>
+        <button class="btn sm" id="outreachSave">Save outreach settings</button>
+        <button class="btn ghost sm" id="outreachRun">Run K6 outreach now</button>
+      </div>
+      <div class="ap-last" id="outreachRuns"></div>
+      <div class="ap-last" id="outreachEffects"></div>
+      <div class="ap-last" id="outreachMsg"></div>
+    </section>
+
     <div class="bar">
       <input class="f" id="q" placeholder="Search business...">
       <select id="fTrade"><option value="">All trades</option></select>
@@ -513,7 +540,7 @@ async function boot(){
   fillFilters(); render();
   if(ROLE==='owner') loadCfg();
   loadFunnel();
-  loadDisc(); loadDraft();
+  loadDisc(); loadDraft(); loadOutreach();
 }
 
 // ---- LASER funnel ----
@@ -662,6 +689,71 @@ $('draftSave').onclick=async()=>{
   const r=await api('draft-setconfig',{enabled:$('draftEnabled').checked,draftsPerRun:+$('draftPerRun').value||0,minScore:parseFloat($('draftMinScore').value)||0});
   $('draftMsg').textContent=r.ok?'Draft settings saved.':('Not saved: '+((r.d&&r.d.message)||(r.d&&r.d.error)||'error'));
   await loadDraft();
+};
+
+// ---- K6 outreach ----
+let OUTREACH={};
+async function loadOutreach(){
+  const r=await api('outreach-status'); if(!r.ok) return;
+  OUTREACH=r.d;
+  $('outreachState').textContent=OUTREACH.armed?'ON':'OFF';
+  $('outreachState').className='ap-state '+(OUTREACH.armed?'on':'off');
+  $('outreachSub').textContent=OUTREACH.armed
+    ? ('Armed. Mode '+esc(OUTREACH.config.mode)+', channels '+OUTREACH.config.channels.map(esc).join(', ')+'. Caps: '+OUTREACH.config.perRunCap+'/run, '+OUTREACH.config.dailyCap+'/day, '+OUTREACH.config.lifetimeCap+'/lifetime.')
+    : 'Off. When armed, the autonomous outreach loop sends postcards to in-queue leads, bounded by caps and spend limits.';
+  const c=OUTREACH.counts||{};
+  $('outreachTiles').innerHTML=''
+    +'<div class="tile go"><b>'+(c.accepted||0)+'</b><span>accepted</span></div>'
+    +'<div class="tile amber"><b>'+(c.unknown||0)+'</b><span>unknown</span></div>'
+    +'<div class="tile red"><b>'+(c.dead||0)+'</b><span>dead</span></div>';
+  const blockers=OUTREACH.blockers||[];
+  $('outreachBlockers').textContent=blockers.length?('Not armed: '+blockers.join('; ')+'.'):'';
+  const runs=OUTREACH.runs||[];
+  $('outreachLast').textContent=runs.length
+    ? ('Last run '+esc(runs[0].id)+' — '+runs[0].status+(runs[0].capStop?', stopped: '+esc(runs[0].capStop):'')+', '+runs[0].sent+' sent / '+runs[0].eligible+' eligible')
+    : 'No outreach run yet.';
+  if(ROLE==='owner'){ $('outreachCfgWrap').hidden=false;
+    if(document.activeElement!==$('outreachEnabled')) $('outreachEnabled').checked=!!OUTREACH.config.enabled;
+    if(document.activeElement!==$('outreachMode')) $('outreachMode').value=OUTREACH.config.mode||'';
+    if(document.activeElement!==$('outreachChannels')) $('outreachChannels').value=(OUTREACH.config.channels||[]).join('\n');
+    if(document.activeElement!==$('outreachPerRun')) $('outreachPerRun').value=OUTREACH.config.perRunCap||'';
+    if(document.activeElement!==$('outreachDaily')) $('outreachDaily').value=OUTREACH.config.dailyCap||'';
+    if(document.activeElement!==$('outreachLifetime')) $('outreachLifetime').value=OUTREACH.config.lifetimeCap||'';
+    if(document.activeElement!==$('outreachPerRunSpend')) $('outreachPerRunSpend').value=OUTREACH.config.perRunSpendCap||'';
+    if(document.activeElement!==$('outreachDailySpend')) $('outreachDailySpend').value=OUTREACH.config.dailySpendCap||'';
+  }
+  const rr=await api('outreach-runs',{limit:5});
+  if(rr.ok){
+    const rows=(rr.d.runs||[]).slice(0,5);
+    $('outreachRuns').innerHTML=rows.length?('<b>Recent runs</b> '+rows.map(function(r){return esc(r.id)+' '+r.status+' '+(r.sent||0)+'/'+(r.eligible||0)}).join(' · ')):'<b>Recent runs</b> none';
+  }
+  const ef=await api('outreach-effects',{limit:10});
+  if(ef.ok){
+    const rows=(ef.d.effects||[]).slice(0,10);
+    $('outreachEffects').innerHTML=rows.length?('<b>Recent effects</b> '+rows.map(function(e){return esc(e.leadId||e.canonicalId||'?')+' '+esc(e.status)}).join(' · ')):'<b>Recent effects</b> none';
+  }
+}
+$('outreachSave').onclick=async()=>{
+  const channels=$('outreachChannels').value.split('\n').map(function(s){return s.trim()}).filter(Boolean);
+  const r=await api('outreach-setconfig',{
+    enabled:$('outreachEnabled').checked,
+    mode:$('outreachMode').value,
+    channels:channels,
+    perRunCap:+$('outreachPerRun').value||0,
+    dailyCap:+$('outreachDaily').value||0,
+    lifetimeCap:+$('outreachLifetime').value||0,
+    perRunSpendCap:+$('outreachPerRunSpend').value||0,
+    dailySpendCap:+$('outreachDailySpend').value||0,
+  });
+  $('outreachMsg').textContent=r.ok?'Outreach settings saved.':('Not saved: '+((r.d&&r.d.message)||(r.d&&r.d.error)||'error'));
+  await loadOutreach();
+};
+$('outreachRun').onclick=async()=>{
+  $('outreachMsg').textContent='Running K6 outreach...';
+  const r=await api('run-outreach');
+  if(r.ok){ $('outreachMsg').textContent='Run complete: '+(r.d.sent||0)+' sent.'+(r.d.run&&r.d.run.capStop?(' Stopped: '+r.d.run.capStop):''); }
+  else { $('outreachMsg').textContent='Error: '+((r.d&&r.d.message)||(r.d&&r.d.error)||r.status); }
+  await loadOutreach();
 };
 
 function paintCfg(){
@@ -965,7 +1057,7 @@ async function refresh(){
     const t=new Date(); $('liveLabel').textContent='Live · updated '+t.toLocaleTimeString(); }
   if(ROLE==='owner') loadCfg();
   loadFunnel();
-  loadDisc(); loadDraft();
+  loadDisc(); loadDraft(); loadOutreach();
 }
 setInterval(refresh,20000);
 
