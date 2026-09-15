@@ -50,6 +50,7 @@ const check = (name, condition, detail = '') => {
 const ARMED = {
   enabled: true, mode: 'test', channels: ['postcard'],
   perRunCap: 5, dailyCap: 10, lifetimeCap: 20, perRunSpendCap: 1000, dailySpendCap: 2000,
+  postcardReserveCents: 94,
 };
 
 function seed(cfg = ARMED) {
@@ -95,8 +96,12 @@ r = await runOutreach({ channel: 'postcard', selectCandidates: async () => [lead
 check('an unsupported channel list is not armable: no provider call', r.ran === false && r.reason === 'not_armed' && calls.length === 0);
 
 console.log('\nCONFIG VALIDATION IS STRICT');
-let v = validateOutreachConfigPatch({}, { enabled: true, mode: 'test', channels: ['postcard'], perRunCap: 1, dailyCap: 1, lifetimeCap: 1, perRunSpendCap: 1, dailySpendCap: 1 });
+let v = validateOutreachConfigPatch({}, { enabled: true, mode: 'test', channels: ['postcard'], perRunCap: 1, dailyCap: 1, lifetimeCap: 1, perRunSpendCap: 1, dailySpendCap: 1, postcardReserveCents: 94 });
 check('a complete valid config arms', !v.error && outreachConfigArmable(v.config));
+v = validateOutreachConfigPatch({}, { enabled: true, mode: 'test', channels: ['postcard'], perRunCap: 1, dailyCap: 1, lifetimeCap: 1, perRunSpendCap: 1, dailySpendCap: 1 });
+check('enabled without a per-card reserve is rejected', v.error === 'incomplete_config');
+v = validateOutreachConfigPatch({}, { postcardReserveCents: 94.5 });
+check('a fractional reserve is rejected, not floored', v.error === 'invalid_config');
 v = validateOutreachConfigPatch({}, { enabled: true, mode: 'test', channels: ['postcard'], perRunCap: 0, dailyCap: 1, lifetimeCap: 1, perRunSpendCap: 1, dailySpendCap: 1 });
 check('enabled with a zero cap is rejected', v.error === 'incomplete_config');
 v = validateOutreachConfigPatch({}, { perRunCap: 2.5 });

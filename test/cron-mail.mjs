@@ -60,6 +60,7 @@ async function call({ headers = {}, query = {}, body } = {}) {
 const ARMED = {
   enabled: true, mode: 'test', channels: ['postcard'],
   perRunCap: 5, dailyCap: 10, lifetimeCap: 20, perRunSpendCap: 1000, dailySpendCap: 2000,
+  postcardReserveCents: 94,
 };
 const LEAD = {
   id: 'sim-lead-1', name: 'Sim Auto', business: 'Sim Auto',
