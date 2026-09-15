@@ -37,9 +37,10 @@ import { notifyOperator } from '../lib/notify.js';
 import { publicOrigin } from '../lib/origin.js';
 import { cmd, pipeline } from '../lib/kv.js';
 import { drainFollowups } from './cron-followups.js';
+import { followupStatus } from '../lib/automation.js';
 import { runMaintenance } from './cron-maintenance.js';
 
-const OWNER_ONLY = new Set(['setconfig', 'run-autopilot', 'mail', 'seed', 'unsuppress', 'suppression-list', 'disc-setconfig', 'draft-setconfig', 'outreach-status', 'outreach-setconfig', 'outreach-runs', 'outreach-effects', 'run-outreach', 'run-scorecard', 'run-followups', 'run-maintenance']);
+const OWNER_ONLY = new Set(['setconfig', 'run-autopilot', 'mail', 'seed', 'unsuppress', 'suppression-list', 'disc-setconfig', 'draft-setconfig', 'outreach-status', 'outreach-setconfig', 'outreach-runs', 'outreach-effects', 'run-outreach', 'run-scorecard', 'run-followups', 'followup-status', 'run-maintenance']);
 
 function outreachStatus(cfg) {
   const armable = outreachConfigArmable(cfg);
@@ -199,6 +200,12 @@ export default async function handler(req, res) {
     if (action === 'run-followups') {
       const r = await drainFollowups();
       res.status(r.code).json(r.body); return;
+    }
+    if (action === 'followup-status') {
+      // Queue depth, terminal ledger sizes, recent dead letters with reasons,
+      // and the last drain summary. Owner-only: dead letters carry recipient
+      // contact handles.
+      res.status(200).json({ ok: true, ...(await followupStatus()) }); return;
     }
     if (action === 'run-maintenance') {
       const r = await runMaintenance();

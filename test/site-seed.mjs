@@ -74,8 +74,14 @@ for (const t of Object.keys(TRADES)) {
   check(`${t}: about reads as a sentence`, /^Acme is an? .+ in Olathe, KS\.$/.test(s.about), s.about);
   check(`${t}: theme is one we ship`, THEME_NAMES.includes(s.theme), s.theme);
   check(`${t}: services ${medical ? 'are withheld' : 'are present'}`,
-    medical ? s.services.length === 0 : s.services.length === 6);
+    medical ? s.services.length === 0 : s.services.length >= 4);
 }
+
+// A generated menu names work a trade does; it never prints a promise the shop
+// did not make ("Emergency service", "Free estimates", ...) under its own name.
+const ACTION_CLAIMS = /emergency service|free estimates|same-day delivery|insurance claims/i;
+check('no seeded service is an unverified commitment',
+  Object.keys(TRADES).every((t) => servicesForTrade(t).every((s) => !ACTION_CLAIMS.test(s.name))));
 
 check('service objects are fresh copies, not the shared table rows',
   (() => {
@@ -154,7 +160,7 @@ check('and the draft carries the demo shape', d.layout === 'trade' && THEME_NAME
 // 'Heating & cooling', so seeding from the STORED label finds nothing.
 const hv = draftFromLead({ id: 'H', name: 'Ace Heating', trade: 'hvac', city: 'Olathe', state: 'KS' }, new Set());
 check('a trade whose label is not its key is still seeded',
-  hv.services.length === 6 && hv.about === 'Ace Heating is a heating & cooling business in Olathe, KS.', hv.about);
+  hv.services.length >= 4 && hv.about === 'Ace Heating is a heating & cooling business in Olathe, KS.', hv.about);
 check('and the stored trade is still the human label', hv.trade === 'Heating & cooling');
 
 const anon = draftFromLead({ id: 'W', name: 'Mystery Co' }, new Set());

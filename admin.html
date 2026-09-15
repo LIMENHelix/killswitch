@@ -390,6 +390,7 @@
       </div>
       <div class="ap-last" id="outreachRuns"></div>
       <div class="ap-last" id="outreachEffects"></div>
+      <div class="ap-last" id="followupLine"></div>
       <div class="ap-last" id="outreachMsg"></div>
     </section>
 
@@ -647,9 +648,10 @@ async function loadDisc(){
     $('discTopWrap').innerHTML='<h2 style="margin:14px 0 6px;font-size:15px">Top candidates</h2>'
       +'<table class="plays"><thead><tr><th>Business</th><th>Where</th><th>Web presence</th><th>Score</th><th>Why / status</th></tr></thead><tbody>'
       +rows.map(function(c){
-        const why=c.status==='excluded'
+        const why=(c.status==='excluded'
           ?('excluded: '+esc(c.excludeReason))
-          :(Object.keys(c.parts||{}).map(function(k){return k+' '+Math.round((c.parts[k]||0)*100)+'%'}).join(' · '));
+          :(Object.keys(c.parts||{}).map(function(k){return k+' '+Math.round((c.parts[k]||0)*100)+'%'}).join(' · ')))
+          +(c.draftStatus?(' · draft: '+esc(c.draftStatus)+(c.draftExcludeReason?' ('+esc(c.draftExcludeReason)+')':'')):'');
         return '<tr><td class="k">'+esc(c.name)+'</td><td>'+esc(c.city)+'</td><td>'+esc(c.webStatus)+'</td>'
           +'<td class="n">'+(c.status==='excluded'?'—':c.score)+'</td><td>'+why+'</td></tr>';
       }).join('')+'</tbody></table>';
@@ -730,7 +732,18 @@ async function loadOutreach(){
   const ef=await api('outreach-effects',{limit:10});
   if(ef.ok){
     const rows=(ef.d.effects||[]).slice(0,10);
-    $('outreachEffects').innerHTML=rows.length?('<b>Recent effects</b> '+rows.map(function(e){return esc(e.leadId||e.canonicalId||'?')+' '+esc(e.status)}).join(' · ')):'<b>Recent effects</b> none';
+    $('outreachEffects').innerHTML=rows.length?('<b>Recent effects</b> '+rows.map(function(e){
+      const reason=e.terminalReason||e.lastReason||'';
+      return esc(e.leadId||e.canonicalId||'?')+' '+esc(e.status)+(reason?' ('+esc(reason)+')':'');
+    }).join(' · ')):'<b>Recent effects</b> none';
+  }
+  const fu=await api('followup-status');
+  if(fu.ok){
+    const d=fu.d||{};
+    const dead=(d.dead||[]).slice(0,5);
+    $('followupLine').innerHTML='<b>Follow-ups</b> '+(d.pending||0)+' queued · '+(d.sent||0)+' sent · '+(d.dead||[]).length+' dead'
+      +(d.lastRun?(' · last drain '+esc(d.lastRun.at||'?')+': '+(d.lastRun.sent||0)+' sent, '+(d.lastRun.dead||0)+' dead, '+(d.lastRun.failed||0)+' failed'):' · no drain recorded yet')
+      +(dead.length?('<br>Dead: '+dead.map(function(x){return esc((x.item&&x.item.id)||'?')+' ('+esc(x.reason)+')'}).join(' · ')):'');
   }
 }
 $('outreachSave').onclick=async()=>{

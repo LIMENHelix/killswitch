@@ -131,5 +131,34 @@ for (const [what, mark] of [['a logo mark', 'class="mk"'], ['a sticky call bar',
 check('and it escapes a business name that contains markup',
   !renderSite({ ...FULL, business: '<script>x</script>' }, {}).includes('<script>x</script>'));
 
+console.log('\nTHE BUILT-IN FORMS SPEAK THE API CONTRACT ACTUALLY SERVED');
+// api/site-action.js 'book' requires `phone`; a form field named `contact`
+// made every booking on a trade-layout site fail with name_and_phone_required.
+const noBookingUrl = renderSite({ ...FULL, bookingUrl: '' }, {});
+check('the booking form posts a phone field', noBookingUrl.includes('name="phone"') && noBookingUrl.includes("post('book',{name:f.name.value,phone:f.phone.value"));
+// 'ask' requires a `messages` array and answers `{reply}`; the trade port
+// posted `question` and read `d.answer`, so every reply rendered as the
+// failure sentence.
+check('the AI assistant posts messages and reads reply',
+  shipped.includes('messages:aiH.slice(-8)') && shipped.includes('d.reply') && !shipped.includes('d.answer'));
+
+console.log('\nP7 WITHOUT A PAYMENT LINK RENDERS NO PAY SECTION');
+for (const layout of ['trade', 'classic']) {
+  const h = renderSite({ ...FULL, layout, payUrl: '' }, {});
+  check(`${layout}: no pay section, no placeholder promise, no nav anchor`,
+    !h.includes('id="pay"') && !h.includes('Payment link coming shortly') && !h.includes('Card payments are switched on') && !h.includes('href="#pay"'));
+}
+
+console.log('\nJSON-LD CANNOT BREAK OUT OF ITS SCRIPT TAG IN EITHER LAYOUT');
+for (const layout of ['trade', 'classic']) {
+  const h = renderSite({ ...FULL, layout, business: 'Evil </script><script>alert(1)</script>' }, {});
+  check(`${layout}: the breakout is escaped`, !h.includes('Evil </script>') && h.includes('Evil \\u003c/script>'));
+}
+
+console.log('\nTEL LINKS NORMALIZE INSTEAD OF STACKING COUNTRY CODES');
+check('a 10-digit number gets +1', renderSite(FULL, {}).includes('href="tel:+18165550142"'));
+check('an 11-digit 1-prefixed number keeps a single +1',
+  renderSite({ ...FULL, phone: '1-816-555-0142' }, {}).includes('href="tel:+18165550142"'));
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

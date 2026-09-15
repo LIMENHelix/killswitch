@@ -2,7 +2,7 @@
 //
 // FAILS CLOSED on CRON_SECRET Bearer only. No query-token fallback. This cron
 // sends real email; the URL must not be triggerable without the project secret.
-import { claimItem, deadLetter, dueItems, MAX_SEND_ATTEMPTS, recordAttempt, releaseItem, retire, sendItem } from '../lib/automation.js';
+import { claimItem, deadLetter, dueItems, MAX_SEND_ATTEMPTS, recordAttempt, recordLastRun, releaseItem, retire, sendItem } from '../lib/automation.js';
 import { getSite, has } from '../lib/sites.js';
 import { getAccount } from '../lib/store.js';
 import { getSuppression } from '../lib/suppression.js';
@@ -111,6 +111,16 @@ export async function drainFollowups() {
         await deadLetter(item, r.reason);
         await retire(item.id, new Date().toISOString());
         out.dead++;
+      } else if (r.reason === 'threw' || (r.reason && r.reason.startsWith('resend_5'))) {
+        // Transient: bounded retry, then terminal dead-letter — the same
+        // policy the claim-reminder branch applies, so a persistently failing
+        // provider can never spin the five-minute cron indefinitely.
+        const attempts = await recordAttempt(item);
+        if (attempts >= MAX_SEND_ATTEMPTS) {
+          await deadLetter({ ...item, attempts }, 'retry_budget_exhausted');
+          await retire(item.id, new Date().toISOString());
+          out.dead++;
+        }
       }
     }
     } finally {
@@ -118,6 +128,7 @@ export async function drainFollowups() {
     }
   }
 
+  await recordLastRun(out);
   return { code: out.failed > out.dead ? 500 : 200, body: { ok: out.failed <= out.dead, ...out } };
 }
 

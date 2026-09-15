@@ -29,6 +29,7 @@
 // One source of truth for what a module costs and whether it can be sold at all.
 // This file used to keep its own copy of the price map, which is how P5 and P6
 // stayed purchasable here after being pulled from the pricing page.
+import crypto from 'node:crypto';
 import { MONTHLY, isSellable } from '../lib/prices.js';
 import { getAccount, upsertAccount } from '../lib/store.js';
 import { panelToken } from '../lib/panel-auth.js';
@@ -144,6 +145,12 @@ export default async function handler(req, res) {
       headers: {
         'Authorization': 'Bearer ' + key,
         'Content-Type': 'application/x-www-form-urlencoded',
+        // A retried or double-submitted checkout must not open a second
+        // session: same customer, same basket, same day replays into the
+        // original session at Stripe instead of creating a duplicate.
+        'Idempotency-Key': 'ks-checkout-' + crypto.createHash('sha256')
+          .update(email + '|' + priceIds.join(',') + '|' + new Date().toISOString().slice(0, 10))
+          .digest('hex').slice(0, 32),
       },
       body: params.toString(),
     });
