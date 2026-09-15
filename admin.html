@@ -385,12 +385,17 @@
         <label class="ap-f">Lifetime cap<input type="number" id="outreachLifetime" min="0" step="1" class="f" placeholder="0"></label>
         <label class="ap-f">Per-run spend cap ¢<input type="number" id="outreachPerRunSpend" min="0" step="1" class="f" placeholder="0"></label>
         <label class="ap-f">Daily spend cap ¢<input type="number" id="outreachDailySpend" min="0" step="1" class="f" placeholder="0"></label>
+        <label class="ap-f">Per-card reserve ¢<input type="number" id="outreachReserve" min="0" step="1" class="f" placeholder="0"></label>
         <button class="btn sm" id="outreachSave">Save outreach settings</button>
         <button class="btn ghost sm" id="outreachRun">Run K6 outreach now</button>
       </div>
       <div class="ap-last" id="outreachRuns"></div>
       <div class="ap-last" id="outreachEffects"></div>
       <div class="ap-last" id="followupLine"></div>
+      <div class="ap-last ownerOnly" id="readinessWrap" hidden>
+        <button class="btn ghost sm" id="readinessCheck">Check canary readiness</button>
+        <span id="readinessOut"></span>
+      </div>
       <div class="ap-last" id="outreachMsg"></div>
     </section>
 
@@ -723,6 +728,8 @@ async function loadOutreach(){
     if(document.activeElement!==$('outreachLifetime')) $('outreachLifetime').value=OUTREACH.config.lifetimeCap||'';
     if(document.activeElement!==$('outreachPerRunSpend')) $('outreachPerRunSpend').value=OUTREACH.config.perRunSpendCap||'';
     if(document.activeElement!==$('outreachDailySpend')) $('outreachDailySpend').value=OUTREACH.config.dailySpendCap||'';
+    if(document.activeElement!==$('outreachReserve')) $('outreachReserve').value=OUTREACH.config.postcardReserveCents||'';
+    $('readinessWrap').hidden=false;
   }
   const rr=await api('outreach-runs',{limit:5});
   if(rr.ok){
@@ -757,6 +764,7 @@ $('outreachSave').onclick=async()=>{
     lifetimeCap:+$('outreachLifetime').value||0,
     perRunSpendCap:+$('outreachPerRunSpend').value||0,
     dailySpendCap:+$('outreachDailySpend').value||0,
+    postcardReserveCents:+$('outreachReserve').value||0,
   });
   $('outreachMsg').textContent=r.ok?'Outreach settings saved.':('Not saved: '+((r.d&&r.d.message)||(r.d&&r.d.error)||'error'));
   await loadOutreach();
@@ -767,6 +775,23 @@ $('outreachRun').onclick=async()=>{
   if(r.ok){ $('outreachMsg').textContent='Run complete: '+(r.d.sent||0)+' sent.'+(r.d.run&&r.d.run.capStop?(' Stopped: '+r.d.run.capStop):''); }
   else { $('outreachMsg').textContent='Error: '+((r.d&&r.d.message)||(r.d&&r.d.error)||r.status); }
   await loadOutreach();
+};
+// On demand only — never on the poll loop. Aggregates, no PII.
+$('readinessCheck').onclick=async()=>{
+  $('readinessOut').textContent=' checking…';
+  const r=await api('outreach-readiness');
+  if(!r.ok){ $('readinessOut').textContent=' unavailable: '+((r.d&&r.d.message)||(r.d&&r.d.error)||r.status); return; }
+  const d=r.d.readiness||{};
+  const c=d.candidates||{};
+  const fmt=(o)=>Object.keys(o||{}).sort().map(function(k){return esc(k)+': '+o[k]}).join(' · ')||'none';
+  $('readinessOut').innerHTML='<br>'
+    +'K6 '+(d.armed?'ARMED':'off')+' · provider '+esc(d.providerMode||'?')+' · reserve '+(d.postcardReserve&&d.postcardReserve.configured?d.postcardReserve.cents+'¢':'not set')
+    +' · sender fields '+Object.keys(d.sender||{}).filter(function(k){return d.sender[k]}).length+'/5'
+    +'<br>candidates '+(c.total||0)+' · ranked '+(c.ranked||0)+' · drafted '+(c.drafted||0)+' · mailable '+(c.draftedMailable||0)+' · eligible now '+(c.eligible||0)
+    +'<br>ineligible: '+fmt(d.ineligibleReasons)
+    +'<br>eligible by trade: '+fmt(d.eligibleByTrade)
+    +'<br>eligible by city: '+fmt(d.eligibleByCity)
+    +'<br>effects: '+fmt(d.effectsByStatus);
 };
 
 function paintCfg(){

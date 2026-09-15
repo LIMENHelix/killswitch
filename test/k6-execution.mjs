@@ -60,6 +60,7 @@ const check = (name, condition, detail = '') => {
 const ARMED = {
   enabled: true, mode: 'test', channels: ['postcard'],
   perRunCap: 5, dailyCap: 10, lifetimeCap: 20, perRunSpendCap: 1000, dailySpendCap: 2000,
+  postcardReserveCents: 94,
 };
 
 const CANDS_KEY = 'ks:disc:cands';

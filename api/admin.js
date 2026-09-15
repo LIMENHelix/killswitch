@@ -30,7 +30,7 @@ import { wilsonLower, allocate } from '../lib/laser.js';
 import { getSuppressionState, matchSuppression, suppressContact, liftSuppression, listSuppressions } from '../lib/suppression.js';
 import { discStatus, listRankedCandidates, listRuns, listCalls, getDiscConfig, saveDiscConfig, validateDiscConfigPatch, resetDiscCursor } from '../lib/discovery.js';
 import { draftAutonomyStatus, listDraftRuns, getDraftConfig, saveDraftConfig, validateDraftConfigPatch } from '../lib/draft-autonomy.js';
-import { runPostcardOutreach, getOutreachConfig, saveOutreachConfig, outreachConfigArmable, validateOutreachConfigPatch } from '../lib/k6-outreach.js';
+import { runPostcardOutreach, getOutreachConfig, saveOutreachConfig, outreachConfigArmable, validateOutreachConfigPatch, outreachReadiness } from '../lib/k6-outreach.js';
 import { listRuns as listOutreachRuns, listEffects, getStatusCounts } from '../lib/outreach-effects.js';
 import { collectWeeklyScorecard, previousCompleteWeek } from '../lib/scorecard.js';
 import { notifyOperator } from '../lib/notify.js';
@@ -40,7 +40,7 @@ import { drainFollowups } from './cron-followups.js';
 import { followupStatus } from '../lib/automation.js';
 import { runMaintenance } from './cron-maintenance.js';
 
-const OWNER_ONLY = new Set(['setconfig', 'run-autopilot', 'mail', 'seed', 'unsuppress', 'suppression-list', 'disc-setconfig', 'draft-setconfig', 'outreach-status', 'outreach-setconfig', 'outreach-runs', 'outreach-effects', 'run-outreach', 'run-scorecard', 'run-followups', 'followup-status', 'run-maintenance']);
+const OWNER_ONLY = new Set(['setconfig', 'run-autopilot', 'mail', 'seed', 'unsuppress', 'suppression-list', 'disc-setconfig', 'draft-setconfig', 'outreach-status', 'outreach-setconfig', 'outreach-runs', 'outreach-effects', 'outreach-readiness', 'run-outreach', 'run-scorecard', 'run-followups', 'followup-status', 'run-maintenance']);
 
 function outreachStatus(cfg) {
   const armable = outreachConfigArmable(cfg);
@@ -52,6 +52,7 @@ function outreachStatus(cfg) {
     if (!(Number(cfg.lifetimeCap) > 0)) blockers.push('lifetimeCap must be > 0');
     if (!(Number(cfg.perRunSpendCap) > 0)) blockers.push('perRunSpendCap must be > 0');
     if (!(Number(cfg.dailySpendCap) > 0)) blockers.push('dailySpendCap must be > 0');
+    if (!(Number(cfg.postcardReserveCents) > 0)) blockers.push('postcardReserveCents must be > 0 (owner-set budget reserve per card, cents)');
     if (!Array.isArray(cfg.channels) || cfg.channels.length === 0) blockers.push('at least one supported channel required (postcard)');
     else if (!cfg.channels.every((c) => ['postcard'].includes(c))) blockers.push('unsupported channel (this build supports: postcard)');
     if (!['autonomous', 'manual', 'test'].includes(cfg.mode)) blockers.push('mode must be autonomous, manual, or test');
@@ -264,6 +265,7 @@ export default async function handler(req, res) {
           lifetimeCap: cfg.lifetimeCap,
           perRunSpendCap: cfg.perRunSpendCap,
           dailySpendCap: cfg.dailySpendCap,
+          postcardReserveCents: cfg.postcardReserveCents,
         },
         counts: await getStatusCounts(),
         runs: await listOutreachRuns(5),
@@ -282,6 +284,12 @@ export default async function handler(req, res) {
     }
     if (action === 'outreach-effects') {
       res.status(200).json({ ok: true, effects: await listEffects(body.limit || 50) }); return;
+    }
+    if (action === 'outreach-readiness') {
+      // Aggregate-only canary readiness: counts, provider mode, reserve config.
+      // No prospect PII, no secrets — the shape is enforced inside
+      // outreachReadiness(), which returns nothing but aggregates and booleans.
+      res.status(200).json({ ok: true, readiness: await outreachReadiness() }); return;
     }
     if (action === 'run-outreach') {
       const result = await runPostcardOutreach({});

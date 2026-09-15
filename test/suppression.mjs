@@ -88,7 +88,7 @@ console.log('\nEVERY OUTBOUND PATH STOPS BEFORE SPEND OR GENERATION');
 r = await call(admin, { action: 'mail', token: 'owner-key', ids: [lead.id] });
 check('manual prospect mail fails closed while K6 is unarmed', r.code === 409 && r.body.error === 'outreach_not_armed', JSON.stringify(r.body));
 check('unarmed means Lob is never called', lobCalls === 0);
-r = await call(admin, { action: 'outreach-setconfig', token: 'owner-key', enabled: true, mode: 'test', channels: ['postcard'], perRunCap: 5, dailyCap: 5, lifetimeCap: 5, perRunSpendCap: 500, dailySpendCap: 500 });
+r = await call(admin, { action: 'outreach-setconfig', token: 'owner-key', enabled: true, mode: 'test', channels: ['postcard'], perRunCap: 5, dailyCap: 5, lifetimeCap: 5, perRunSpendCap: 500, dailySpendCap: 500, postcardReserveCents: 94 });
 check('the owner can arm a complete synthetic K6 config', r.code === 200 && r.body.config.enabled === true, JSON.stringify(r.body));
 r = await call(admin, { action: 'run-autopilot', token: 'owner-key' });
 check('the K6 run skips the suppressed contact', r.code === 200 && r.body.result.sent === 0, JSON.stringify(r.body));
