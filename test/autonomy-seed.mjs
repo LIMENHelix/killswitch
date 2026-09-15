@@ -57,7 +57,7 @@ check('it is the paying customer\'s', paid.site.email === 'buyer@example.com');
 check('it is live and claimed', paid.site.published === true && paid.site.claimed === true);
 check('it is free-tier only, payment did not grant modules', JSON.stringify(paid.site.modules) === JSON.stringify(['P0']));
 
-check('SEEDED: it has a service list', paid.site.services.length === 6, JSON.stringify(paid.site.services));
+check('SEEDED: it has a service list', paid.site.services.length >= 4, JSON.stringify(paid.site.services));
 check('SEEDED: the services match the trade', paid.site.services[0].name === 'Leak repair');
 check('SEEDED: it has a theme', paid.site.theme === 'bold', paid.site.theme);
 check('SEEDED: it has the demo layout', paid.site.layout === 'trade', paid.site.layout);

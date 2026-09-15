@@ -18,6 +18,7 @@ let stripeSubs = [];        // subscriptions the fake Stripe knows about
 let stripeCustomers = [];   // customers by email
 let stripeCharges = {};     // charge lookup for refund/dispute webhooks
 let created = [];           // checkout sessions created
+let sessionKeys = [];       // Idempotency-Key header on each session POST
 let stripeCalls = [];       // mutation parameters and idempotency headers
 let stripeFailure = null;   // { method, path } for fail-closed billing tests
 let kvFailure = null;       // key prefix that must throw, for provisioning retry tests
@@ -105,6 +106,7 @@ globalThis.fetch = async (url, opts = {}) => {
     }
     if (path === '/checkout/sessions' && opts.method === 'POST') {
       created.push(opts.body);
+      sessionKeys.push(opts.headers && (opts.headers['Idempotency-Key'] || opts.headers['idempotency-key']));
       return json({ url: 'https://checkout.stripe.com/pay/cs_test_1', id: 'cs_test_1' });
     }
     if (path.startsWith('/checkout/sessions/')) {
@@ -197,7 +199,7 @@ function putSite(rec) {
   if (rec.email) { const em = KV.get('ks:siteemail') || {}; em[rec.email.toLowerCase()] = rec.slug; KV.set('ks:siteemail', em); }
 }
 function seed() {
-  KV.clear(); stripeSubs = []; stripeCustomers = []; stripeCharges = {}; created = []; stripeCalls = []; stripeFailure = null; kvFailure = null;
+  KV.clear(); stripeSubs = []; stripeCustomers = []; stripeCharges = {}; created = []; sessionKeys = []; stripeCalls = []; stripeFailure = null; kvFailure = null;
   seedAccounts({ [EMAIL]: { email: EMAIL, tokenNonce: NONCE, name: 'Test Shop', plan: ['P0'] } });
   putSite({ slug: 'test-shop', business: 'Test Shop', email: EMAIL, phone: '816-555-0101', modules: ['P0'], published: true, claimed: true });
 }
@@ -804,6 +806,12 @@ check('they come back to their own panel, not a static thank-you page',
 check('and it carries the session id that triggers linking',
   sess.includes('session_id={CHECKOUT_SESSION_ID}'), sess.slice(0, 260));
 check('Stripe is told who is buying', sess.includes('customer_email=' + NEW) || sess.includes('customer_email=walkin'), sess.slice(0, 200));
+
+// A double-submitted or retried purchase must replay into the same Stripe
+// session, not open a second one.
+check('the session request carries an idempotency key', /^ks-checkout-[a-f0-9]{32}$/.test(sessionKeys[0] || ''), String(sessionKeys[0]));
+r = await call(checkout, { phases: ['P1', 'P3'], email: NEW });
+check('a retried checkout reuses the same idempotency key', sessionKeys.length === 2 && sessionKeys[1] === sessionKeys[0], JSON.stringify(sessionKeys));
 
 // An existing customer must not be reset to a free plan by buying an upgrade,
 // and must not end up with a second Stripe customer object.

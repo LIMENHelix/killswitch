@@ -10,11 +10,10 @@
 // AUTH: CRON_SECRET Bearer only, fail closed on both sides. No query tokens.
 // Drafting is gated by a separate ks:draft:cfg that defaults OFF.
 import { runDraftAutonomy } from '../lib/draft-autonomy.js';
+import { cronAuthorized } from '../lib/cron-auth.js';
 
 export default async function handler(req, res) {
-  const secret = process.env.CRON_SECRET;
-  const bearer = (req.headers && req.headers.authorization) || '';
-  if (!secret || bearer !== 'Bearer ' + secret) {
+  if (!cronAuthorized(req)) {
     res.status(401).json({ error: 'unauthorized' });
     return;
   }

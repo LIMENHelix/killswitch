@@ -81,7 +81,11 @@ export default async function handler(req, res) {
   }
 
   res.setHeader('content-type', 'text/html; charset=utf-8');
-  res.setHeader('content-security-policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; connect-src 'self'; img-src 'self' data:; font-src 'self' data:; form-action 'self' https://calendly.com https://buy.stripe.com https://checkout.stripe.com");
+  // style-src/font-src carry Google Fonts because both layouts load their
+  // display faces from there; without it every customer site falls back to
+  // system fonts. frame-src allows the P3 booking embed (bookingUrl is set by
+  // the owner through the panel, not by a visitor).
+  res.setHeader('content-security-policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; connect-src 'self'; img-src 'self' data:; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self' https:; form-action 'self' https://calendly.com https://buy.stripe.com https://checkout.stripe.com");
   // Short cache: edits from the panel should show up quickly, but a burst of
   // traffic to one site must not hammer Redis on every hit.
   res.setHeader('cache-control', 'public, max-age=0, s-maxage=60, stale-while-revalidate=300');

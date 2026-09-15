@@ -379,5 +379,28 @@ check('a dead-lettered P6 item cannot resurrect',
   (await queueFollowUps(await getSite('river-auto'), { name: 'Pat', handle: 'pat@x.test', kind: 'message' })) === 0
   && (await dueItems(Date.now() + 99999)).length === 0);
 
+console.log('\nP6 TRANSIENT FAILURES ARE BOUNDED, NOT A FIVE-MINUTE LOOP FOREVER');
+// The claim-reminder branch dead-lettered after MAX_SEND_ATTEMPTS transient
+// failures but the P6 branch never recorded attempts: a persistently failing
+// provider retried every five minutes indefinitely. Same policy now.
+seed();
+await upsertSite({ ...SITE, modules: ['P0', 'P6'] });
+await queueFollowUps(await getSite('river-auto'), { name: 'Sam', handle: 'sam@x.test', kind: 'message' });
+q2 = KV.get('ks:auto:q'); for (const k of Object.keys(q2)) q2[k] = Date.now() - 1000; KV.set('ks:auto:q', q2);
+resendFail = 500;
+r = await runCron();
+check('first transient P6 failure retries with the attempt recorded', r.body.failed >= 1 && r.body.dead === 0 && (await dueItems(Date.now() + 99999)).length >= 1);
+r = await runCron();
+check('second transient P6 failure still retries', r.body.failed >= 1 && r.body.dead === 0);
+r = await runCron();
+check('the third consecutive transient P6 failure dead-letters every due item',
+  r.body.dead >= 1 && (await dueItems(Date.now() + 99999)).length === 0);
+check('the P6 retry-budget dead-letters are auditable with their reason',
+  (await listDeadLetters(10)).filter((d) => d.reason === 'retry_budget_exhausted').length >= 1);
+resendFail = null;
+callsBefore = resendCalls.length;
+r = await runCron();
+check('budget-exhausted P6 items are never resent after recovery', r.body.sent === 0 && resendCalls.length === callsBefore);
+
 console.log(fail ? `\n${pass} passed, ${fail} FAILED` : `\n${pass} passed, 0 failed`);
 process.exit(fail ? 1 : 0);

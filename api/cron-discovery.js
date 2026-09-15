@@ -20,11 +20,10 @@
 // query-string tokens here — unlike the older crons, this path has no legacy
 // operator URL to preserve.
 import { runDiscovery } from '../lib/discovery.js';
+import { cronAuthorized } from '../lib/cron-auth.js';
 
 export default async function handler(req, res) {
-  const secret = process.env.CRON_SECRET;
-  const bearer = (req.headers && req.headers.authorization) || '';
-  if (!secret || bearer !== 'Bearer ' + secret) {
+  if (!cronAuthorized(req)) {
     res.status(401).json({ error: 'unauthorized' });
     return;
   }

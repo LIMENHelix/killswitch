@@ -29,7 +29,7 @@ const BASE = {
   published: true, claimed: true,
 };
 const FREE = { ...BASE, modules: ['P0'] };
-const PAID = { ...BASE, modules: ['P0', 'P1', 'P3', 'P7', 'P8', 'P9'] };
+const PAID = { ...BASE, modules: ['P0', 'P1', 'P3', 'P7', 'P8', 'P9'], payUrl: 'https://buy.stripe.com/example' };
 const CUSTOM = {
   ...BASE, slug: 'auto-tech-shawnee', business: 'Auto Tech Services Center', bookingUrl: '',
   payUrl: 'https://buy.stripe.com/example', posts: [{ title: 'Winter checkups', body: 'Appointments are open.' }],
@@ -145,6 +145,7 @@ check('no javascript errors', consoleErrors.length === 0, consoleErrors.join(' |
 check('booking is there', await evaluate(`!!document.getElementById('book')`));
 check('the AI widget is there', await evaluate(`!!document.getElementById('aiBtn')`));
 check('pay online is there', await evaluate(`!!document.getElementById('pay')`));
+check('the pay link points at the configured URL', await evaluate(`document.querySelector('#pay a.btn').href.startsWith('https://buy.stripe.com/')`));
 check('the free contact form is STILL there', await evaluate(`!!document.querySelector('form.cf')`));
 check('the search listing markup is present', await evaluate(`!!document.querySelector('script[type="application/ld+json"]')`));
 
