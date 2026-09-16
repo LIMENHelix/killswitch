@@ -14,7 +14,7 @@
 // already on the record. If a future edit makes seedAbout() reach for a review
 // count, an award, a founding year or anything else nobody told us, the
 // "invents nothing" block below is what should fail.
-import { seedSite, seedAbout, seedTagline, seedMissing, servicesForTrade,
+import { seedSite, seedAbout, seedTagline, seedMissing,
   themeForTrade, tradeLabel, tradeEntry, TRADES, SEED_LAYOUT,
   FALLBACK_LABEL, FALLBACK_THEME } from '../lib/site-seed.js';
 import { draftFromLead } from '../lib/draft-site.js';
@@ -33,13 +33,13 @@ console.log('\n1. A new record is seeded into a real page');
 const seed = seedSite({ business: 'Old School Iron', trade: 'gym/fitness', city: 'Kansas City', state: 'MO' });
 check('it produces a tagline', seed.tagline === 'Gym & fitness in Kansas City, MO', seed.tagline);
 check('it produces an about line', seed.about === 'Old School Iron is a gym & fitness business in Kansas City, MO.', seed.about);
-check('it produces a service list', seed.services.length === 6);
+check('it produces NO service list: category is framing, not evidence', !('services' in seed), JSON.stringify(seed.services));
 check('it produces a theme we actually ship', THEME_NAMES.includes(seed.theme), seed.theme);
 check('it produces a layout that exists', isLayout(seed.layout) && seed.layout === SEED_LAYOUT, seed.layout);
 check('and the layout is the demo shape, not the bare one', seed.layout === 'trade');
 
 check('it returns ONLY content fields, never slug/email/published/modules',
-  Object.keys(seed).every((k) => ['tagline', 'about', 'services', 'theme', 'layout'].includes(k)),
+  Object.keys(seed).every((k) => ['tagline', 'about', 'theme', 'layout'].includes(k)),
   Object.keys(seed).join(','));
 
 // ---------------------------------------------------------------------------
@@ -58,10 +58,9 @@ check('no town means it stops early rather than reaching for filler',
 check('about is capped under the field limit',
   seedAbout({ business: 'X'.repeat(5000), trade: 'bakery', city: 'KC', state: 'MO' }).length <= 600);
 
-check('the three medical trades get NO invented service menu',
-  servicesForTrade('clinic/doctor').length === 0
-  && servicesForTrade('dentist').length === 0
-  && servicesForTrade('vet').length === 0);
+check('no trade invents a service menu any more, medical or not',
+  ['clinic/doctor', 'dentist', 'vet', 'auto repair', 'plumber', 'salon/barber']
+    .every((t) => !('services' in seedSite({ business: 'X', trade: t, city: 'KC', state: 'MO' }))));
 check('but they still get a factual about line',
   seedAbout({ business: 'Paws', trade: 'vet', city: 'Lenexa', state: 'KS' }) === 'Paws is a veterinary practice in Lenexa, KS.');
 
@@ -70,35 +69,20 @@ console.log('\n3. Every trade in the table produces usable copy');
 
 for (const t of Object.keys(TRADES)) {
   const s = seedSite({ business: 'Acme', trade: t, city: 'Olathe', state: 'KS' });
-  const medical = ['clinic/doctor', 'dentist', 'vet'].includes(t);
   check(`${t}: about reads as a sentence`, /^Acme is an? .+ in Olathe, KS\.$/.test(s.about), s.about);
   check(`${t}: theme is one we ship`, THEME_NAMES.includes(s.theme), s.theme);
-  check(`${t}: services ${medical ? 'are withheld' : 'are present'}`,
-    medical ? s.services.length === 0 : s.services.length >= 4);
+  check(`${t}: category alone yields no service list`, !('services' in s));
 }
-
-// A generated menu names work a trade does; it never prints a promise the shop
-// did not make ("Emergency service", "Free estimates", ...) under its own name.
-const ACTION_CLAIMS = /emergency service|free estimates|same-day delivery|insurance claims/i;
-check('no seeded service is an unverified commitment',
-  Object.keys(TRADES).every((t) => servicesForTrade(t).every((s) => !ACTION_CLAIMS.test(s.name))));
-
-check('service objects are fresh copies, not the shared table rows',
-  (() => {
-    const a = servicesForTrade('bakery');
-    a[0].name = 'MUTATED';
-    return servicesForTrade('bakery')[0].name === 'Fresh bread';
-  })());
 
 // ---------------------------------------------------------------------------
 console.log('\n4. Unknown and blank trades fall back deterministically');
 
 check('a blank trade gets the generic label', tradeLabel('') === FALLBACK_LABEL);
 check('a blank trade gets the fallback theme', themeForTrade('') === FALLBACK_THEME);
-check('a blank trade gets no invented services', servicesForTrade('').length === 0);
+check('a blank trade gets no invented services', !('services' in seedSite({ business: 'X', trade: '', city: 'KC' })));
 check('an unrecognised trade keeps what the lead said', tradeLabel('taxidermy') === 'taxidermy');
 check('an unrecognised trade still gets a shipped theme', THEME_NAMES.includes(themeForTrade('taxidermy')));
-check('and no services are guessed for it', servicesForTrade('taxidermy').length === 0);
+check('and no services are guessed for it', !('services' in seedSite({ business: 'X', trade: 'taxidermy', city: 'KC' })));
 check('lookup is case and whitespace insensitive',
   tradeEntry('  AUTO REPAIR  ') === tradeEntry('auto repair'));
 check('a blank trade with no town produces no tagline rather than a stub',
@@ -122,7 +106,7 @@ const patch = seedMissing(customerWrote);
 check('a record the customer filled in gets an EMPTY patch',
   Object.keys(patch).length === 0, JSON.stringify(patch));
 
-for (const field of ['tagline', 'about', 'services', 'theme', 'layout']) {
+for (const field of ['tagline', 'about', 'theme', 'layout']) {
   const partial = { ...customerWrote };
   delete partial[field];
   const p = seedMissing(partial);
@@ -131,7 +115,8 @@ for (const field of ['tagline', 'about', 'services', 'theme', 'layout']) {
 }
 
 check('an empty string counts as missing', 'about' in seedMissing({ ...customerWrote, about: '' }));
-check('an empty array counts as missing', 'services' in seedMissing({ ...customerWrote, services: [] }));
+check('an empty service list is NOT filled from category — only owner data adds services',
+  !('services' in seedMissing({ ...customerWrote, services: [] })));
 check('a customer service list of one is NOT topped up',
   !('services' in seedMissing({ ...customerWrote, services: [{ name: 'Just this', desc: '' }] })));
 check('a medical record with no services is left empty rather than filled',
@@ -160,8 +145,14 @@ check('and the draft carries the demo shape', d.layout === 'trade' && THEME_NAME
 // 'Heating & cooling', so seeding from the STORED label finds nothing.
 const hv = draftFromLead({ id: 'H', name: 'Ace Heating', trade: 'hvac', city: 'Olathe', state: 'KS' }, new Set());
 check('a trade whose label is not its key is still seeded',
-  hv.services.length >= 4 && hv.about === 'Ace Heating is a heating & cooling business in Olathe, KS.', hv.about);
+  hv.about === 'Ace Heating is a heating & cooling business in Olathe, KS.', hv.about);
 check('and the stored trade is still the human label', hv.trade === 'Heating & cooling');
+check('but no service list comes from category alone', hv.services.length === 0);
+
+const ownSvc = draftFromLead({ id: 'S', name: 'Listed Shop', trade: 'bakery', city: 'KC', state: 'MO',
+  services: [{ name: 'Sourdough', desc: 'Baked daily' }, { name: '', desc: 'skip me' }] }, new Set());
+check('owner or intake services DO land on the draft', ownSvc.services.length === 1 && ownSvc.services[0].name === 'Sourdough',
+  JSON.stringify(ownSvc.services));
 
 const anon = draftFromLead({ id: 'W', name: 'Mystery Co' }, new Set());
 check('a lead with no trade at all still produces a record', !!anon && anon.slug === 'mystery-co');
@@ -181,11 +172,13 @@ const seededHtml = renderSite(seeded, { base: 'https://killswitchwebsites.com' }
 
 check('the bare record really is the reported defect: one section',
   sections(bareHtml).length === 1, sections(bareHtml).join(','));
-check('the seeded record renders services, about and contact',
-  ['services', 'about', 'contact'].every((s) => sections(seededHtml).includes(s)),
+check('the seeded record renders about and contact',
+  ['about', 'contact'].every((s) => sections(seededHtml).includes(s)),
   sections(seededHtml).join(','));
+check('and it does NOT invent a services section to get there',
+  !sections(seededHtml).includes('services'));
 check('and it is materially bigger than the bare page',
-  seededHtml.length > bareHtml.length * 1.4,
+  seededHtml.length > bareHtml.length,
   `${bareHtml.length} -> ${seededHtml.length}`);
 
 // BOTH halves are required. Content in the old shape is still not the demo.

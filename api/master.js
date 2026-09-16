@@ -26,6 +26,7 @@ import { notifyCustomer } from '../lib/notify.js';
 import { listBillingEvents } from '../lib/billing-events.js';
 import { collectWeeklyScorecard } from '../lib/scorecard.js';
 import { getSuppression } from '../lib/suppression.js';
+import { validatePublishable } from '../lib/site-quality.js';
 
 // Everything the website editor is allowed to write. A save applies ONLY the
 // keys it was actually sent, so a partial save is a partial update. This used to
@@ -411,6 +412,16 @@ export default async function handler(req, res) {
       //    existing page is refused rather than published.
       const before = await getSite(slug);
       if (!html && !(before && before.html)) { res.status(400).json({ error: 'no_html_to_publish' }); return; }
+      // THE QUALITY GATE. The same validator every publish path uses; the
+      // merged record is checked, so the copy being sent live is the copy
+      // being measured. Fails visibly with the exact blockers.
+      if (!(before && before.published)) {
+        const q = validatePublishable({ ...(before || {}), ...(body.business ? { business: String(body.business).trim() } : {}) });
+        if (!q.ok) {
+          res.status(422).json({ error: 'site_not_publishable', blockers: q.blockers });
+          return;
+        }
+      }
       // PUBLISHED IS NOT CLAIMED, AND THIS USED TO SET BOTH AT ONCE.
       //
       // The record has three states, not two, and the middle one is the whole
