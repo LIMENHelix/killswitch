@@ -132,6 +132,10 @@ check('no javascript errors', consoleErrors.length === 0, consoleErrors.join(' |
 check('app is showing', await evaluate(`getComputedStyle(document.getElementById('app')).display !== 'none'`));
 check('all 5 leads rendered', await evaluate(`document.querySelectorAll('#tb tr').length`) === 5);
 check('autopilot panel is visible', await evaluate(`!document.getElementById('autopanel').hidden`));
+check('the legacy panel is marked SUPERSEDED, not ON/OFF', (await evaluate(`document.getElementById('apState').textContent`)) === 'SUPERSEDED');
+check('the legacy panel offers no send controls', await evaluate(`!document.getElementById('apEnabled') && !document.getElementById('apRun') && !document.getElementById('apSave')`));
+check('the mail button explains why it cannot send', (await evaluate(`document.getElementById('mailBtnNote').textContent`)).includes('K6 outreach is not armed'));
+check('the mail button stays disabled with the sender unarmed', await evaluate(`document.getElementById('mailBtn').disabled === true`));
 check('mail bar is visible', await evaluate(`!document.getElementById('mailbar').hidden`));
 check('badge says Owner', (await evaluate(`document.getElementById('whoami').textContent`)) === 'Owner');
 check('owner column shows the rep who worked L1', (await evaluate(`document.querySelector('#tb tr td.owner-c').textContent`)) === 'dana');

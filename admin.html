@@ -231,7 +231,6 @@
           <tr><td class="ok">Email</td><td><b>A customer switched a paid module ON.</b> Subject &ldquo;Switch change&rdquo;. It says whether billing has already started, or whether they only reached the Stripe checkout and have yet to pay.</td></tr>
           <tr><td class="ok">Email</td><td><b>A customer paid for the first time.</b> Subject starts with PAID. This is the moment they become a paying customer.</td></tr>
           <tr><td class="ok">Email</td><td><b>A customer switched a paid module OFF.</b> Subject &ldquo;Switch OFF&rdquo;. It keeps working until the end of the cycle they already paid for, then stops.</td></tr>
-          <tr><td class="ok">Email</td><td><b>Autopilot hit its budget ceiling and stopped itself.</b> The email states what you have spent, what the ceiling was, and the exact minimum needed to start it again.</td></tr>
           <tr><td class="ok">Email</td><td><b>A booking came in</b> through a customer&rsquo;s website. The shop owner is emailed too.</td></tr>
         </table>
         <p class="warn">Every money event now emails you, so there is no weekly check to remember. Two things are still worth knowing: the emails are <b>notifications, not a record</b>, so /master remains the place to see who is actually paying and what renews when; and if an email ever fails to send, the switch still works &mdash; notifications can never block a customer.</p>
@@ -256,26 +255,27 @@
 
         <h3>The postcard machine, in plain terms</h3>
         <table class="rbt">
-          <tr><td>Postcards / day</td><td>How many go out automatically each day. Set 0 to pause without switching anything off.</td></tr>
-          <tr><td>Budget ceiling</td><td><b>Total spend for all time, not new spend.</b> Every postcard ever sent counts against it. This is the number that confuses people.</td></tr>
-          <tr><td>The switch</td><td>Turns automatic mailing on. It refuses to switch on if the ceiling is already used up.</td></tr>
-          <tr><td>Run a batch now</td><td>Sends immediately instead of waiting for the daily run.</td></tr>
+          <tr><td>K6 outreach panel</td><td>The <b>only</b> thing that sends postcards. Its switch, mode, channels, caps and spend limits arm the scheduled cron and both manual send buttons. Nothing mails while it is unarmed.</td></tr>
+          <tr><td>Per-card reserve ¢</td><td>The budget each card counts against the spend caps. You choose the number; arming is impossible without it. It is a reservation, not a claim about Lob's price.</td></tr>
+          <tr><td>Run K6 outreach now</td><td>Sends immediately instead of waiting for the scheduled run, through the same eligibility, caps and idempotency. Disabled while unarmed.</td></tr>
+          <tr><td>Approve &amp; mail selected</td><td>Mails only the rows you ticked, through the same K6 path. Disabled while K6 is unarmed.</td></tr>
+          <tr><td>Legacy autopilot</td><td>The pre-K6 panel. Historical only: its switch and ceiling no longer send anything. The mailed and spend counters above come from the lead ledger, so the history they show is real.</td></tr>
         </table>
-        <p class="warn">Each postcard costs about <b>$0.94</b>, billed by Lob. To allow more mail, the ceiling must be <b>what you have already spent, plus 94 cents per new card</b>. The page tells you the minimum if you get it wrong.</p>
+        <p class="warn">Postage is billed by Lob per card actually sent. The K6 spend caps count the per-card reserve you set, never a guessed price.</p>
 
         <h3>How to stop things</h3>
         <table class="rbt">
-          <tr><td>Stop the mail</td><td>Flip the autopilot switch off on this page. Nothing further is sent, and nothing is charged.</td></tr>
+          <tr><td>Stop the mail</td><td>Save the K6 outreach panel with its switch off. Nothing further is sent, and nothing is charged.</td></tr>
           <tr><td>Stop one contact everywhere</td><td>Use <b>Suppress</b> on their row. It immediately blocks postcards, call scripts, copied texts, and AI-written email sequences that match their lead, email, phone, or address. Only the owner can lift it.</td></tr>
           <tr><td>Stop a customer's paid module</td><td>They can switch it off themselves in their panel. It keeps running until the end of the cycle they already paid for, then stops. You can also cancel it in Stripe.</td></tr>
-          <tr><td>Stop everything at once</td><td>Autopilot off here, and pause the account in Stripe. The free websites stay online either way, and they belong to the customer.</td></tr>
+          <tr><td>Stop everything at once</td><td>K6 outreach off here, and pause the account in Stripe. The free websites stay online either way, and they belong to the customer.</td></tr>
         </table>
 
         <h3>What money is where</h3>
         <table class="rbt">
           <tr><td>Lob</td><td>Postage. Real money leaves here every time a postcard is sent. If it runs dry, sends just fail quietly.</td></tr>
           <tr><td>Stripe</td><td>Customer subscriptions, $19 to $29 a month per module. This is the income.</td></tr>
-          <tr><td>The ceiling on this page</td><td>A safety limit we set on ourselves. It does not hold money, it just stops the mailing.</td></tr>
+          <tr><td>The K6 spend caps on this page</td><td>A safety limit we set on ourselves. They do not hold money, they just stop the mailing.</td></tr>
         </table>
 
       </div>
@@ -308,19 +308,17 @@
       <div id="playsWrap"></div>
     </section>
 
-    <!-- AUTOPILOT CONTROL -->
+    <!-- LEGACY AUTOPILOT (pre-K6) — HISTORICAL ONLY. This panel's switch, daily
+         cap and budget ceiling stopped driving sends when every mail path moved
+         onto the armed K6 control plane; the server now refuses writes to it.
+         The stored values are shown read-only as a historical record. The
+         mailed/spend counters come from the lead ledger itself and are real.
+         The K6 outreach panel below is the ONLY sender. -->
     <section class="autopanel ownerOnly" id="autopanel">
       <div class="ap-head">
-        <div class="ap-title">Mailing autopilot <span class="ap-state off" id="apState">OFF</span></div>
-        <label class="switch"><input type="checkbox" id="apEnabled"><span class="slider"></span></label>
+        <div class="ap-title">Legacy autopilot <span class="ap-state off" id="apState">SUPERSEDED</span></div>
       </div>
-      <div class="ap-sub" id="apSub">Off. Set a daily cap and a budget ceiling, then flip the switch. It mails on its own, every day, and stops itself the instant it hits the ceiling.</div>
-      <div class="ap-grid">
-        <label class="ap-f">Postcards / day<input type="number" id="apCap" min="0" step="10" class="f" placeholder="0"></label>
-        <label class="ap-f">Budget ceiling $ total<input type="number" id="apBudget" min="0" step="50" class="f" placeholder="0"></label>
-        <button class="btn sm" id="apSave">Save settings</button>
-        <button class="btn ghost sm" id="apRun">Run a batch now</button>
-      </div>
+      <div class="ap-sub" id="apSub">This pre-K6 autopilot no longer sends anything — its switch and caps have no sender behind them. Every postcard, manual or scheduled, runs through the K6 outreach control plane below, and only that switch arms mail.</div>
       <div class="ap-budget" id="apBudgetNote"></div>
       <div class="ap-last" id="apLast"></div>
     </section>
@@ -413,6 +411,7 @@
       <button class="btn ghost sm" id="selNone">Clear</button>
       <span class="n" id="selCount">0 selected</span>
       <button class="btn sm" id="mailBtn" disabled>📮 Approve &amp; mail selected</button>
+      <span class="n" id="mailBtnNote"></span>
     </div>
     <div class="toolbar"><span class="n" id="count"></span></div>
     <div class="msg" id="msg"></div>
@@ -544,7 +543,7 @@ async function boot(){
   $('login').style.display='none'; $('app').style.display='block';
   applyRole();
   fillFilters(); render();
-  if(ROLE==='owner') loadCfg();
+  if(ROLE==='owner') loadLegacy();
   loadFunnel();
   loadDisc(); loadDraft(); loadOutreach();
 }
@@ -611,13 +610,28 @@ async function loadFunnel(){
     }).join('')+'</tbody></table>';
 }
 
-// ---- autopilot config ----
+// ---- legacy autopilot (pre-K6) — HISTORICAL READ ONLY ----
+// The ks:autopilot blob drives no sender: cron-mail, run-outreach and mail all
+// execute through the armed K6 control plane, and the server refuses writes to
+// the legacy config (409 legacy_autopilot_superseded). All this panel does is
+// show the stored values as history. The mailed/spend counters derive from the
+// lead ledger itself, so they stay true regardless of this panel.
 let CFG={enabled:false,dailyCap:0,budgetCeiling:0};
-let SPENT=0; // postage already spent; the ceiling is measured against it
-// Derived from the leads already in the browser, so the once-a-minute poll costs
-// no extra Upstash read. The server recomputes it authoritatively on setconfig.
+let SPENT=0; // historical postage spend, derived from the lead ledger
 function recomputeSpent(){ SPENT=+((LEADS.filter(isMailed).length)*COST).toFixed(2); }
-async function loadCfg(){ recomputeSpent(); const r=await api('config'); if(r.ok){ CFG=r.d.config||CFG; paintCfg(); } }
+async function loadLegacy(){ recomputeSpent(); const r=await api('config'); if(r.ok){ CFG=r.d.config||CFG; paintLegacy(); } }
+function paintLegacy(){
+  $('apState').textContent='SUPERSEDED';
+  $('apState').className='ap-state off';
+  let txt='Historical record — switch was '+(CFG.enabled?'ON':'OFF')
+    +', cap '+(CFG.dailyCap||0)+'/day, ceiling $'+(CFG.budgetCeiling||0).toLocaleString()
+    +'. Postage spent to date: $'+SPENT.toFixed(2)+' (lead ledger, unaffected by this panel).';
+  if(CFG.mailedToday) txt+=' Last active day on the old counter: '+CFG.mailedToday+' mailed.';
+  $('apBudgetNote').textContent=txt;
+  $('apBudgetNote').className='ap-budget';
+  const L=CFG.lastRun;
+  $('apLast').textContent=L?('Last legacy run: '+(L.mailed||0)+' mailed'+(L.bad?', '+L.bad+' bad-addr':'')+(L.when?'  ·  '+new Date(L.when).toLocaleString():'')):'';
+}
 
 // ---- discovery (K4) ----
 let DISC={};
@@ -629,7 +643,7 @@ async function loadDisc(){
   $('discState').className='ap-state '+(DISC.enabled?'on':'off');
   $('discSub').textContent=DISC.enabled
     ? ('Armed. '+DISC.planCount+' plan slot'+(DISC.planCount===1?'':'s')+', up to '+DISC.perRunCap+' Places calls per run and '+DISC.dailyCap+' per day. Ranked candidates are below — working them is still your call.')
-    : 'Off. When armed, a cron discovers businesses from Google Places, dedupes them, excludes customers and suppressed contacts, ranks what is left, and stops. It never contacts anyone.';
+    : 'Off. No new candidates will enter the pipeline while discovery is off. When armed, a cron discovers businesses from Google Places, dedupes them, excludes customers and suppressed contacts, ranks what is left, and stops. It never contacts anyone.';
   const c=DISC.counts||{};
   $('discTiles').innerHTML=''
     +'<div class="tile"><b>'+(DISC.candidateCount||0)+'</b><span>candidates</span></div>'
@@ -677,7 +691,8 @@ async function loadDraft(){
   $('draftState').textContent=DRAFT.enabled?'ON':'OFF';
   $('draftState').className='ap-state '+(DRAFT.enabled?'on':'off');
   $('draftSub').textContent=DRAFT.enabled
-    ? ('Armed. Up to '+DRAFT.draftsPerRun+' draft'+(DRAFT.draftsPerRun===1?'':'s')+' per run, minimum score '+DRAFT.minScore+'. '+DRAFT.rankedCount+' ranked, '+DRAFT.draftedCount+' already drafted.')
+    ? ('Armed. Up to '+DRAFT.draftsPerRun+' draft'+(DRAFT.draftsPerRun===1?'':'s')+' per run, minimum score '+DRAFT.minScore+'. '+DRAFT.rankedCount+' ranked, '+DRAFT.draftedCount+' already drafted.'
+       +((DRAFT.rankedCount===0)?' Waiting on discovery: no ranked candidates in inventory yet, so there is nothing to draft — arm discovery or wait for its next run.':''))
     : 'Off. When armed, a cron turns ranked discovery candidates into unpublished site drafts, one per business. Drafts are not published and nobody is contacted.';
   $('draftTiles').innerHTML=''
     +'<div class="tile"><b>'+(DRAFT.rankedCount||0)+'</b><span>ranked</span></div>'
@@ -715,6 +730,9 @@ async function loadOutreach(){
     +'<div class="tile red"><b>'+(c.dead||0)+'</b><span>dead</span></div>';
   const blockers=OUTREACH.blockers||[];
   $('outreachBlockers').textContent=blockers.length?('Not armed: '+blockers.join('; ')+'.'):'';
+  $('outreachRun').disabled=!OUTREACH.armed;
+  $('outreachRun').title=OUTREACH.armed?'':'Cannot run: '+(blockers[0]||'K6 config incomplete')+'.';
+  updSel();
   const runs=OUTREACH.runs||[];
   $('outreachLast').textContent=runs.length
     ? ('Last run '+esc(runs[0].id)+' — '+runs[0].status+(runs[0].capStop?', stopped: '+esc(runs[0].capStop):'')+', '+runs[0].sent+' sent / '+runs[0].eligible+' eligible')
@@ -787,6 +805,7 @@ $('readinessCheck').onclick=async()=>{
   $('readinessOut').innerHTML='<br>'
     +'K6 '+(d.armed?'ARMED':'off')+' · provider '+esc(d.providerMode||'?')+' · reserve '+(d.postcardReserve&&d.postcardReserve.configured?d.postcardReserve.cents+'¢':'not set')
     +' · sender fields '+Object.keys(d.sender||{}).filter(function(k){return d.sender[k]}).length+'/5'
+    +'<br>blockers: '+((OUTREACH.blockers&&OUTREACH.blockers.length)?OUTREACH.blockers.map(esc).join('; '):'none')
     +'<br>candidates '+(c.total||0)+' · ranked '+(c.ranked||0)+' · drafted '+(c.drafted||0)+' · mailable '+(c.draftedMailable||0)+' · eligible now '+(c.eligible||0)
     +'<br>ineligible: '+fmt(d.ineligibleReasons)
     +'<br>eligible by trade: '+fmt(d.eligibleByTrade)
@@ -794,37 +813,6 @@ $('readinessCheck').onclick=async()=>{
     +'<br>effects: '+fmt(d.effectsByStatus);
 };
 
-function paintCfg(){
-  $('apEnabled').checked=!!CFG.enabled;
-  if(document.activeElement!==$('apCap')) $('apCap').value=CFG.dailyCap||'';
-  if(document.activeElement!==$('apBudget')) $('apBudget').value=CFG.budgetCeiling||'';
-  $('apState').textContent=CFG.enabled?'ON':'OFF';
-  $('apState').className='ap-state '+(CFG.enabled?'on':'off');
-  $('apSub').textContent=CFG.enabled
-    ? `On. Mailing up to ${CFG.dailyCap}/day, halting at $${(CFG.budgetCeiling||0).toLocaleString()} total. ${CFG.mailedToday||0} sent today.`
-    : 'Off. Set a daily cap and a budget ceiling, then flip the switch. It mails on its own, every day, and stops itself the instant it hits the ceiling.';
-  paintBudget();
-  const L=CFG.lastRun;
-  $('apLast').textContent=L?`Last run: ${L.mailed||0} mailed`+(L.bad?`, ${L.bad} bad-addr`:'')+(L.note?`. ${L.note}`:'')+(L.when?`  ·  ${new Date(L.when).toLocaleString()}`:''):'';
-}
-// The ceiling is TOTAL postage, so anything already mailed counts against it.
-// Show that plainly, because a ceiling under spend-to-date can never run.
-function paintBudget(){
-  const el=$('apBudgetNote'); if(!el) return;
-  const bud=+$('apBudget').value||CFG.budgetCeiling||0;
-  const left=+(bud-SPENT).toFixed(2);
-  el.textContent=`Postage spent to date: $${SPENT.toFixed(2)}.`+(bud>0
-    ? (left>=COST ? ` A $${bud.toLocaleString()} ceiling leaves $${left.toFixed(2)} (about ${Math.floor(left/COST)} more postcards).`
-                  : ` A $${bud.toLocaleString()} ceiling is already used up, so autopilot cannot mail. Set it to at least $${(SPENT+COST).toFixed(2)}.`)
-    : ` Set a ceiling above that (at least $${(SPENT+COST).toFixed(2)}) to arm autopilot.`);
-  el.className='ap-budget'+((bud>0&&left<COST)?' warn':'');
-}
-async function saveCfg(extra){
-  const r=await api('setconfig',{dailyCap:+$('apCap').value||0,budgetCeiling:+$('apBudget').value||0,...(extra||{})});
-  if(r.ok){ CFG=r.d.config; if(typeof r.d.spent==='number') SPENT=r.d.spent; paintCfg(); }
-  else { if(typeof r.d.spent==='number'){ SPENT=r.d.spent; paintBudget(); } $('msg').textContent=r.d.message||('Error: '+(r.d.error||r.status)); $('apEnabled').checked=!!CFG.enabled; }
-  return r;
-}
 function uniq(k){return [...new Set(LEADS.map(r=>r[k]).filter(Boolean))].sort()}
 function fillFilters(){
   uniq('trade').forEach(t=>$('fTrade').insertAdjacentHTML('beforeend',`<option>${esc(t)}</option>`));
@@ -910,7 +898,12 @@ function render(){
   wt.scrollTop=sc;
   board(); updSel();
 }
-function updSel(){ $('selCount').textContent=sel.size+' selected'; $('mailBtn').disabled=sel.size===0; }
+function updSel(){
+  $('selCount').textContent=sel.size+' selected';
+  const armed=!!OUTREACH.armed;
+  $('mailBtn').disabled=sel.size===0||!armed;
+  $('mailBtnNote').textContent=armed?'':'K6 outreach is not armed — nothing can be mailed. Arm it in the K6 outreach panel.';
+}
 
 // events
 $('loginBtn').onclick=async()=>{ KEY=$('key').value.trim(); boot(); };
@@ -937,40 +930,26 @@ $('selAll').onclick=()=>{ filtered().forEach(r=>{ if(inQueue(r)) sel.add(r.id); 
 $('selNone').onclick=()=>{ sel.clear(); render(); };
 $('mailBtn').onclick=async()=>{
   const ids=[...sel]; if(!ids.length) return;
-  const cost=(ids.length*COST).toFixed(2);
-  if(!confirm(`Send ${ids.length} postcard(s) via Lob for about $${cost}? Undeliverable ones are skipped automatically.`)) return;
+  // The budget number shown is the owner-set K6 reserve per card when known —
+  // the same value the spend caps count — never a guessed provider price.
+  const reserveCents=(OUTREACH.config&&+OUTREACH.config.postcardReserveCents)||Math.round(COST*100);
+  const cost=(ids.length*reserveCents/100).toFixed(2);
+  if(!confirm(`Send ${ids.length} postcard(s) via Lob through the K6 control plane (budget reserve about $${cost})? Ineligible or undeliverable ones are skipped automatically.`)) return;
   $('mailBtn').disabled=true; $('msg').textContent='Sending '+ids.length+'...';
   const res=await api('mail',{ids});
   if(res.ok){
     const r2=await api('list'); if(r2.ok) LEADS=r2.d.leads;
     sel.clear();
-    $('msg').textContent=`Done: ${res.d.sent} mailed, ${res.d.bad} bad-address skipped, ${res.d.suppressed||0} suppressed`+(res.d.failed.length?`, ${res.d.failed.length} error(s)`:'')+'.';
+    const run=res.d.run||{};
+    $('msg').textContent=`Done: ${res.d.sent||0} mailed, ${run.skipped||0} skipped, ${run.dead||0} dead`+(run.capStop?`, stopped: ${run.capStop}`:'')+'.';
     render();
-  } else { $('msg').textContent='Error: '+(res.d.error||res.status); $('mailBtn').disabled=false; }
+  } else { $('msg').textContent='Error: '+(res.d.message||res.d.error||res.status); $('mailBtn').disabled=false; }
 };
 
-// autopilot controls
-$('apBudget').oninput=paintBudget;
-$('apSave').onclick=async()=>{ const r=await saveCfg(); if(r.ok) $('msg').textContent='Autopilot settings saved.'; };
-$('apEnabled').onchange=async()=>{
-  const on=$('apEnabled').checked;
-  if(on){
-    const cap=+$('apCap').value, bud=+$('apBudget').value;
-    if(!(cap>0)||!(bud>0)){ $('msg').textContent='Set a daily cap and a budget ceiling before switching on.'; $('apEnabled').checked=false; return; }
-    if(bud<SPENT+COST){ $('msg').textContent=`That ceiling is already used up. You have spent $${SPENT.toFixed(2)} on postage and the ceiling is total spend, so set it to at least $${(SPENT+COST).toFixed(2)}.`; $('apEnabled').checked=false; paintBudget(); return; }
-    const room=Math.floor((bud-SPENT)/COST);
-    if(!confirm(`Turn autopilot ON?\n\nIt will mail up to ${cap} postcards/day automatically.\n\nSpent so far: $${SPENT.toFixed(2)}. Ceiling: $${bud.toLocaleString()} total. That leaves room for about ${room} more postcards before it switches itself OFF.`)){ $('apEnabled').checked=false; return; }
-  }
-  const r=await saveCfg({enabled:on});
-  if(r.ok) $('msg').textContent=on?'Autopilot ON.':'Autopilot OFF.';
-};
-$('apRun').onclick=async()=>{
-  $('msg').textContent='Running a batch now...';
-  const r=await api('run-autopilot');
-  if(r.ok){ const R=r.d.result; $('msg').textContent=R.ran?`Batch done: ${R.mailed} mailed, ${R.bad||0} bad-address skipped, ${R.suppressed||0} suppressed.`:`Did not run: ${R.reason}.`;
-    await loadCfg(); await refresh(); }
-  else $('msg').textContent='Error: '+(r.d.error||r.status);
-};
+// autopilot controls — RETIRED with the legacy panel. The old switch/cap/
+// ceiling inputs and the "Run a batch now" button no longer exist; the K6
+// outreach panel above carries every send control, and the server refuses
+// writes to the legacy config.
 
 /* ---- the call script ---- */
 let scLead=null, scText='';
@@ -1093,7 +1072,7 @@ async function refresh(){
   const res=await api('list');
   if(res.ok){ LEADS=res.d.leads||[]; render();
     const t=new Date(); $('liveLabel').textContent='Live · updated '+t.toLocaleTimeString(); }
-  if(ROLE==='owner') loadCfg();
+  if(ROLE==='owner') loadLegacy();
   loadFunnel();
   loadDisc(); loadDraft(); loadOutreach();
 }

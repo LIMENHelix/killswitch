@@ -11,18 +11,25 @@
 //
 // Actions (POST {action, token, ...}):
 //   list    -> all leads, merged with per-lead stage/notes/owner  (both roles)
-//   config  -> autopilot settings, read only                      (both roles)
+//   config  -> legacy autopilot blob, read only, HISTORICAL       (both roles)
 //   update / suppress -> record an outcome or do-not-contact      (both roles)
-//   setconfig / run-autopilot / mail / seed / unsuppress          (owner only)
+//   setconfig -> RETIRED, always 409 (see below)                  (owner only)
+//   run-autopilot / mail / seed / unsuppress                      (owner only)
 //   outreach-status / outreach-runs / outreach-effects            (owner only)
 //   outreach-setconfig / run-outreach / run-scorecard             (owner only)
 //   run-followups / run-maintenance                               (owner only)
 //
+// THE CONTROL PLANE IS K6. The legacy ks:autopilot config (setconfig's switch,
+// daily cap and budget ceiling) has no sender: cron-mail, run-autopilot and
+// mail all execute through the armed K6 outreach plane, so setconfig refuses
+// rather than store values nothing reads. The blob itself is kept and served
+// read-only via action:config — the historical mailed/spend counters live on
+// the lead ledger and are unaffected.
+//
 // Nothing mails unless the OWNER posts action:mail with explicit ids, and even
 // then only through the armed K6 outreach control plane.
 
-import { configured, getLeads, saveLeads, getConfig, saveConfig, getLeadMeta, setLeadMeta } from '../lib/store.js';
-import { spentToDate, COST } from '../lib/mailer.js';
+import { configured, getLeads, saveLeads, getConfig, getLeadMeta, setLeadMeta } from '../lib/store.js';
 import { identify, isOwner, anyKeyConfigured } from '../lib/roles.js';
 import { getSite, upsertSite } from '../lib/sites.js';
 import { getFunnel, setStage, summarize, toPlays, migrateFrom, migrateStage, STAGES } from '../lib/funnel.js';
@@ -159,34 +166,25 @@ export default async function handler(req, res) {
     }
     // Deliberately does NOT read the lead list. /admin polls this every minute and
     // the leads blob is ~600 KB, so reading it here would double Upstash egress for
-    // a number the page can already derive from the leads it just fetched. The
-    // authoritative spend check lives in setconfig, which runs only on a click.
+    // a number the page can already derive from the leads it just fetched.
+    // HISTORICAL: the legacy ks:autopilot blob drives no sender (K6 is the only
+    // mail path); it is served read-only so the admin page can show the old
+    // values as a historical record. Viewing never mutates it.
     if (action === 'config') {
-      res.status(200).json({ ok: true, config: await getConfig(), role: who.role }); return;
+      res.status(200).json({ ok: true, config: await getConfig(), supersededBy: 'k6-outreach', role: who.role }); return;
     }
     if (action === 'setconfig') {
-      const cur = await getConfig();
-      const next = { ...cur };
-      if (body.enabled !== undefined) next.enabled = !!body.enabled;
-      if (body.dailyCap !== undefined) next.dailyCap = Math.max(0, Math.floor(Number(body.dailyCap) || 0));
-      if (body.budgetCeiling !== undefined) next.budgetCeiling = Math.max(0, Number(body.budgetCeiling) || 0);
-
-      // The ceiling counts postage already spent. Arming with a ceiling at or
-      // below that would switch autopilot on and then trip it dead on the first
-      // run, hours later, looking like a silent failure. Refuse it now instead.
-      const spent = spentToDate(await getLeads());
-      const minCeiling = +(spent + COST).toFixed(2); // room for at least one postcard
-      if (next.enabled && next.budgetCeiling < minCeiling) {
-        res.status(400).json({
-          error: 'budget_below_spend',
-          spent, minCeiling,
-          message: `You have already spent $${spent.toFixed(2)} on postage. The ceiling is TOTAL spend, not new spend, so a $${next.budgetCeiling.toFixed(2)} ceiling leaves nothing to mail with. Set it to at least $${minCeiling.toFixed(2)} before switching autopilot on.`,
-        });
-        return;
-      }
-
-      await saveConfig(next);
-      res.status(200).json({ ok: true, config: next, spent }); return;
+      // RETIRED. The legacy autopilot's switch/caps have no consumer — every
+      // send runs through the armed K6 control plane — so storing new values
+      // here would paint a switch that does nothing. Refuse, mutate nothing,
+      // and point at the real control. The stored blob stays untouched as the
+      // historical record served by action:config.
+      res.status(409).json({
+        error: 'legacy_autopilot_superseded',
+        supersededBy: 'k6-outreach',
+        message: 'The old mailing autopilot no longer sends anything and cannot be switched on. Postcard sends are armed, capped and budgeted in the K6 outreach panel (outreach-setconfig).',
+      });
+      return;
     }
     if (action === 'run-autopilot') {
       // The legacy name for "run the prospect mail batch now". It goes through
