@@ -806,7 +806,8 @@ $('readinessCheck').onclick=async()=>{
     +'K6 '+(d.armed?'ARMED':'off')+' · provider '+esc(d.providerMode||'?')+' · reserve '+(d.postcardReserve&&d.postcardReserve.configured?d.postcardReserve.cents+'¢':'not set')
     +' · sender fields '+Object.keys(d.sender||{}).filter(function(k){return d.sender[k]}).length+'/5'
     +'<br>blockers: '+((OUTREACH.blockers&&OUTREACH.blockers.length)?OUTREACH.blockers.map(esc).join('; '):'none')
-    +'<br>candidates '+(c.total||0)+' · ranked '+(c.ranked||0)+' · drafted '+(c.drafted||0)+' · mailable '+(c.draftedMailable||0)+' · eligible now '+(c.eligible||0)
+    +'<br>K4/K5 pipeline: candidates '+(c.total||0)+' · ranked '+(c.ranked||0)+' · drafted '+(c.drafted||0)+' · drafted mailable '+(c.draftedMailable||0)
+    +'<br>send pool (what a run would consider): legacy queue '+(d.legacyQueue||0)+' + drafted '+(c.draftedMailable||0)+' → pool '+(d.pool||0)+' · mailable '+(d.mailable||0)+' · <b>eligible now '+(d.eligible||0)+'</b>'
     +'<br>ineligible: '+fmt(d.ineligibleReasons)
     +'<br>eligible by trade: '+fmt(d.eligibleByTrade)
     +'<br>eligible by city: '+fmt(d.eligibleByCity)

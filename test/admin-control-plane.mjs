@@ -173,7 +173,7 @@ await upsertSite({
 r = await call('outreach-readiness', 'owner-key');
 const rd = r.body.readiness || {};
 check('readiness sees the drafted mailable prospect as eligible',
-  r.code === 200 && rd.candidates && rd.candidates.total === 1 && rd.candidates.drafted === 1 && rd.candidates.draftedMailable === 1 && rd.candidates.eligible === 1,
+  r.code === 200 && rd.candidates && rd.candidates.total === 1 && rd.candidates.drafted === 1 && rd.candidates.draftedMailable === 1 && rd.pool === 1 && rd.eligible === 1,
   JSON.stringify(rd.candidates));
 check('readiness reports provider mode and reserve without secrets', rd.providerMode === 'TEST' && rd.postcardReserve && rd.postcardReserve.configured === true && rd.postcardReserve.cents === 94);
 check('readiness carries no prospect PII', !JSON.stringify(rd).includes('Drafted Dental') && !JSON.stringify(rd).includes('816-555') && !JSON.stringify(rd).includes('Elm St'));
