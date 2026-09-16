@@ -69,8 +69,8 @@ const ARMED = {
 };
 
 let seq = 0;
-async function seedProspect(name) {
-  const placeId = 'plc-ready-' + (++seq);
+async function seedProspect(name, forcedPlaceId) {
+  const placeId = forcedPlaceId || 'plc-ready-' + (++seq);
   const phone = '(913) 555-0' + (200 + seq);
   const h = KV.get('ks:disc:cands') || {};
   h[placeId] = JSON.stringify({
@@ -84,6 +84,10 @@ async function seedProspect(name) {
     street: seq + ' Secret Ln', zip: '64108', modules: ['P0'], published: false, claimed: false, placeId,
   });
   return { placeId, phone };
+}
+
+function seedLegacyLeads(leads) {
+  KV.set('ks:leads', JSON.stringify(leads));
 }
 
 console.log('\nLOB KEY MODE: PREFIX CLASSIFICATION ONLY');
@@ -120,7 +124,9 @@ check('payload contains no street addresses', !payload.includes('Secret Ln'));
 check('payload contains no raw KV keys', !payload.includes('ks:'));
 const rd = r2.body.readiness;
 check('counts are right', rd.candidates.total === 2 && rd.candidates.ranked === 2 && rd.candidates.drafted === 2
-  && rd.candidates.draftedMailable === 2 && rd.candidates.eligible === 2, JSON.stringify(rd.candidates));
+  && rd.candidates.draftedMailable === 2 && rd.eligible === 2, JSON.stringify(rd.candidates));
+check('the send pool is the drafted inventory when the legacy queue is empty',
+  rd.legacyQueue === 0 && rd.pool === 2 && rd.mailable === 2);
 check('provider mode is classified', rd.providerMode === 'TEST');
 check('reserve is reported configured with cents', rd.postcardReserve.configured === true && rd.postcardReserve.cents === 94);
 check('aggregates by trade and city', rd.eligibleByTrade.plumber === 2 && rd.eligibleByCity['Kansas City, MO'] === 2);
@@ -171,6 +177,58 @@ r = await runPostcardOutreach({});
 check('second run sends nothing new', r.sent === 0 && lobCalls.length === 2);
 effects = (await getRunEffects(r.run.id)).effects;
 check('still exactly two effects and two reservations', effects.length === 2 && (await getRunEffects(r.run.id)).rc === 2);
+
+// ---------------------------------------------------------------------------
+console.log('\nREADINESS REPORTS THE ACTUAL SEND POOL (BOTH SOURCES)');
+
+// Legacy-only inventory: no K4/K5 candidates at all, only the lead queue.
+seed(ARMED);
+seedLegacyLeads([
+  { id: 'leg-1', name: 'Legacy One', trade: 'roofer', street: '1 A St', city: 'Lee\'s Summit', state: 'MO', zip: '64063' },
+  { id: 'leg-2', name: 'Legacy Two', trade: 'roofer', street: '2 B St', city: 'Lee\'s Summit', state: 'MO', zip: '64063' },
+  { id: 'leg-historical', name: 'Already Mailed', trade: 'roofer', street: '3 C St', city: 'Lee\'s Summit', state: 'MO', zip: '64063', status: 'mailed', lob_id: 'psc_hist' },
+]);
+r = await callAdmin({ action: 'outreach-readiness', token: 'owner-key-test' });
+let rl = r.body.readiness;
+check('legacy-only inventory appears in the pool', rl.legacyQueue === 2 && rl.pool === 2 && rl.mailable === 2, JSON.stringify({ legacyQueue: rl.legacyQueue, pool: rl.pool }));
+check('already-mailed leads stay historical, not pooled', rl.pool === 2);
+check('legacy-only eligibility is counted by trade and city',
+  rl.eligible === 2 && rl.eligibleByTrade.roofer === 2 && rl.eligibleByCity['Lee\'s Summit, MO'] === 2, JSON.stringify({ eligible: rl.eligible, byTrade: rl.eligibleByTrade, byCity: rl.eligibleByCity }));
+check('legacy-only readiness carries no PII', !JSON.stringify(rl).includes('Legacy One') && !JSON.stringify(rl).includes('A St'));
+
+// Run parity: what readiness calls eligible is what the run considers, and
+// with headroom in every cap each eligible prospect sends exactly once.
+r = await runPostcardOutreach({});
+check('run considers exactly what readiness counted eligible', r.run.eligible === rl.eligible && r.sent === 2 && lobCalls.length === 2,
+  JSON.stringify({ runEligible: r.run.eligible, sent: r.sent }));
+
+// Mixed inventory with a DUPLICATE identity: one business present as both a
+// legacy queued lead (id = its placeId) and a K5 drafted prospect.
+seed(ARMED);
+seq++;
+seedLegacyLeads([
+  { id: 'plc-dup-1', name: 'Duplicate Identity', trade: 'plumber', street: '4 D St', city: 'Kansas City', state: 'MO', zip: '64108' },
+  { id: 'leg-solo', name: 'Legacy Solo', trade: 'plumber', street: '5 E St', city: 'Kansas City', state: 'MO', zip: '64108' },
+]);
+await seedProspect('Duplicate Identity', 'plc-dup-1');   // same identity, drafted side
+await seedProspect('Drafted Solo');                      // drafted-only
+r = await callAdmin({ action: 'outreach-readiness', token: 'owner-key-test' });
+rl = r.body.readiness;
+check('a duplicate identity counts once in the pool', rl.legacyQueue === 2 && rl.pool === 3, JSON.stringify({ legacyQueue: rl.legacyQueue, pool: rl.pool }));
+check('mixed eligibility totals match the deduped pool', rl.eligible === 3 && rl.eligibleByTrade.plumber === 3);
+r = await runPostcardOutreach({});
+check('the run sends the deduped pool exactly once each', r.run.eligible === 3 && r.sent === 3 && lobCalls.length === 3,
+  JSON.stringify({ eligible: r.run.eligible, sent: r.sent, lob: lobCalls.length }));
+r = await runPostcardOutreach({});
+check('repeating sends nothing (one effect per identity)', r.sent === 0 && lobCalls.length === 3);
+
+// Unarmed: readiness still reports the pool honestly, and nothing can send.
+seed(null);
+seedLegacyLeads([{ id: 'leg-x', name: 'Unarmed Lead', trade: 'roofer', street: '6 F St', city: 'Olathe', state: 'KS', zip: '66061' }]);
+r = await callAdmin({ action: 'outreach-readiness', token: 'owner-key-test' });
+check('unarmed readiness still reports the true pool', r.body.readiness.armed === false && r.body.readiness.pool === 1 && r.body.readiness.eligible === 1);
+r = await runPostcardOutreach({});
+check('unarmed means zero provider calls', r.ran === false && r.reason === 'not_armed' && lobCalls.length === 0);
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 clearKvStub();
