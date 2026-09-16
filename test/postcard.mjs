@@ -63,13 +63,38 @@ check('the delivery card offers to walk them through it instead',
 
 console.log('\nNOTHING THAT ALREADY WORKED WAS TAKEN AWAY');
 
-check('the offer card still leads with the free-website headline', /100% Free/.test(front));
+check('the offer card leads with the free-website headline', /Your business website\./.test(front) && /Free\./.test(front));
+check('the offer card states the terms plainly', front.includes('Yours to keep. No contract. No card required.'));
 check('the delivery card still leads with "already built"', /already built/.test(delivered));
 check('the delivery card still prints where the site is', delivered.includes('killswitchwebsites.com/s/lee-auto'));
 check('the trade is still pluralised for the audience', /Built for auto shops/.test(back),
   (back.match(/Built for [^<]*/) || [''])[0]);
 check('the business name is still on the delivery card', delivered.includes('Lee Auto Repair'));
 check('the card is still the right size for Lob', front.includes('9.25in') && front.includes('6.25in'));
+
+console.log('\nTHE K6 OFFER CARD: CLEAN, FACTUAL, SCANNABLE');
+
+// K6 recipients have NO live site (drafts are never published by any send
+// path), so the offer card must not claim one exists or name the business.
+check('the offer card never claims a site is already built',
+  !/already built/i.test(front) && !/already built/i.test(back));
+check('the offer card prints no business name (pool is generic)',
+  !front.includes('Lee Auto Repair') && !back.includes('Lee Auto Repair'));
+
+// Removed copy stays removed, on both variants.
+for (const [label, html] of [['offer front', front], ['offer back', back], ['delivery front', delivered], ['delivery back', deliveredBack]]) {
+  check(label + ' carries no prices', !/\$\d/.test(html), (html.match(/\$\d[^<]*/) || [''])[0]);
+  check(label + ' has no "catch" framing', !/catch/i.test(html));
+  check(label + ' has no betting or scarcity language', !/betting|few builds a month/i.test(html));
+}
+
+// The QR and the printed URL point at the same working destination.
+check('the offer back carries the QR image', back.includes('https://killswitchwebsites.com/qr-start.png'));
+check('the QR alt text names the destination', back.includes('killswitch.domains/start'));
+check('the printed CTA is killswitch.domains/start on the front', front.includes('killswitch.domains/start'));
+check('the printed CTA is killswitch.domains/start on the back', (back.match(/killswitch\.domains\/start/g) || []).length >= 2);
+check('the delivery card has no intake QR (its destination is the site itself)', !deliveredBack.includes('qr-start.png'));
+check('the delivery card keeps its own URL CTA', deliveredBack.includes('killswitchwebsites.com/s/lee-auto'));
 
 // A business name with an ampersand must not break the markup. Note this has to
 // be tested on the DELIVERY card: the offer card never prints the name at all,

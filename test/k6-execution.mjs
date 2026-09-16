@@ -157,7 +157,7 @@ await seedDraftSite(good);
 r = await runPostcardOutreach({});
 check('the run sent exactly one card', r.ran === true && r.sent === 1 && lobCalls.length === 1, JSON.stringify(r.run || {}));
 check('the provider call carried the durable Idempotency-Key', typeof lobCalls[0].idempotency === 'string' && /^oe-[a-f0-9]{32}:0$/.test(lobCalls[0].idempotency), lobCalls[0].idempotency);
-check('the card is the existing plain offer, not a delivery claim', lobCalls[0].front.includes('Claim your') && !lobCalls[0].front.includes('already built'));
+check('the card is the existing plain offer, not a delivery claim', lobCalls[0].front.includes('Your business website.') && !lobCalls[0].front.includes('already built'));
 check('the card never references the unpublished draft', !lobCalls[0].front.includes(good.draftSlug) && !lobCalls[0].back.includes(good.draftSlug));
 let effects = (await getRunEffects(r.run.id)).effects;
 check('exactly one effect, accepted with provider ref and one attempt', effects.length === 1 && effects[0].status === STATUS.ACCEPTED && effects[0].providerRef === 'psc_sim_1' && effects[0].attempts === 1);
