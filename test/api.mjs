@@ -441,7 +441,7 @@ check('draft holds only facts we have',
   charlie.phone === '913-859-9994' && charlie.city === 'Lenexa' && charlie.hours.length === 0
   && charlie.about === "Charlie's Brake & Muffler is an auto repair business in Lenexa, KS.",
   charlie.about);
-check('trade services are filled in', charlie.services.length === 6 && charlie.services[0].name === 'Brakes');
+check('no service list is invented from the trade alone', charlie.services.length === 0, JSON.stringify(charlie.services));
 const dental = await getSite('downtown-dental');
 check('a medical practice gets NO invented service menu', dental.services.length === 0, JSON.stringify(dental.services));
 
@@ -498,7 +498,7 @@ KV.set('ks:leads', JSON.stringify([
   { id: 'B', name: 'Paying Shop', trade: 'bakery', phone: '816-111-2222', city: 'KC', state: 'MO' },
 ]));
 KV.set('ks:leadmeta', { A: JSON.stringify({ siteSlug: 'charlies-brake-muffler' }), B: JSON.stringify({ siteSlug: 'paying-shop' }) });
-putSite({ slug: 'charlies-brake-muffler', business: "Charlie's Brake & Muffler", city: 'Lenexa', trade: 'auto repair', leadId: 'A', published: false, claimed: false, modules: ['P0'] });
+putSite({ slug: 'charlies-brake-muffler', business: "Charlie's Brake & Muffler", city: 'Lenexa', state: 'KS', trade: 'auto repair', services: [{ name: 'Brakes', desc: '' }], leadId: 'A', published: false, claimed: false, modules: ['P0'] });
 putSite({ slug: 'paying-shop', business: 'Paying Shop', city: 'KC', email: EMAIL, leadId: 'B', published: true, claimed: true, modules: ['P0'] });
 seedAccounts({ [EMAIL]: { email: EMAIL, tokenNonce: NONCE, name: 'Pat', stripeCustomerId: 'cus_paid' } });
 stripeSubs = [{ id: 's1', status: 'active', cancel_at_period_end: false, current_period_end: 9999999999,
@@ -1915,7 +1915,7 @@ check('a missing slug is refused', r.code === 400, JSON.stringify(r.body));
 const PAGE = '<html><head><title>Cut</title></head><body><h1>Fades</h1></body></html>';
 
 // Publish WITHOUT handing it over. These are two different decisions.
-putSite({ slug: 'draft-cuts', business: 'Draft Cuts', published: false, claimed: false, modules: ['P0'] });
+putSite({ slug: 'draft-cuts', business: 'Draft Cuts', trade: 'salon/barber', city: 'Kansas City', state: 'MO', services: [{ name: 'Haircut', desc: '' }], published: false, claimed: false, modules: ['P0'] });
 r = await asAdmin({ action: 'site-golive', slug: 'draft-cuts', html: PAGE });
 check('a page can be published without onboarding anyone', r.code === 200 && r.body.ok, JSON.stringify(r.body).slice(0, 120));
 check('and nobody was set up as a customer', !r.body.steps.customer, JSON.stringify(r.body.steps));
@@ -1928,7 +1928,7 @@ check('it is published', rec.published === true);
 check('but NOT claimed, so the owner can see it and Google cannot', rec.claimed === false);
 
 // The whole chain.
-putSite({ slug: 'fade-house', business: 'Fade House', published: false, claimed: false, modules: ['P0'] });
+putSite({ slug: 'fade-house', business: 'Fade House', trade: 'salon/barber', city: 'Kansas City', state: 'MO', services: [{ name: 'Fade', desc: '' }], published: false, claimed: false, modules: ['P0'] });
 r = await asAdmin({ action: 'site-golive', slug: 'fade-house', html: PAGE, email: 'owner@fadehouse.com', name: 'Ray' });
 check('the whole chain runs in one call', r.code === 200 && r.body.ok, JSON.stringify(r.body).slice(0, 140));
 check('the owner gets an account', r.body.steps.customer && r.body.steps.customer.ok, JSON.stringify(r.body.steps.customer));
@@ -2163,6 +2163,7 @@ check('and stays accepted after the edit', JSON.parse(KV.get('ks:site:accepted-s
 console.log('\nShowing them before Google sees it');
 
 const SHOWPAGE = '<html><head></head><body>their page</body></html>';
+putSite({ slug: 'shy-shop', business: 'Shy Shop', trade: 'salon/barber', city: 'Kansas City', state: 'MO', services: [{ name: 'Trim', desc: '' }], published: false, claimed: false, modules: ['P0'] });
 r = await asAdmin({ action: 'site-golive', slug: 'shy-shop', html: SHOWPAGE, business: 'Shy Shop' });
 check('step 1 puts it live', r.code === 200 && r.body.steps.site.published === true, JSON.stringify(r.body.steps.site));
 check('but NOT claimed, so it carries noindex and Google never sees it',

@@ -40,6 +40,7 @@ import { draftAutonomyStatus, listDraftRuns, getDraftConfig, saveDraftConfig, va
 import { runPostcardOutreach, getOutreachConfig, saveOutreachConfig, outreachConfigArmable, validateOutreachConfigPatch, outreachReadiness } from '../lib/k6-outreach.js';
 import { listRuns as listOutreachRuns, listEffects, getStatusCounts } from '../lib/outreach-effects.js';
 import { collectWeeklyScorecard, previousCompleteWeek } from '../lib/scorecard.js';
+import { validatePublishable } from '../lib/site-quality.js';
 import { notifyOperator } from '../lib/notify.js';
 import { publicOrigin } from '../lib/origin.js';
 import { cmd, pipeline } from '../lib/kv.js';
@@ -419,6 +420,19 @@ export default async function handler(req, res) {
       const lead = directLead || leads.find((l) => String(l.id) === String(site.leadId));
       if (lead && matchSuppression({ ...lead, ...(meta[lead.id] || {}) }, state)) {
         res.status(409).json({ error: 'contact_suppressed', message: 'This contact is on the do-not-contact list.' }); return;
+      }
+      // THE QUALITY GATE. Publishing is showing the business their page; a
+      // draft that is still four blocks and a phone number fails here with the
+      // exact reasons instead of going live and embarrassing the caller.
+      if (!site.published) {
+        const q = validatePublishable(site);
+        if (!q.ok) {
+          res.status(422).json({
+            error: 'site_not_publishable', blockers: q.blockers,
+            message: 'This draft is not complete enough to show the business: ' + q.blockers.join('; ') + '. Fill the gaps in Master first.',
+          });
+          return;
+        }
       }
       if (!site.published) await upsertSite({ slug, published: true });
       if (body.id) await setLeadMeta(body.id, { siteSlug: slug, sitePublished: true, publishedBy: who.name });

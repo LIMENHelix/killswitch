@@ -100,10 +100,18 @@ check('the demo file itself is still the hand-built one, untouched',
 
 console.log('\nA MODULE IS NEVER SHOWN THAT THE RECORD DOES NOT HAVE');
 const bare = renderSite({ ...FULL, modules: ['P0'] }, {});
-for (const [phase, mark] of [['P3', 'id="book"'], ['P7', 'id="pay"'], ['P2', 'id="updates"'], ['P9', 'class="aibtn"'], ['P1', 'LocalBusiness'], ['P8', "action:'view'"]]) {
+for (const [phase, mark] of [['P3', 'id="book"'], ['P7', 'id="pay"'], ['P2', 'id="updates"'], ['P9', 'class="aibtn"'], ['P8', "action:'view'"]]) {
   check(`${phase} absent when switched off`, !bare.includes(mark));
   check(`${phase} present when switched on`, renderSite(FULL, {}).includes(mark));
 }
+
+console.log('\nLOCAL-BUSINESS SCHEMA IS PART OF EVERY PAGE; P1 KEEPS THE RICH EXTRA');
+check('the factual schema renders with no paid module at all', bare.includes('application/ld+json'));
+check('and it carries the trade subtype, not the generic one', bare.includes('"@type":"AutoRepair"'));
+check('hours and area served are in it when known', bare.includes('"openingHours":["Mon to Fri: 8am to 6pm"]') && bare.includes('"areaServed":{"@type":"City","name":"Overland Park, KS"}'));
+const gbp = { ...FULL, googleBusinessProfile: 'https://maps.app.goo.gl/AutoTech' };
+check('the Google profile link is the P1 extra, not free', !renderSite({ ...gbp, modules: ['P0'] }, {}).includes('sameAs'));
+check('and appears when P1 is on', renderSite(gbp, {}).includes('"sameAs":["https://maps.app.goo.gl/AutoTech"]'));
 
 console.log('\nCONTRAST IS COMPUTED, NEVER HARDCODED');
 for (const t of THEME_NAMES) {

@@ -25,6 +25,7 @@ import { notifyOperator } from '../lib/notify.js';
 import { entitlements, CHANGE_PHASES } from '../lib/entitle.js';
 import { onboardCustomer } from '../lib/onboard.js';
 import { publicOrigin } from '../lib/origin.js';
+import { validatePublishable } from '../lib/site-quality.js';
 
 const CALENDLY = 'https://calendly.com/chrishubbel72/30min';
 
@@ -173,7 +174,19 @@ async function publish(res, body, host) {
   if (!site) { res.status(404).json({ error: 'no_site', say: 'I cannot find a site under that name.' }); return; }
 
   const already = !!site.published;
-  if (!already) await upsertSite({ slug, published: true });
+  // THE QUALITY GATE. The agent publishes while the owner listens; a page
+  // that would embarrass the business fails here, audibly, with the reasons.
+  if (!already) {
+    const q = validatePublishable(site);
+    if (!q.ok) {
+      res.status(422).json({
+        error: 'site_not_publishable', blockers: q.blockers,
+        say: 'Their site needs a few more details before it can go live. The team has been told exactly what is missing.',
+      });
+      return;
+    }
+    await upsertSite({ slug, published: true });
+  }
 
   const url = host + '/s/' + slug;
   const d = digits(body.phone);
@@ -286,6 +299,20 @@ async function deliverSite(res, body, host) {
   }
   const site = slug ? await getSite(slug) : null;
   if (!site) { res.status(404).json({ error: 'no_site' }); return; }
+
+  // THE QUALITY GATE, same as the publish action: do not hand over a page that
+  // is not ready to be their public site. The agent can collect the missing
+  // facts with update_site and call this again.
+  if (!site.published) {
+    const q = validatePublishable(site);
+    if (!q.ok) {
+      res.status(422).json({
+        error: 'site_not_publishable', blockers: q.blockers,
+        say: 'Before I hand it over, their site needs a few more details. Ask for what is missing and update the site first.',
+      });
+      return;
+    }
+  }
 
   const saved = await upsertSite({ slug, email, published: true, claimed: true });
   const out = await onboardCustomer({

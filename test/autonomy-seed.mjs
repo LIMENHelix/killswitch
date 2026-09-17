@@ -57,8 +57,7 @@ check('it is the paying customer\'s', paid.site.email === 'buyer@example.com');
 check('it is live and claimed', paid.site.published === true && paid.site.claimed === true);
 check('it is free-tier only, payment did not grant modules', JSON.stringify(paid.site.modules) === JSON.stringify(['P0']));
 
-check('SEEDED: it has a service list', paid.site.services.length >= 4, JSON.stringify(paid.site.services));
-check('SEEDED: the services match the trade', paid.site.services[0].name === 'Leak repair');
+check('SEEDED: NO service list comes from category alone', paid.site.services.length === 0, JSON.stringify(paid.site.services));
 check('SEEDED: it has a theme', paid.site.theme === 'bold', paid.site.theme);
 check('SEEDED: it has the demo layout', paid.site.layout === 'trade', paid.site.layout);
 check('SEEDED: it has a factual about line',
@@ -67,8 +66,8 @@ check('the about line invents no location it was never given',
   !/\bin\b/.test(paid.site.about));
 
 const paidHtml = renderSite(paid.site, { base: 'https://killswitchwebsites.com' });
-check('and the page it renders is no longer four blocks',
-  sections(paidHtml).includes('services') && sections(paidHtml).includes('about'),
+check('and the page carries the factual sections, not an invented menu',
+  sections(paidHtml).includes('about') && !sections(paidHtml).includes('services'),
   sections(paidHtml).join(','));
 
 // ---------------------------------------------------------------------------
@@ -140,7 +139,8 @@ const after = await getSite('apex-tyres');
 check('the original owner keeps the record', after.email === 'first@example.com');
 check('nothing about it changed', JSON.stringify(before) === JSON.stringify(after));
 check('the newcomer got a different slug', intruder.site.slug !== 'apex-tyres', intruder.site.slug);
-check('and the newcomer\'s own site is seeded', intruder.site.services.length === 6);
+check('and the newcomer\'s own site is seeded with factual content, not an invented menu',
+  intruder.site.about === 'Apex Tyres is an auto repair business.' && intruder.site.services.length === 0, intruder.site.about);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
