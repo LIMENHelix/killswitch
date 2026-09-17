@@ -31,7 +31,7 @@
 
 import { configured, getLeads, saveLeads, getConfig, getLeadMeta, setLeadMeta } from '../lib/store.js';
 import { identify, isOwner, anyKeyConfigured } from '../lib/roles.js';
-import { getSite, upsertSite } from '../lib/sites.js';
+import { getSite, upsertSite, slugify } from '../lib/sites.js';
 import { getFunnel, setStage, summarize, toPlays, migrateFrom, migrateStage, STAGES } from '../lib/funnel.js';
 import { wilsonLower, allocate } from '../lib/laser.js';
 import { getSuppressionState, matchSuppression, suppressContact, liftSuppression, listSuppressions } from '../lib/suppression.js';
@@ -41,14 +41,34 @@ import { runPostcardOutreach, getOutreachConfig, saveOutreachConfig, outreachCon
 import { listRuns as listOutreachRuns, listEffects, getStatusCounts } from '../lib/outreach-effects.js';
 import { collectWeeklyScorecard, previousCompleteWeek } from '../lib/scorecard.js';
 import { validatePublishable } from '../lib/site-quality.js';
+import { seedMissing } from '../lib/site-seed.js';
+import { renderSite } from '../lib/site-template.js';
 import { notifyOperator } from '../lib/notify.js';
 import { publicOrigin } from '../lib/origin.js';
-import { cmd, pipeline } from '../lib/kv.js';
+import { cmd, pipeline, parseHash } from '../lib/kv.js';
 import { drainFollowups } from './cron-followups.js';
 import { followupStatus } from '../lib/automation.js';
 import { runMaintenance } from './cron-maintenance.js';
 
-const OWNER_ONLY = new Set(['setconfig', 'run-autopilot', 'mail', 'seed', 'unsuppress', 'suppression-list', 'disc-setconfig', 'draft-setconfig', 'outreach-status', 'outreach-setconfig', 'outreach-runs', 'outreach-effects', 'outreach-readiness', 'run-outreach', 'run-scorecard', 'run-followups', 'followup-status', 'run-maintenance']);
+const OWNER_ONLY = new Set(['setconfig', 'run-autopilot', 'mail', 'seed', 'unsuppress', 'suppression-list', 'disc-setconfig', 'draft-setconfig', 'outreach-status', 'outreach-setconfig', 'outreach-runs', 'outreach-effects', 'outreach-readiness', 'run-outreach', 'run-scorecard', 'run-followups', 'followup-status', 'run-maintenance', 'site-reseed']);
+
+// ---- operator repair log (owner actions that mutate customer records) ----
+// One bounded hash, the same ledger idiom as the outreach run/effect ledgers.
+// Written once per site-reseed invocation, whether or not it changed anything.
+const RESEED_LOG = 'ks:admin:reseed-log';
+const RESEED_LOG_MAX = 200;
+async function recordReseed(entry) {
+  try {
+    const id = new Date().toISOString() + ':' + (entry.slug || '');
+    await cmd(['HSET', RESEED_LOG, id, JSON.stringify(entry)]);
+    // Bound it: beyond the cap, drop the oldest entries.
+    const all = parseHash(await cmd(['HGETALL', RESEED_LOG]));
+    const keys = Object.keys(all).sort();
+    if (keys.length > RESEED_LOG_MAX) {
+      await pipeline(keys.slice(0, keys.length - RESEED_LOG_MAX).map((k) => ['HDEL', RESEED_LOG, k]));
+    }
+  } catch (e) { console.error('[admin] reseed log', e); }
+}
 
 function outreachStatus(cfg) {
   const armable = outreachConfigArmable(cfg);
@@ -407,6 +427,50 @@ export default async function handler(req, res) {
     // published but NOT claimed, so the link works and search engines still stay
     // out until they actually become a customer (owner-only, via onboarding).
     // A rep cannot edit content, cannot unpublish, and cannot make it indexable.
+    // THE LEGACY RECORD REPAIR. Owner-only: completes an existing customer site
+    // with seedMissing — generated content assembled ONLY from facts already on
+    // the record (name, trade, town) — then measures the result with the same
+    // authoritative validator every publish path uses. It fills empty fields
+    // and nothing else: owner/operator words are never overwritten, no service
+    // list is invented (category is framing, not evidence), and publication
+    // state is never touched — a live legacy site stays live, a draft stays a
+    // draft. The slug is slugified before lookup, so the action can only ever
+    // address ks:site:<slug> records, never an arbitrary KV key.
+    if (action === 'site-reseed') {
+      const slug = slugify(body.slug);
+      if (!slug) { res.status(400).json({ error: 'invalid_slug' }); return; }
+      const site = await getSite(slug);
+      if (!site) { res.status(404).json({ error: 'no_site' }); return; }
+
+      const patch = seedMissing(site);
+      const fieldsAdded = Object.keys(patch);
+      const saved = fieldsAdded.length ? await upsertSite({ slug, ...patch }) : site;
+
+      const q = validatePublishable(saved);
+      const html = renderSite(saved, { base: publicOrigin() });
+      const meta = (html.match(/<meta name="description" content="([^"]*)"/) || [])[1] || '';
+
+      await recordReseed({
+        action: 'site-reseed', slug, actor: who.name, role: who.role,
+        changed: fieldsAdded.length > 0, fieldsAdded,
+        qualityPass: q.ok, blockers: q.blockers,
+      });
+
+      res.status(200).json({
+        ok: true,
+        slug,
+        changed: fieldsAdded.length > 0,
+        fieldsAdded,
+        qualityPass: q.ok,
+        blockers: q.blockers,
+        publicationState: saved.published ? (saved.claimed ? 'claimed' : 'published') : 'draft',
+        schemaPresent: html.includes('application/ld+json'),
+        usefulMetaPresent: meta.length > 0 && meta !== String(saved.business || '') + '.',
+        servicesPresent: (Array.isArray(saved.services) && saved.services.length > 0),
+      });
+      return;
+    }
+
     if (action === 'site-publish') {
       const [leads, meta, state] = await Promise.all([getLeads(), getLeadMeta(), getSuppressionState()]);
       const directLead = leads.find((l) => String(l.id) === String(body.id));
