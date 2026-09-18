@@ -24,7 +24,12 @@ const kvFetch = globalThis.fetch;
 globalThis.fetch = async (url, options = {}) => {
   const u = String(url);
   if (u === 'https://api.lob.com/v1/postcards') {
-    lobCalls.push({ idempotency: options.headers && options.headers['Idempotency-Key'] });
+    const params = new URLSearchParams(options.body);
+    lobCalls.push({
+      idempotency: options.headers && options.headers['Idempotency-Key'],
+      front: params.get('front') || '',
+      back: params.get('back') || '',
+    });
     return { ok: true, status: 200, json: async () => ({ id: 'psc_stub_' + lobCalls.length }) };
   }
   return kvFetch(url, options);
@@ -232,18 +237,32 @@ r = await runOutreach({ channel: 'postcard', selectCandidates: async () => [lead
 check('exactly the cap sends', r.sent === 1 && calls.length === 1);
 check('the run records the cap stop', r.run.capStop === 'per_run_cap');
 
-console.log('\nK5 PRODUCT BOUNDARY AT RUN LEVEL: UNPUBLISHED DRAFT, ZERO LOB CALLS (SIMULATED)');
+console.log('\nUNPUBLISHED DRAFT AT RUN LEVEL: PLAIN-OFFER SEND, DRAFT UNTOUCHED (SIMULATED)');
 seed();
 await upsertSite({
   slug: 'shop-m', business: 'Shop m', city: 'Kansas City', state: 'MO',
   modules: ['P0'], claimed: false, published: false,
 });
 r = await runOutreach({ channel: 'postcard', selectCandidates: async () => [lead('m', { siteSlug: 'shop-m' })], channelAdapter: sendPostcard });
-check('the run sends nothing for an unpublished destination', r.sent === 0 && lobCalls.length === 0);
+check('the run sends the plain offer for an unpublished destination', r.sent === 1 && lobCalls.length === 1);
+check('the card is the offer variant with the /start QR', lobCalls[0].front.includes('Your business website.') && lobCalls[0].back.includes('qr-start.png'));
 const effM = (await getRunEffects(r.run.id)).effects.find((e) => e.leadId === 'm');
-check('the effect dead-letters with the non-sendable reason', effM.status === STATUS.DEAD && effM.terminalReason === 'destination_unpublished');
+check('the effect is accepted with a provider ref', effM.status === STATUS.ACCEPTED && !!effM.providerRef);
 const siteM = await getSite('shop-m');
 check('the draft stays unpublished, unclaimed, unmodified', siteM.published === false && siteM.claimed === false && JSON.stringify(siteM.modules) === JSON.stringify(['P0']));
+
+console.log('\nPREFLIGHT FAILURE BURNS NO CAP AND NO EFFECT (SIMULATED)');
+seed({ ...ARMED, perRunCap: 1 });
+calls = [];
+r = await runOutreach({
+  channel: 'postcard',
+  selectCandidates: async () => [lead('n')],
+  preflightCandidate: async () => { throw new Error('store unavailable'); },
+  channelAdapter: stubAdapter({}, calls),
+});
+check('a candidate that cannot be attempted is skipped with no provider call', r.sent === 0 && r.run.skipped === 1 && calls.length === 0);
+const runN = await getRunEffects(r.run.id);
+check('no effect reserved and no run/daily counter consumed', runN.effects.length === 0 && runN.rc === 0 && runN.dc === 0);
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 clearKvStub();

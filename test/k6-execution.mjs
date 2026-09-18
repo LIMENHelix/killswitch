@@ -262,6 +262,23 @@ const sel = await draftedProspectCandidates();
 check('only the fully drafted, mailable prospect is selected', sel.length === 1 && sel[0].placeId === 'p60');
 check('the selected lead carries placeId and draftSlug but no siteSlug', sel[0].draftSlug === 'drafted-p60' && sel[0].placeId === 'p60' && !('siteSlug' in sel[0]));
 
+console.log('\nLEGACY LEAD WITH UNPUBLISHED SITE: PLAIN-OFFER VIA PREFLIGHT, NO PUBLISH (SIMULATED)');
+seed();
+KV.set('ks:leads', JSON.stringify([{ id: 'legacy-unpub', name: 'Legacy Unpub', business: 'Legacy Unpub', street: '9 Oak Ave', city: 'Topeka', state: 'KS', zip: '66603', trade: 'auto repair', siteSlug: 'legacy-unpub-site' }]));
+await upsertSite({
+  slug: 'legacy-unpub-site', business: 'Legacy Unpub', city: 'Topeka', state: 'KS',
+  modules: ['P0'], claimed: false, published: false,
+});
+r = await runPostcardOutreach({});
+check('the full run path sends the plain offer for an unpublished siteSlug', r.sent === 1 && lobCalls.length === 1);
+check('the card never claims a built site', lobCalls[0].front.includes('Your business website.') && !lobCalls[0].front.includes('already built'));
+const effU = (await getRunEffects(r.run.id)).effects.find((e) => e.leadId === 'legacy-unpub');
+check('the accepted effect records the preflight-resolved plain destination', effU.status === STATUS.ACCEPTED && effU.lead.resolvedSiteUrl === '');
+const siteU = await getSite('legacy-unpub-site');
+check('the unpublished site is untouched by the send', siteU.published === false && siteU.claimed === false);
+r = await runPostcardOutreach({});
+check('a same-day re-run adds no second send for the accepted lead', r.sent === 0 && lobCalls.length === 1);
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 clearKvStub();
 process.exit(fail ? 1 : 0);

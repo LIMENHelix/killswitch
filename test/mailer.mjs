@@ -209,19 +209,32 @@ check('a timeout is classified unknown and retryable', !a.ok && a.unknown === tr
 check('a timeout reports no spend and no provider ref', a.spend === 0 && !a.providerRef);
 check('the timeout reason is explicit', a.reason === 'provider_timeout');
 
-console.log('\nK5 PRODUCT BOUNDARY: NO IMPLICIT PUBLISH');
+console.log('\nUNPUBLISHED DRAFT: PLAIN-OFFER FALLBACK, NEVER PUBLISH (OWNER DECISION)');
 seed();
 await upsertSite({
   slug: 'river-auto', business: 'River Auto', city: 'Kansas City', state: 'MO',
   modules: ['P0'], claimed: false, published: false,
 });
 a = await sendPostcard({ lead: lead({ siteSlug: 'river-auto' }), idempotencyKey: 'oe-k5:0' });
-check('an unpublished draft makes the send fail closed', !a.ok && a.reason === 'destination_unpublished' && !a.retryable);
-check('no Lob call happens for an unpublished destination', lobCalls.length === 0);
+check('an unpublished destination still sends, as the plain offer', a.ok === true && lobCalls.length === 1);
+check('the card is the offer variant, not the delivery variant', lobCalls[0].front.includes('Your business website.') && !lobCalls[0].front.includes('already built'));
+check('the offer card carries the /start QR and URL', lobCalls[0].back.includes('qr-start.png') && lobCalls[0].back.includes('killswitch.domains/start'));
 let siteAfter = await getSite('river-auto');
 check('the draft stays unpublished', siteAfter.published === false);
 check('the draft stays unclaimed', siteAfter.claimed === false);
 check('the draft modules are unchanged', JSON.stringify(siteAfter.modules) === JSON.stringify(['P0']));
+
+seed();
+a = await sendPostcard({ lead: lead({ siteSlug: 'ghost-draft' }), idempotencyKey: 'oe-ghost:0' });
+check('a missing site record also falls back to the plain offer', a.ok === true && lobCalls.length === 1 && lobCalls[0].front.includes('Your business website.'));
+
+seed();
+await upsertSite({
+  slug: 'river-auto', business: 'River Auto', city: 'Kansas City', state: 'MO',
+  modules: ['P0'], claimed: false, published: true,
+});
+a = await sendPostcard({ lead: lead({ siteSlug: 'river-auto', resolvedSiteUrl: '' }), idempotencyKey: 'oe-pf:0' });
+check('a preflight-resolved plain destination is used as-is, no second lookup', a.ok === true && lobCalls.length === 1 && lobCalls[0].front.includes('Your business website.'));
 
 seed();
 await upsertSite({
@@ -230,6 +243,7 @@ await upsertSite({
 });
 a = await sendPostcard({ lead: lead({ siteSlug: 'river-auto' }), idempotencyKey: 'oe-k5b:0' });
 check('an already-public site may be referenced', a.ok === true);
+check('the delivery card names the live site', lobCalls[0].front.includes('already built') && lobCalls[0].front.includes('killswitchwebsites.com/s/river-auto'));
 siteAfter = await getSite('river-auto');
 check('the public site is not modified by the send', siteAfter.published === true && siteAfter.claimed === false && JSON.stringify(siteAfter.modules) === JSON.stringify(['P0']));
 
