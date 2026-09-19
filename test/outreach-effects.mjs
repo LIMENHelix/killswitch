@@ -55,12 +55,13 @@ const baseCfg = () => ({
   dailySpendCap: 2000,
 });
 
-console.log('\nEFFECT IDENTITY IS STABLE AND DERIVED FROM RUN + CHANNEL + LEAD');
+console.log('\nEFFECT IDENTITY IS STABLE AND DERIVED FROM CHANNEL + BUSINESS, NOT RUN');
 const e1 = baseEffect();
 const idA = makeEffectId(e1);
 const idB = makeEffectId({ ...e1, channel: 'postcard' });
 const idC = makeEffectId({ ...e1, channel: 'email' });
-check('same run/channel/canonicalId produces the same effect id', idA === idB);
+check('same channel/canonicalId produces the same effect id', idA === idB);
+check('a different runId produces the SAME effect id (run is not identity)', makeEffectId({ ...e1, runId: 'outreach-run-postcard-other' }) === idA);
 check('different channel produces a different effect id', idC !== idA);
 check('effect id has the expected oe- prefix and length', /^oe-[a-f0-9]{32}$/.test(idA));
 check('idempotency key includes the effect id and attempt', makeIdempotencyKey({ effectId: idA, attempt: 2 }) === `${idA}:2`);
@@ -135,9 +136,18 @@ check('first reservation consumes the daily cap', d1.ok);
 check('second reservation hits the daily cap', !d2.ok && d2.status === 'DAILY_CAP_REACHED');
 const cfgLifeOnly = { perRunCap: 100, dailyCap: 100, lifetimeCap: 1, perRunSpendCap: 100000, dailySpendCap: 100000 };
 const l1 = await reserveEffect({ owner: owner4, effect: baseEffect({ runId: 'run-life-a', canonicalId: 'life-biz', leadId: 'life-biz' }), cfg: cfgLifeOnly });
+const dcBeforeReplay = (await getRunEffects('run-life-a')).dc;
 const l2 = await reserveEffect({ owner: owner4, effect: baseEffect({ runId: 'run-life-b', canonicalId: 'life-biz', leadId: 'life-biz' }), cfg: cfgLifeOnly });
 check('first contact with a business consumes its lifetime cap', l1.ok && l1.status === 'OK');
-check('a second logical effect for the SAME business hits the lifetime cap', !l2.ok && l2.status === 'LIFETIME_CAP_REACHED');
+check('a second logical effect for the SAME business returns EXISTS, never a duplicate', l2.ok && l2.exists === true);
+check('the EXISTS replay consumed no daily counter', (await getRunEffects('run-life-b')).dc === dcBeforeReplay);
+// Legacy backstop: an effect reserved before identity-scoped ids (its stored
+// effectId embeds an old run id) does not EXISTS-match a fresh reservation,
+// so the lifetime counter is what blocks re-contact for those businesses.
+KV.set('ks:outreach:lc:legacy-biz', '1');
+const l3 = await reserveEffect({ owner: owner4, effect: baseEffect({ runId: 'run-life-c', canonicalId: 'legacy-biz', leadId: 'legacy-biz' }), cfg: cfgLifeOnly });
+check('a business whose lifetime counter is already consumed is blocked', !l3.ok && l3.status === 'LIFETIME_CAP_REACHED');
+check('no new effect was created for the lifetime-blocked business', !(await getEffect(makeEffectId({ channel: 'postcard', canonicalId: 'legacy-biz' }))));
 await releaseLease(owner4);
 
 console.log('\nIDEMPOTENCY RETURNS EXISTING EFFECT WITHOUT DOUBLE-COUNTING');
@@ -300,6 +310,18 @@ const f4 = await updateEffect({ owner: owner12, effectId: resFlow.effectId, patc
 check('attempting -> accepted works', f4.ok);
 const f5 = await updateEffect({ owner: owner12, effectId: resFlow.effectId, patch: { status: STATUS.ATTEMPTING } });
 check('accepted is then locked', !f5.ok && f5.status === 'TERMINAL_LOCKED');
+
+console.log('\nHISTORICAL RUN-SCOPED EFFECT IDS STAY TERMINAL-LOCKED');
+// Effects written before identity-scoped ids keep their old id shape; the
+// terminal lock applies to them unchanged.
+const legacyId = 'oe-' + '0'.repeat(31) + '1';
+const legacyHash = KV.get('ks:outreach:effects') || {};
+legacyHash[legacyId] = JSON.stringify({ effectId: legacyId, runId: 'outreach-run-postcard-20260918', channel: 'postcard', status: 'accepted', attempts: 1 });
+KV.set('ks:outreach:effects', legacyHash);
+const legacyRevive = await updateEffect({ owner: owner12, effectId: legacyId, patch: { status: STATUS.ATTEMPTING } });
+check('a historical terminal effect cannot be resurrected', !legacyRevive.ok && legacyRevive.status === 'TERMINAL_LOCKED');
+check('the historical record is untouched', JSON.parse((KV.get('ks:outreach:effects') || {})[legacyId]).status === 'accepted');
+
 await releaseLease(owner12);
 
 console.log('\nA STALE OWNER CANNOT RELEASE A SUCCESSOR LEASE');

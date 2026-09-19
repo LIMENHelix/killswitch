@@ -478,10 +478,11 @@ check('the timeout leaves one unknown effect, nothing sent', or.sent === 0 && or
 const effT = (await getRunEffects(or.run.id)).effects.find((e) => e.leadId === 'plc-e2e-2');
 check('the effect is durably unknown with the reservation intact', effT && effT.status === STATUS.UNKNOWN && effT.attempts === 1);
 const keyT = lobCalls[lobCalls.length - 1].idempotency;
-const rcBeforeRetry = (await getRunEffects(or.run.id)).rc;
+const timeoutRunId = or.run.id;
+const rcBeforeRetry = (await getRunEffects(timeoutRunId)).rc;
 // Simulate the crash window: the worker died between ATTEMPTING and the outcome
 // write. The same effect must resume, never reserve a second one.
-const { acquireLease, releaseLease, updateEffect } = await import('../lib/outreach-effects.js');
+const { acquireLease, releaseLease, updateEffect, getEffect } = await import('../lib/outreach-effects.js');
 await acquireLease('crash-sim', 60000);
 await updateEffect({ owner: 'crash-sim', effectId: effT.effectId, patch: { status: STATUS.ATTEMPTING } });
 await releaseLease('crash-sim');
@@ -489,10 +490,10 @@ lobBehavior = null;
 or = await runPostcardOutreach({});
 check('the retry resumes the SAME effect and accepts', or.sent === 1);
 check('the retry reused the SAME provider idempotency key', lobCalls[lobCalls.length - 1].idempotency === keyT);
-const effT2 = (await getRunEffects(or.run.id)).effects.find((e) => e.leadId === 'plc-e2e-2');
+const effT2 = await getEffect(effT.effectId);
 check('the effect is accepted with two attempts and consumed NO new reservation', effT2.status === STATUS.ACCEPTED && effT2.attempts === 2
-  && (await getRunEffects(or.run.id)).rc === rcBeforeRetry,
-  JSON.stringify({ status: effT2.status, attempts: effT2.attempts, rc: (await getRunEffects(or.run.id)).rc, before: rcBeforeRetry }));
+  && (await getRunEffects(timeoutRunId)).rc === rcBeforeRetry,
+  JSON.stringify({ status: effT2.status, attempts: effT2.attempts, rc: (await getRunEffects(timeoutRunId)).rc, before: rcBeforeRetry }));
 
 console.log('\nSUPPRESSED MID-FLOW: ZERO PROVIDER CALL, NO EFFECT');
 await seedDraftedProspect('plc-e2e-3', 'Suppressed Midflow Electric', '(913) 555-0163');

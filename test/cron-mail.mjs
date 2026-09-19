@@ -102,6 +102,7 @@ console.log('\nSIMULATED END-TO-END TRACE (fake provider, synthetic caps)');
 seed();
 r = await call({ headers: { authorization: 'Bearer test-cron-secret' } });
 check('the run sent the one eligible prospect', r.code === 200 && r.body.ran === true && r.body.sent === 1, JSON.stringify(r.body));
+const firstCronRunId = r.body.run.id;
 check('exactly one provider invocation happened', lobCalls.length === 1);
 check('the provider call carried a durable Idempotency-Key', typeof lobCalls[0].idempotency === 'string' && lobCalls[0].idempotency.startsWith('oe-'));
 const counts1 = await getStatusCounts();
@@ -109,8 +110,9 @@ check('the ledger holds one accepted effect', counts1[STATUS.ACCEPTED] === 1);
 
 r = await call({ headers: { authorization: 'Bearer test-cron-secret' } });
 check('the same trace twice sends nothing new', r.body.sent === 0);
+check('the second cron run gets its own fresh runId', r.body.run.id !== firstCronRunId);
 check('still exactly one provider invocation', lobCalls.length === 1);
-const effects = await getRunEffects(r.body.run.id);
+const effects = await getRunEffects(firstCronRunId);
 check('still exactly one cap reservation', effects.rc === 1);
 check('still exactly one logical effect', effects.effects.length === 1 && effects.effects[0].status === STATUS.ACCEPTED && effects.effects[0].providerRef === 'psc_sim_1');
 
