@@ -33,7 +33,7 @@ globalThis.fetch = async (url, options = {}) => {
 
 const { runPostcardOutreach, outreachReadiness, CFG_KEY } = await import('../lib/k6-outreach.js');
 const { lobKeyMode, senderConfigPresence } = await import('../lib/mailer.js');
-const { getRunEffects } = await import('../lib/outreach-effects.js');
+const { getRunEffects, getStatusCounts } = await import('../lib/outreach-effects.js');
 const { upsertSite } = await import('../lib/sites.js');
 const admin = (await import('../api/admin.js')).default;
 
@@ -153,7 +153,7 @@ await seedProspect('Live Mode Shop');
 r = await runPostcardOutreach({});
 check('LIVE provider + no reserve: zero calls, zero effects, explicit reason',
   lobCalls.length === 0 && r.ran === false && r.reason === 'not_armed'
-  && (await getRunEffects('outreach-run-postcard-' + new Date().toISOString().slice(0, 10).replace(/-/g, ''))).effects.length === 0);
+  && Object.keys(await getStatusCounts()).length === 0);
 process.env.LOB_API_KEY = 'test_9f8e7d6c5b';
 
 console.log('\nCONFIGURED RESERVE DRIVES THE ATOMIC SPEND CAP');
@@ -173,10 +173,12 @@ r = await runPostcardOutreach({});
 check('300 cap admits exactly two 150-cent reservations', r.sent === 2 && lobCalls.length === 2);
 
 console.log('\nREPEAT RUN: ONE EFFECT, ONE SEND');
+const reserveRunId = r.run.id;
 r = await runPostcardOutreach({});
+check('the repeat run gets its own fresh runId', r.run.id !== reserveRunId);
 check('second run sends nothing new', r.sent === 0 && lobCalls.length === 2);
-effects = (await getRunEffects(r.run.id)).effects;
-check('still exactly two effects and two reservations', effects.length === 2 && (await getRunEffects(r.run.id)).rc === 2);
+effects = (await getRunEffects(reserveRunId)).effects;
+check('still exactly two effects and two reservations', effects.length === 2 && (await getRunEffects(reserveRunId)).rc === 2);
 
 // ---------------------------------------------------------------------------
 console.log('\nREADINESS REPORTS THE ACTUAL SEND POOL (BOTH SOURCES)');

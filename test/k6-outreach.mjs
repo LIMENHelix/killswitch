@@ -39,7 +39,7 @@ const {
   runOutreach, validateOutreachConfigPatch, outreachConfigArmable, CFG_KEY,
 } = await import('../lib/k6-outreach.js');
 const {
-  acquireLease, releaseLease, getEffect, getRunEffects, STATUS,
+  acquireLease, releaseLease, getEffect, getRunEffects, getStatusCounts, reserveEffect, STATUS,
 } = await import('../lib/outreach-effects.js');
 const { sendPostcard } = await import('../lib/mailer.js');
 const { upsertAccount } = await import('../lib/store.js');
@@ -161,14 +161,16 @@ console.log('\nRETRY CEILING ENDS DEAD, NEVER RESURRECTED (SIMULATED)');
 seed();
 calls = [];
 const alwaysFlaky = { d: [{ ok: false, unknown: true, retryable: true, reason: 'timeout' }] };
+let firstFlakyRunId = null;
 for (let i = 0; i < 4; i++) {
   r = await runOutreach({ channel: 'postcard', selectCandidates: async () => [lead('d')], channelAdapter: stubAdapter(alwaysFlaky, calls) });
+  if (!firstFlakyRunId) firstFlakyRunId = r.run.id;
 }
 check('the adapter was attempted exactly the bounded ceiling', calls.length === 3);
 check('every attempt used the same idempotency key', calls.every((c) => c.idempotencyKey === calls[0].idempotencyKey));
-const effD = (await getRunEffects(r.run.id)).effects.find((e) => e.leadId === 'd');
+const effD = (await getRunEffects(firstFlakyRunId)).effects.find((e) => e.leadId === 'd');
 check('the effect is dead with a terminal reason after the ceiling', effD.status === STATUS.DEAD && !!effD.terminalReason);
-check('its capacity stays pessimistically reserved', (await getRunEffects(r.run.id)).rc === 1);
+check('its capacity stays pessimistically reserved', (await getRunEffects(firstFlakyRunId)).rc === 1);
 
 console.log('\nKNOWN PERMANENT FAILURE IS TERMINAL WITHOUT RETRY SPEND (SIMULATED)');
 seed();
@@ -198,10 +200,11 @@ calls = [];
 const flakyG = { g: [{ ok: false, unknown: true, retryable: true, reason: 'timeout' }] };
 r = await runOutreach({ channel: 'postcard', selectCandidates: async () => [lead('g', { email: 'g@shop.test' })], channelAdapter: stubAdapter(flakyG, calls) });
 check('first attempt ends unknown', r.run.unknown === 1 && calls.length === 1);
+const gRunId = r.run.id;
 await suppressContact({ email: 'g@shop.test' }, { reason: 'stop', actor: 'test' });
 r = await runOutreach({ channel: 'postcard', selectCandidates: async () => [lead('g', { email: 'g@shop.test' })], channelAdapter: stubAdapter(flakyG, calls) });
 check('a contact suppressed between attempts gets NO retry call', calls.length === 1);
-const effG = (await getRunEffects(r.run.id)).effects.find((e) => e.leadId === 'g');
+const effG = (await getRunEffects(gRunId)).effects.find((e) => e.leadId === 'g');
 check('the open effect closes with the exclusion as terminal reason', effG.status === STATUS.DEAD && effG.terminalReason === 'excluded_suppressed');
 
 console.log('\nLEASE IS AN OWNED RUN, NOT A CORRECTNESS CRUTCH');
@@ -263,6 +266,68 @@ r = await runOutreach({
 check('a candidate that cannot be attempted is skipped with no provider call', r.sent === 0 && r.run.skipped === 1 && calls.length === 0);
 const runN = await getRunEffects(r.run.id);
 check('no effect reserved and no run/daily counter consumed', runN.effects.length === 0 && runN.rc === 0 && runN.dc === 0);
+
+console.log('\nTRUE PER-RUN NAMESPACE: 1/RUN + 3/DAY SIMULATED POLICY TRACE');
+const SMALL = {
+  enabled: true, mode: 'test', channels: ['postcard'],
+  perRunCap: 1, dailyCap: 3, lifetimeCap: 1, perRunSpendCap: 150, dailySpendCap: 450,
+  postcardReserveCents: 110,
+};
+seed(SMALL);
+calls = [];
+const trace = (runId, leads) => runOutreach({ channel: 'postcard', runId, selectCandidates: async () => leads, channelAdapter: stubAdapter({}, calls) });
+
+let rA = await trace('outreach-run-postcard-testA', [lead('ta'), lead('ta2')]);
+check('run A: one send, per-run cap stops the second candidate in the SAME run', rA.sent === 1 && rA.run.capStop === 'per_run_cap' && calls.length === 1);
+check('run A: the injected runId is the run identity', rA.run.id === 'outreach-run-postcard-testA');
+let nsA = await getRunEffects('outreach-run-postcard-testA');
+check('run A namespace: rc=1, rsc=110, while daily starts dc=1, dsc=110', nsA.rc === 1 && nsA.rsc === 110 && nsA.dc === 1 && nsA.dsc === 110);
+
+let rB = await trace('outreach-run-postcard-testB', [lead('tb')]);
+check('run B same day: fresh per-run namespace sends one more', rB.sent === 1 && calls.length === 2);
+let nsB = await getRunEffects('outreach-run-postcard-testB');
+check('run B namespace: rc=1 while the shared daily counters rise to dc=2, dsc=220', nsB.rc === 1 && nsB.dc === 2 && nsB.dsc === 220);
+
+let rC = await trace('outreach-run-postcard-testC', [lead('tc')]);
+check('run C: third business sends, daily total 3', rC.sent === 1 && calls.length === 3);
+check('daily reserved spend is 330 after three runs', (await getRunEffects('outreach-run-postcard-testC')).dsc === 330);
+
+let rD = await trace('outreach-run-postcard-testD', [lead('td')]);
+check('run D: DAILY_CAP_REACHED, zero provider call, zero reservation', rD.sent === 0 && rD.run.capStop === 'DAILY_CAP_REACHED' && calls.length === 3);
+check('exactly three accepted effects exist after four runs', (await getStatusCounts()).accepted === 3);
+check('run D namespace stayed empty', (await getRunEffects('outreach-run-postcard-testD')).rc === 0);
+
+let rE = await trace('outreach-run-postcard-testE', [lead('ta')]);
+check('run E: an already-accepted business in a fresh runId sends nothing', rE.sent === 0 && rE.run.skipped === 1 && calls.length === 3);
+check('no second effect and no new reservation for the repeat business', (await getStatusCounts()).accepted === 3 && (await getRunEffects('outreach-run-postcard-testE')).rc === 0);
+
+console.log('\nDEFAULT RUN IDS ARE UNIQUE PER INVOCATION');
+seed({ ...ARMED, perRunCap: 1 });
+calls = [];
+let u1 = await runOutreach({ channel: 'postcard', selectCandidates: async () => [lead('u1')], channelAdapter: stubAdapter({}, calls) });
+let u2 = await runOutreach({ channel: 'postcard', selectCandidates: async () => [lead('u2')], channelAdapter: stubAdapter({}, calls) });
+check('two default runs get different runIds', u1.run.id !== u2.run.id);
+check('a second invocation the same day is no longer run-capped', u1.sent === 1 && u2.sent === 1 && calls.length === 2);
+
+console.log('\nCONCURRENT RUNS RACE THE LAST DAILY SLOT (SIMULATED)');
+seed(SMALL);
+await acquireLease('race-owner', 60000);
+const raceEffect = (runId, id) => ({
+  runId, channel: 'postcard', provider: 'lob', canonicalId: id, leadId: id,
+  idempotencyKey: 'k-' + id, eligibility: { eligible: true, canonicalId: id },
+  createdAt: new Date().toISOString(),
+});
+await reserveEffect({ owner: 'race-owner', effect: raceEffect('race-r1', 'rb1'), cfg: SMALL, costCents: 110 });
+await reserveEffect({ owner: 'race-owner', effect: raceEffect('race-r2', 'rb2'), cfg: SMALL, costCents: 110 });
+const [w1, w2] = await Promise.all([
+  reserveEffect({ owner: 'race-owner', effect: raceEffect('race-r3', 'rb3'), cfg: SMALL, costCents: 110 }),
+  reserveEffect({ owner: 'race-owner', effect: raceEffect('race-r4', 'rb4'), cfg: SMALL, costCents: 110 }),
+]);
+const winners = [w1, w2].filter((w) => w.ok && !w.exists);
+const losers = [w1, w2].filter((w) => !w.ok);
+check('exactly one racer reserves the last daily slot', winners.length === 1 && losers.length === 1 && losers[0].status === 'DAILY_CAP_REACHED');
+check('daily counters stop exactly at the cap', (await getRunEffects('race-r3')).dc === 3 && (await getRunEffects('race-r3')).dsc === 330);
+await releaseLease('race-owner');
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 clearKvStub();

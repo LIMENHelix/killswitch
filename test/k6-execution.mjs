@@ -167,9 +167,10 @@ const siteAfter = await getSite(good.draftSlug);
 check('the draft stays unpublished, unclaimed, unmodified', siteAfter.published === false && siteAfter.claimed === false && JSON.stringify(siteAfter.modules) === JSON.stringify(['P0']));
 
 console.log('\nRUN TWICE: ONE SEND, ONE EFFECT, ONE CAP RESERVATION');
+const firstSendRunId = r.run.id;
 r = await runPostcardOutreach({});
 check('second run sends nothing', r.sent === 0 && lobCalls.length === 1);
-const rerun = await getRunEffects(r.run.id);
+const rerun = await getRunEffects(firstSendRunId);
 check('still one effect and one cap reservation', rerun.effects.length === 1 && rerun.rc === 1);
 
 console.log('\nCONCURRENT RUNS: ONE SEND TOTAL');
@@ -205,12 +206,13 @@ seedCandidate(drafted('p30'));
 lobBehavior = async () => { throw Object.assign(new Error('The operation was aborted due to timeout'), { name: 'TimeoutError' }); };
 r = await runPostcardOutreach({});
 check('timeout leaves the effect unknown after one attempt', r.sent === 0 && r.run.unknown === 1 && lobCalls.length === 1);
+const timeoutRunId = r.run.id;
 const keyT = lobCalls[0].idempotency;
 r = await runPostcardOutreach({});
 check('retry one used the SAME provider idempotency key', lobCalls.length === 2 && lobCalls[1].idempotency === keyT);
 r = await runPostcardOutreach({});
 check('the bounded ceiling is exactly three attempts', lobCalls.length === 3 && lobCalls[2].idempotency === keyT);
-effects = (await getRunEffects(r.run.id)).effects;
+effects = (await getRunEffects(timeoutRunId)).effects;
 check('the effect is dead with the timeout as terminal reason', effects.length === 1 && effects[0].status === STATUS.DEAD && effects[0].terminalReason === 'provider_timeout' && effects[0].attempts === 3);
 lobBehavior = defaultLob;
 r = await runPostcardOutreach({});
