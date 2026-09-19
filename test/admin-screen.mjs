@@ -12,6 +12,7 @@ import os from 'node:os';
 const ROOT = path.join(import.meta.dirname, '..');
 
 const ADMIN = path.join(ROOT, 'admin.html');
+const ADMIN_POLL = path.join(ROOT, 'admin-poll.js');
 const LEADS = [
   { id: 'L1', name: 'Auto Tech Services Center', trade: 'auto repair', phone: '913-268-7887', street: '11441 Shawnee Mission Pkwy', city: 'Shawnee', state: 'KS', zip: '66203', stage: 'called', owner: 'dana' },
   { id: 'L2', name: 'Autobots Garage', trade: 'auto repair', phone: '913-722-5151', street: '5000 Mackey St', city: 'Overland Park', state: 'KS', zip: '66203', attribution: { source: 'google', medium: 'cpc', campaign: 'kc-free-site-v1' } },
@@ -65,6 +66,10 @@ const server = http.createServer((req, res) => {
       res.end(JSON.stringify({ ok: false, error: 'nope' }));
     });
     return;
+  }
+  if (req.url === '/admin-poll.js') {
+    res.setHeader('content-type', 'text/javascript');
+    return res.end(fs.readFileSync(ADMIN_POLL));
   }
   res.setHeader('content-type', 'text/html');
   res.end(fs.readFileSync(ADMIN));
@@ -253,4 +258,5 @@ check('a rep sees the funnel too, since it is read-only',
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 chrome.kill(); server.close();
+process.exit(fail ? 1 : 0);
 process.exit(fail ? 1 : 0);
