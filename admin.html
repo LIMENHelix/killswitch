@@ -442,6 +442,7 @@
   </div>
 </div>
 
+<script src="/admin-poll.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 localStorage.removeItem('ks-admin-key');
@@ -545,7 +546,9 @@ async function boot(){
   fillFilters(); render();
   if(ROLE==='owner') loadLegacy();
   loadFunnel();
-  loadDisc(); loadDraft(); loadOutreach();
+  loadDisc(); loadDraft();
+  if(ROLE==='owner'){ loadOutreach(); loadOutreachDetail(); }
+  poller.start();
 }
 
 // ---- LASER funnel ----
@@ -749,11 +752,13 @@ async function loadOutreach(){
     if(document.activeElement!==$('outreachReserve')) $('outreachReserve').value=OUTREACH.config.postcardReserveCents||'';
     $('readinessWrap').hidden=false;
   }
-  const rr=await api('outreach-runs',{limit:5});
-  if(rr.ok){
-    const rows=(rr.d.runs||[]).slice(0,5);
-    $('outreachRuns').innerHTML=rows.length?('<b>Recent runs</b> '+rows.map(function(r){return esc(r.id)+' '+r.status+' '+(r.sent||0)+'/'+(r.eligible||0)}).join(' · ')):'<b>Recent runs</b> none';
-  }
+  const rr=(OUTREACH.runs||[]).slice(0,5);
+  $('outreachRuns').innerHTML=rr.length?('<b>Recent runs</b> '+rr.map(function(r){return esc(r.id)+' '+r.status+' '+(r.sent||0)+'/'+(r.eligible||0)}).join(' · ')):'<b>Recent runs</b> none';
+}
+// Effects and follow-up detail: NOT polled. Runs once after boot, after an
+// outreach mutation, and once when a hidden tab becomes visible again.
+async function loadOutreachDetail(){
+  if(ROLE!=='owner') return;
   const ef=await api('outreach-effects',{limit:10});
   if(ef.ok){
     const rows=(ef.d.effects||[]).slice(0,10);
@@ -785,14 +790,14 @@ $('outreachSave').onclick=async()=>{
     postcardReserveCents:+$('outreachReserve').value||0,
   });
   $('outreachMsg').textContent=r.ok?'Outreach settings saved.':('Not saved: '+((r.d&&r.d.message)||(r.d&&r.d.error)||'error'));
-  await loadOutreach();
+  await refresh();
 };
 $('outreachRun').onclick=async()=>{
   $('outreachMsg').textContent='Running K6 outreach...';
   const r=await api('run-outreach');
   if(r.ok){ $('outreachMsg').textContent='Run complete: '+(r.d.sent||0)+' sent.'+(r.d.run&&r.d.run.capStop?(' Stopped: '+r.d.run.capStop):''); }
   else { $('outreachMsg').textContent='Error: '+((r.d&&r.d.message)||(r.d&&r.d.error)||r.status); }
-  await loadOutreach();
+  await refresh();
 };
 // On demand only — never on the poll loop. Aggregates, no PII.
 $('readinessCheck').onclick=async()=>{
@@ -1065,19 +1070,39 @@ $('scCalled').onclick=async()=>{
   render();
 };
 
-// live auto-refresh (skip if typing a note or holding a dropdown open)
-async function refresh(){
+// Live refresh — tiered and visibility-aware (schedule lives in admin-poll.js,
+// which test/admin-polling.mjs simulates). The old 20-second refresh loop
+// fanned out to ten /api/admin calls per tick — ~1,800 requests/hour for one
+// open owner tab — and burned the Upstash command budget from the inside.
+async function refreshBoard(){
   if(!KEY||$('app').style.display==='none') return;
   const a=document.activeElement;
   if(a&&(a.classList.contains('note')||a.classList.contains('stage'))) return;
   const res=await api('list');
   if(res.ok){ LEADS=res.d.leads||[]; render();
     const t=new Date(); $('liveLabel').textContent='Live · updated '+t.toLocaleTimeString(); }
+}
+async function refreshStatus(){
+  if(!KEY||$('app').style.display==='none') return;
   if(ROLE==='owner') loadLegacy();
   loadFunnel();
-  loadDisc(); loadDraft(); loadOutreach();
+  loadDisc(); loadDraft();
+  if(ROLE==='owner') loadOutreach();
 }
-setInterval(refresh,20000);
+async function refreshDetail(){
+  if(ROLE!=='owner') return;
+  loadOutreachDetail();
+}
+const poller=new AdminPoll.AdminPoller({
+  onLight:refreshBoard, onStatus:refreshStatus, onDetail:refreshDetail,
+  isVisible:function(){ return document.visibilityState==='visible'; },
+});
+document.addEventListener('visibilitychange',function(){
+  poller.handleVisibilityChange();
+  if(!poller.running) $('liveLabel').textContent='Paused — tab hidden';
+});
+// Mutations refresh everything once, through the poller's in-flight dedupe.
+async function refresh(){ return poller.refreshAll(); }
 
 boot();
 </script>
