@@ -59,7 +59,10 @@ const RESEED_LOG = 'ks:admin:reseed-log';
 const RESEED_LOG_MAX = 200;
 async function recordReseed(entry) {
   try {
-    const id = new Date().toISOString() + ':' + (entry.slug || '');
+    // Random suffix: two invocations on the same slug inside one millisecond
+    // must still produce two ledger entries (ISO prefix keeps chronological
+    // ordering intact for the bounded-trim sort below).
+    const id = new Date().toISOString() + ':' + (entry.slug || '') + ':' + Math.random().toString(36).slice(2, 8);
     await cmd(['HSET', RESEED_LOG, id, JSON.stringify(entry)]);
     // Bound it: beyond the cap, drop the oldest entries.
     const all = parseHash(await cmd(['HGETALL', RESEED_LOG]));

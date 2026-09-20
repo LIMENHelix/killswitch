@@ -345,18 +345,21 @@ function seedCandidate(placeId, name, phone) {
 // The K5 output state for a candidate, written directly: candidate marked
 // drafted plus its unpublished draft site. (A second same-day draft run is
 // 'caught_up' by design, so later-section prospects arrive pre-drafted.)
+// Prospects get their own street address: the K6 pool dedupes drafted
+// inventory against the legacy/inbound queue by strong identity, so two
+// DIFFERENT businesses must not share the test's customer address.
 async function seedDraftedProspect(placeId, name, phone) {
   const h = get('ks:disc:cands') || {};
   const slug = slugify(name);
   h[placeId] = JSON.stringify({
     placeId, name, category: 'plumber', status: 'ranked', score: 88,
-    street: '44 Main St', city: 'Kansas City', state: 'MO', zip: '64108',
+    street: '77 Prospect Ave', city: 'Kansas City', state: 'MO', zip: '64112',
     phone, hours: [], draftStatus: 'drafted', draftSlug: slug,
   });
   set('ks:disc:cands', h);
   await upsertSite({
     slug, business: name, city: 'Kansas City', state: 'MO', phone,
-    street: '44 Main St', zip: '64108',
+    street: '77 Prospect Ave', zip: '64112',
     modules: ['P0'], published: false, claimed: false, placeId,
   });
   return slug;
