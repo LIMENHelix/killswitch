@@ -492,5 +492,91 @@ console.log('\nJ. INVENTORY GROWS ACROSS RUNS AND ENTERS THE OUTREACH POOL ONCE'
     legacyQueued.length === 1 && drafted.length === 0 && pool.length === 1);
 }
 
+// ---- K. WEEKLY PLAN ROTATION ----
+console.log('\nK. WEEKLY TRADE/OPPORTUNITY ROTATION');
+{
+  // Pure determinism of the slice function.
+  const rot = { enabled: true, slotsPerWeek: 2, universe: [
+    { trade: 'auto repair', city: 'Kansas City, MO' },
+    { trade: 'dentist', city: 'Olathe, KS' },
+    { trade: 'plumber', city: 'Independence, MO' },
+    { trade: 'electrician', city: 'Overland Park, KS' },
+  ] };
+  const w41 = disc.rotationSlots(rot, '2026-W41');
+  check('rotation slice is deterministic within a week',
+    JSON.stringify(disc.rotationSlots(rot, '2026-W41')) === JSON.stringify(w41));
+  check('next week advances the slice', JSON.stringify(disc.rotationSlots(rot, '2026-W42')) !== JSON.stringify(w41));
+  check('slice length is capped at slotsPerWeek and universe size', w41.length === 2 && disc.rotationSlots({ ...rot, slotsPerWeek: 99 }, '2026-W41').length === 4);
+  check('isoWeekKey: Monday boundary weeks differ', disc.isoWeekKey(new Date('2026-10-05T00:30:00Z')) === '2026-W41' && disc.isoWeekKey(new Date('2026-10-12T00:30:00Z')) === '2026-W42');
+}
+{
+  // Validation: incomplete rotation is refused; valid rotation saves.
+  const refused = disc.validateDiscConfigPatch({}, { rotation: { enabled: true, universe: [], slotsPerWeek: 0 } });
+  check('incomplete rotation is refused with exact error', refused.error === 'incomplete_rotation');
+  const ok = disc.validateDiscConfigPatch({}, { rotation: { enabled: true, slotsPerWeek: 2, universe: [{ trade: 'plumber', city: 'Lee\'s Summit, MO' }] } });
+  check('complete rotation validates and saves shape', ok.config && ok.config.rotation.enabled === true && ok.config.rotation.universe.length === 1);
+}
+{
+  // REGRESSION for the current production shape: static owner plan, no
+  // rotation configured -> plan survives a week boundary byte-identical.
+  seed();
+  await armDiscovery();
+  placesQueue = [placesResp([mkPlace('R1', { name: 'Static Week One', phone: '816-555-2001' })])];
+  await disc.runDiscovery({ clock: clockAt('2026-10-05T06:00:00.000Z') }); // W41
+  placesQueue = [placesResp([mkPlace('R2', { name: 'Static Week Two', phone: '816-555-2002' })])];
+  const r = await disc.runDiscovery({ clock: clockAt('2026-10-12T06:00:00.000Z') }); // W42
+  const cfg = await disc.getDiscConfig();
+  check('no rotation configured -> owner plan untouched across weeks',
+    r.rotated === false && JSON.stringify(cfg.plan) === JSON.stringify(PLAN) && !cfg.planWeek && (await disc.listRotations()).length === 0);
+}
+{
+  // Rotation enabled: first run of the week swaps the plan, audits, resets cursor.
+  seed();
+  await armDiscovery();
+  const base = await disc.getDiscConfig();
+  await disc.saveDiscConfig({ ...base, rotation: { enabled: true, slotsPerWeek: 2, universe: [
+    { trade: 'auto repair', city: 'Kansas City, MO' },
+    { trade: 'dentist', city: 'Olathe, KS' },
+    { trade: 'plumber', city: 'Independence, MO' },
+    { trade: 'electrician', city: 'Overland Park, KS' },
+  ] } });
+  const weekPlan = disc.rotationSlots({ enabled: true, slotsPerWeek: 2, universe: [
+    { trade: 'auto repair', city: 'Kansas City, MO' },
+    { trade: 'dentist', city: 'Olathe, KS' },
+    { trade: 'plumber', city: 'Independence, MO' },
+    { trade: 'electrician', city: 'Overland Park, KS' },
+  ] }, disc.isoWeekKey(new Date('2026-10-05T06:00:00.000Z')));
+  placesQueue = [placesResp([mkPlace('W1', { name: 'Week One Shop', phone: '816-555-3001' })])];
+  const r1 = await disc.runDiscovery({ clock: clockAt('2026-10-05T06:00:00.000Z') });
+  const cfg1 = await disc.getDiscConfig();
+  check('first run of the week rotates the plan to the week slice',
+    r1.rotated === true && cfg1.planWeek === disc.isoWeekKey(new Date('2026-10-05T06:00:00.000Z'))
+      && JSON.stringify(cfg1.plan) === JSON.stringify(weekPlan));
+  check('rotation preserved enabled + caps byte-identical (spend unchanged)',
+    cfg1.enabled === true && cfg1.perRunCap === 5 && cfg1.dailyCap === 20 && cfg1.slotsPerRun === 1);
+  check('rotation is audited in a bounded ledger', (await disc.listRotations()).length === 1);
+  check('cursor reset means the run starts at the NEW plan slot 0',
+    r1.run.slot && r1.run.slot.trade === weekPlan[0].trade && r1.run.slot.city === weekPlan[0].city, JSON.stringify(r1.run.slot));
+  const r2 = await disc.runDiscovery({ clock: clockAt('2026-10-05T16:37:00.000Z') });
+  check('second run same week: no re-rotation, no second ledger entry',
+    r2.rotated === false && (await disc.listRotations()).length === 1);
+  placesQueue = [placesResp([mkPlace('W2', { name: 'Week Two Shop', phone: '816-555-3002' })])];
+  const r3 = await disc.runDiscovery({ clock: clockAt('2026-10-12T06:00:00.000Z') });
+  const cfg2 = await disc.getDiscConfig();
+  check('next week rotates again deterministically',
+    r3.rotated === true && cfg2.planWeek === '2026-W42' && JSON.stringify(cfg2.plan) !== JSON.stringify(cfg1.plan) && (await disc.listRotations()).length === 2);
+}
+{
+  // Rotation armed but discovery disabled -> the disabled gate fires first,
+  // nothing is written.
+  seed();
+  await disc.saveDiscConfig({ enabled: false, perRunCap: 5, dailyCap: 20, slotsPerRun: 1,
+    plan: [{ trade: 'auto repair', city: 'Kansas City, MO' }],
+    rotation: { enabled: true, slotsPerWeek: 1, universe: [{ trade: 'dentist', city: 'Olathe, KS' }] } });
+  const r = await disc.runDiscovery({ clock: clockAt('2026-10-05T06:00:00.000Z') });
+  const cfg = await disc.getDiscConfig();
+  check('disabled discovery never rotates or spends', r.reason === 'disabled' && !cfg.planWeek && (await disc.listRotations()).length === 0 && placesCalls === 0);
+}
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
