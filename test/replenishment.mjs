@@ -383,6 +383,35 @@ console.log('\nG. DRAFT IDEMPOTENCY');
   check('no slug-2 duplicates exist', new Set(bodies.map((s) => s.slug)).size === bodies.length);
 }
 
+// ---- G2. PER-INVOCATION RUN IDENTITY: EVERY SCHEDULED SLOT CAN CONSUME ----
+console.log('\nG2. PER-HOUR RUNS CONSUME FRESH INVENTORY (4x/day cron actually works)');
+{
+  seed();
+  await armDraft({ draftsPerRun: 1 });
+  const cand = (id, name, phone, street, score) => ({
+    placeId: id, name, slotTrade: 'auto repair', category: 'Auto repair shop',
+    city: 'Kansas City', state: 'MO', street, zip: '64108', phone,
+    status: 'ranked', score, businessStatus: 'OPERATIONAL', webStatus: 'no_site',
+  });
+  await cmd(['HSET', 'ks:disc:cands', 'H1', JSON.stringify(cand('H1', 'Hour One Auto', '816-555-0001', '1 First St', 3))]);
+  await cmd(['HSET', 'ks:disc:cands', 'H2', JSON.stringify(cand('H2', 'Hour Two Auto', '816-555-0002', '2 Second St', 2))]);
+
+  const r1 = await draftAuto.runDraftAutonomy({ clock: clockAt('2026-10-01T06:00:00.000Z') });
+  check('06:00 run drafts the highest scorer, run id carries the UTC hour',
+    r1.reason === 'completed' && r1.run.drafted === 1 && r1.run.id === 'draft-run-20261001-06', r1.run && r1.run.id);
+  const r2 = await draftAuto.runDraftAutonomy({ clock: clockAt('2026-10-01T06:20:00.000Z') });
+  check('same-hour replay -> caught_up (retry idempotent, cap accounting intact)',
+    r2.reason === 'caught_up' && r2.drafts === 0);
+  const r3 = await draftAuto.runDraftAutonomy({ clock: clockAt('2026-10-01T07:00:00.000Z') });
+  check('next-hour run is NOT caught_up: consumes the next ranked candidate',
+    r3.reason === 'completed' && r3.run.drafted === 1 && r3.run.id === 'draft-run-20261001-07', r3.run && r3.run.id);
+  const bodies = await siteBodies();
+  check('two hourly runs -> two distinct unpublished drafts, no duplicate',
+    bodies.length === 2 && new Set(bodies.map((s) => s.slug)).size === 2 && bodies.every((s) => s.published === false && s.claimed === false));
+  const r4 = await draftAuto.runDraftAutonomy({ clock: clockAt('2026-10-01T08:00:00.000Z') });
+  check('empty backlog hour -> completes cleanly, drafts nothing', r4.reason === 'completed' && r4.run.drafted === 0 && (await siteBodies()).length === 2);
+}
+
 // ---- H. QUALITY GATE: INCOMPLETE FACTS CANNOT BECOME A DRAFT ----
 console.log('\nH. QUALITY GATE');
 {

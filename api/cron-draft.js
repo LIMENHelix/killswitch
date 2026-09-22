@@ -9,6 +9,10 @@
 //
 // AUTH: CRON_SECRET Bearer only, fail closed on both sides. No query tokens.
 // Drafting is gated by a separate ks:draft:cfg that defaults OFF.
+//
+// RUN IDENTITY: per UTC hour. The cron is scheduled 4x/day; each scheduled
+// invocation gets its own run (and its own draftsPerRun budget), while a
+// same-hour retry replays the same run idempotently.
 import { runDraftAutonomy } from '../lib/draft-autonomy.js';
 import { cronAuthorized } from '../lib/cron-auth.js';
 
