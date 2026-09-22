@@ -237,7 +237,7 @@ const bodiesForPlace = (placeId) => {
   return slugs;
 };
 
-const runIdForToday = () => 'draft-run-' + new Date().toISOString().slice(0, 10).replace(/-/g, '');
+const runIdForToday = () => { const d = new Date(); return 'draft-run-' + d.toISOString().slice(0, 10).replace(/-/g, '') + '-' + String(d.getUTCHours()).padStart(2, '0'); };
 
 // ---- CONFIG / GATES ----
 console.log('\nCONFIG / DEFAULT-OFF GATES');
@@ -542,7 +542,7 @@ console.log('\nDURABILITY: placeId -> SLUG FAULT MATRIX');
     await saveCand(candidate('ChIJ_A'));
     await draftAuto.saveDraftConfig({ enabled: true, draftsPerRun: 5, minScore: 0 });
     await draftAuto.runDraftAutonomy();
-    await cmd(['HDEL', 'ks:draft:runs', 'draft-run-' + new Date().toISOString().slice(0, 10).replace(/-/g, '')]);
+    await cmd(['HDEL', 'ks:draft:runs', runIdForToday()]);
     const r = await draftAuto.runDraftAutonomy();
     const bodies = bodiesForPlace('ChIJ_A');
     check('FD. candidate linked/run ledger missing -> replay idempotent', (r.reason === 'completed' || r.reason === 'caught_up') && bodies.length === 1);
