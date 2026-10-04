@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Killswitch Websites lead finder (DIY, free, no API key).
+Sunflower Websites lead finder (DIY, free, no API key).
 
 Pulls local businesses from OpenStreetMap (Overpass API) inside a bounding box,
 keeps only the ones with NO website, and writes a CSV grouped by trade. Those
@@ -63,7 +63,7 @@ def main():
     url = "https://overpass-api.de/api/interpreter"
     data = urllib.parse.urlencode({"data": q}).encode()
     print(f"querying OSM for bbox {bbox} ...")
-    req = urllib.request.Request(url, data=data, headers={"User-Agent": "killswitch-leadfinder/1.0"})
+    req = urllib.request.Request(url, data=data, headers={"User-Agent": "sunflower-leadfinder/1.0"})
     with urllib.request.urlopen(req, timeout=120) as r:
         d = json.load(r)
     els = d.get("elements", [])

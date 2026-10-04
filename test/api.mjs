@@ -1,7 +1,7 @@
 
 import path from 'node:path';
 // Repo root, derived from this file's own location so the suite runs
-// from any checkout rather than only from C:/Users/Chris/killswitch.
+// from any checkout rather than only from C:/Users/Chris/sunflower.
 const ROOT = path.join(import.meta.dirname, '..');
 // Exercises the REAL handlers (api/support.js, api/switch.js) against a stubbed
 // Upstash KV and Stripe, so the fixes are tested rather than asserted.
@@ -403,7 +403,7 @@ check('lead identity is intact after all that', l1.name === 'Auto Tech Services 
 // ---------------------------------------------------------------------------
 console.log('\n6. Sites for everyone: draft, deliver, claim');
 process.env.LOB_API_KEY = 'test_stub';
-process.env.KS_FROM_NAME = 'Killswitch'; process.env.KS_FROM_LINE1 = '1 Main St';
+process.env.KS_FROM_NAME = 'Sunflower'; process.env.KS_FROM_LINE1 = '1 Main St';
 process.env.KS_FROM_CITY = 'KC'; process.env.KS_FROM_STATE = 'MO'; process.env.KS_FROM_ZIP = '64111';
 const siteApi = (await import('../api/site.js')).default;
 const { renderSite } = await import('../lib/site-template.js');
@@ -466,7 +466,7 @@ const meta = (KV.get('ks:leadmeta') || {});
 const slugB = JSON.parse(meta.B).siteSlug;
 await lobSend({ id: 'B', name: 'Downtown Dental', trade: 'dentist', street: '5 Elm St', city: 'Kansas City', state: 'MO', zip: '64111', siteSlug: slugB });
 const card = decodeURIComponent(lobCards[0].replace(/\+/g, ' '));
-check('the postcard prints their own URL', card.includes('killswitchwebsites.com/s/downtown-dental'), card.slice(0, 60));
+check('the postcard prints their own URL', card.includes('sunflowerwebsites.com/s/downtown-dental'), card.slice(0, 60));
 check('the card says already built, not claim yours', card.includes('already built') && !card.includes('Claim your'));
 check('mailing published the site so the URL resolves', (await getSite('downtown-dental')).published === true);
 check('mailing did NOT make it indexable', (await getSite('downtown-dental')).claimed === false);

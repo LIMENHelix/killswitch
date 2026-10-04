@@ -65,7 +65,7 @@ const server = http.createServer((req, res) => {
 await new Promise((r) => server.listen(0, r));
 const PORT = server.address().port;
 
-const CHROME = ['C:/Program Files/Google/Chrome/Application/chrome.exe',
+const CHROME = ['/usr/bin/chromium','C:/Program Files/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable'].find((p) => fs.existsSync(p));
 if (!CHROME) { console.log('Chrome not found, cannot run the DOM check'); process.exit(2); }
 const userDir = path.join(os.tmpdir(), 'ks-analytics-' + PORT);
@@ -200,7 +200,11 @@ check('tagged with where it came from',
   JSON.parse(await evaluate(EVENT('signup_submitted')) || 'null')?.source === 'start-page', await evaluate(EVENT('signup_submitted')));
 
 await open('/');
-await evaluate(`document.querySelector('a[href^="tel:"]').click()`);
+await evaluate(`
+  var phone = document.querySelector('a[href^="tel:"]');
+  phone.addEventListener('click', function(e){ e.preventDefault(); }, { once: true });
+  phone.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}));
+`);
 await new Promise((r) => setTimeout(r, 250));
 check('tapping the phone number is recorded, the highest-intent act on the site',
   (await evaluate(NAMES)).includes('call_clicked'), JSON.stringify(await evaluate(NAMES)));

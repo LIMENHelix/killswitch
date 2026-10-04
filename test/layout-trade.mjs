@@ -66,7 +66,7 @@ check('and classic is NOT the trade markup',
 
 console.log('\nTRADE x EVERY THEME x FULL RECORD');
 for (const t of THEME_NAMES) {
-  const h = renderSite({ ...FULL, theme: t }, { base: 'https://killswitchwebsites.com' });
+  const h = renderSite({ ...FULL, theme: t }, { base: 'https://sunflowerwebsites.com' });
   const ok = h.includes('class="hero-bg"') && h.includes('class="mk"') && h.includes('class="navcall"')
     && h.includes('id="services"') && h.includes('class="band"') && h.includes('class="eyebrow"')
     && h.includes('--bg:' + THEMES[t].bg) && h.includes('--on:' + onAccent(THEMES[t].ac));
@@ -75,7 +75,7 @@ for (const t of THEME_NAMES) {
 
 console.log('\nTRADE x EVERY THEME x SPARSE RECORD, degrading honestly');
 for (const t of THEME_NAMES) {
-  const h = renderSite({ ...SPARSE, theme: t }, { base: 'https://killswitchwebsites.com' });
+  const h = renderSite({ ...SPARSE, theme: t }, { base: 'https://sunflowerwebsites.com' });
   const structural = h.includes('class="hero-bg"') && h.includes('class="mk"') && h.includes('id="contact"');
   // Absent, not present-and-empty. An empty services grid or a band of blanks
   // is worse than no section, because it reads as broken rather than as new.
@@ -130,7 +130,7 @@ check('the theme still supplies the rest', custom.includes('--bg:' + THEMES.midn
 check('and the text on it is still readable', custom.includes('--on:' + onAccent('#7C3AED')));
 
 console.log('\nTHE PAGE IS STRUCTURALLY WHAT WAS ASKED FOR');
-const shipped = renderSite(FULL, { base: 'https://killswitchwebsites.com' });
+const shipped = renderSite(FULL, { base: 'https://sunflowerwebsites.com' });
 for (const [what, mark] of [['a logo mark', 'class="mk"'], ['a sticky call bar', 'class="navcall"'],
   ['a full-bleed hero', 'class="hero-bg"'], ['icon-tile service cards', 'class="ic"'],
   ['uppercase eyebrows', 'class="eyebrow"'], ['a real footer', '<footer']]) {

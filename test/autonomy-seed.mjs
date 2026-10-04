@@ -65,7 +65,7 @@ check('SEEDED: it has a factual about line',
 check('the about line invents no location it was never given',
   !/\bin\b/.test(paid.site.about));
 
-const paidHtml = renderSite(paid.site, { base: 'https://killswitchwebsites.com' });
+const paidHtml = renderSite(paid.site, { base: 'https://sunflowerwebsites.com' });
 check('and the page carries the factual sections, not an invented menu',
   sections(paidHtml).includes('about') && !sections(paidHtml).includes('services'),
   sections(paidHtml).join(','));

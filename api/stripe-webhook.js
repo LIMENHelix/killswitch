@@ -13,7 +13,7 @@
 //
 // SETUP, two clicks in the Stripe dashboard, then one env var:
 //   1. Developers > Webhooks > Add endpoint
-//      https://killswitchwebsites.com/api/stripe-webhook
+//      https://sunflowerwebsites.com/api/stripe-webhook
 //      events: checkout.session.completed,
 //              checkout.session.async_payment_succeeded,
 //              customer.subscription.updated,

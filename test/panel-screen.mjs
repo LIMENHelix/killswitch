@@ -19,7 +19,7 @@ import path from 'node:path';
 import os from 'node:os';
 
 // Repo root, derived from this file's own location so the suite runs
-// from any checkout rather than only from C:/Users/Chris/killswitch.
+// from any checkout rather than only from C:/Users/Chris/sunflower.
 const ROOT = path.join(import.meta.dirname, '..');
 
 const PANEL = path.join(ROOT, 'panel.html');
@@ -76,7 +76,7 @@ const server = http.createServer((req, res) => {
 await new Promise((r) => server.listen(0, r));
 const PORT = server.address().port;
 
-const CHROME = ['C:/Program Files/Google/Chrome/Application/chrome.exe',
+const CHROME = ['/usr/bin/chromium','C:/Program Files/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable'].find((p) => fs.existsSync(p));
 if (!CHROME) { console.log('Chrome not found, cannot run the DOM check'); process.exit(2); }
 

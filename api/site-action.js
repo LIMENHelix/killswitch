@@ -23,7 +23,7 @@ async function emailBusiness(site, subject, lines) {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + key, 'content-type': 'application/json' },
       body: JSON.stringify({
-        from: process.env.KS_FROM_EMAIL || 'Killswitch Websites <hello@killswitch.domains>',
+        from: process.env.KS_FROM_EMAIL || 'Sunflower Websites <hello@sunflowerwebsites.com>',
         to: [to],
         subject,
         html: '<div style="font-family:Arial,sans-serif;max-width:520px;color:#1E1B16">'

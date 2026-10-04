@@ -1,4 +1,4 @@
-# KILLSWITCH — Stripe Setup (start taking payments)
+# SUNFLOWER — Stripe Setup (start taking payments)
 
 You can be accepting cards within ~30 minutes. Three parts: create the account,
 send invoices (for quoted work), make payment links (for the website buttons).
@@ -13,9 +13,9 @@ send invoices (for quoted work), make payment links (for the website buttons).
    - **Business type:** Individual / Sole proprietor (or LLC if you have one).
    - **Your details:** legal name, address, date of birth, last 4 of SSN (identity/tax — required).
    - **Industry:** "Computer software" or "Web development / IT services".
-   - **Business website:** killswitch.domains
+   - **Business website:** sunflowerwebsites.com
    - **Bank account for payouts:** routing + account number — *this is where your money lands.*
-   - **Statement descriptor:** what shows on a customer's card statement → `KILLSWITCH`.
+   - **Statement descriptor:** what shows on a customer's card statement → `SUNFLOWER`.
 4. Done. You're in **Live mode** and can take real cards.
    - **Fee:** 2.9% + 30¢ per successful charge (US). e.g. $499 → you net ~$484.
 

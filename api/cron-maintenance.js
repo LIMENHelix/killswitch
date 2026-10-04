@@ -46,7 +46,7 @@ export async function runMaintenance() {
         heading: 'A switched-off module reached the end of its paid cycle',
         lines: [`Customer: ${e.email}`, `Now off: ${labelPhases(e.phases)}`,
           'They switched this off earlier and kept it until the cycle they had paid for ran out.'],
-        url: 'https://killswitchwebsites.com/master', urlText: 'Open Master Panel',
+        url: 'https://sunflowerwebsites.com/master', urlText: 'Open Master Panel',
       });
     }
   } catch (e) {
@@ -65,7 +65,7 @@ export async function runMaintenance() {
       subject: 'BACKUP FAILED',
       heading: 'The daily backup did not run',
       lines: ['Customer sites were not snapshotted today.', String(e && e.message || e).slice(0, 300)],
-      url: 'https://killswitchwebsites.com/master', urlText: 'Open Master Panel',
+      url: 'https://sunflowerwebsites.com/master', urlText: 'Open Master Panel',
     });
   }
 
@@ -88,7 +88,7 @@ export async function runMaintenance() {
           '',
           `Checked ${out.uptime.checked} published sites.`,
         ],
-        url: 'https://killswitchwebsites.com/master', urlText: 'Open Master Panel',
+        url: 'https://sunflowerwebsites.com/master', urlText: 'Open Master Panel',
       });
     }
     const recovered = ((before && before.failures) || []).filter(

@@ -74,7 +74,7 @@ check('the account is created', account && account.plan.includes('P0'));
 check('a real site is created and linked', site && site.slug === 'north-star-electric', JSON.stringify(site));
 check('the site is live and customer-claimed', site.published && site.claimed);
 check('the customer phone is on the page record', site.phone === '(816) 555-0199');
-check('the response links the live site', res.body.siteUrl === 'https://killswitchwebsites.com/s/north-star-electric', res.body.siteUrl);
+check('the response links the live site', res.body.siteUrl === 'https://sunflowerwebsites.com/s/north-star-electric', res.body.siteUrl);
 check('an attacker Host header cannot capture a panel token', !res.body.portalUrl && !JSON.stringify(res.body).includes('attacker.example'));
 const inboundLead = (await getLeads()).find((lead) => lead.email === 'owner@example.com');
 check('the signup is present on the lead board', !!inboundLead);
@@ -128,7 +128,7 @@ check('the parsed hours are on the site record',
 check('the customer about wins over the generated sentence',
   rvSite.about === 'Family owned, third generation, we answer the phone ourselves.', rvSite.about);
 check('a new free site is P0 only', JSON.stringify(rvSite.modules) === JSON.stringify(['P0']), JSON.stringify(rvSite.modules));
-check('the response links the live site', res.body.siteUrl === 'https://killswitchwebsites.com/s/rivertown-plumbing', res.body.siteUrl);
+check('the response links the live site', res.body.siteUrl === 'https://sunflowerwebsites.com/s/rivertown-plumbing', res.body.siteUrl);
 const rvAccount = await getAccount('rivertown@example.com');
 check('the contact name is on the account', rvAccount.name === 'Ada Ruiz', JSON.stringify(rvAccount));
 const rvLead = (await getLeads()).find((lead) => lead.email === 'rivertown@example.com');

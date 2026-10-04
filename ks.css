@@ -1,5 +1,5 @@
 /* ============================================================
-   Killswitch Websites — unified kill-switch design system
+   Sunflower Websites — unified kill-switch design system
    ONE stylesheet for every page. index.html carries an inline
    copy of the core (kept in sync); every other page links this.
    Superset of the old styles.css vocabulary + the new kill-switch
@@ -8,20 +8,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 :root{
-  --bg:#121214;
-  --panel:#1a1a1e;
-  --metal:#232328;
-  --metal-hi:#2c2c33;
-  --line:#34343c;
-  --line-soft:#26262c;
+  --bg:#14140f;
+  --panel:#1f1e16;
+  --metal:#28261b;
+  --metal-hi:#302d20;
+  --line:#403b2a;
+  --line-soft:#302d20;
   --ink:#FFFFFF;
   --mute:#b6bac2;
   --mute-2:#888c96;
-  --amber:#FFC42E;
-  --amber-dim:#c79a34;
-  --red:#FF5546;
-  --red-deep:#d21f10;
-  --go:#1BA45A;
+  --amber:#F6C945;
+  --amber-dim:#B58A22;
+  --red:#C66A2C;
+  --red-deep:#A34F22;
+  --go:#247A45;
   --go-ink:#ffffff;
   --ok:#3ad17a;
   --maxw:1140px;
@@ -156,7 +156,7 @@ h1.hero-h .free{color:var(--amber);position:relative;text-shadow:0 0 22px rgba(2
 .klsw:focus-visible{outline:2px solid var(--go);outline-offset:5px}
 .klsw.on{border-color:var(--go);box-shadow:inset 0 2px 9px rgba(0,0,0,.5),0 0 34px -2px rgba(27,164,90,.82)}
 .klsw.on .lever{background:linear-gradient(180deg,#38c877,#158f4e);border-color:#0f7a40;box-shadow:0 0 16px rgba(27,164,90,.8)}
-.klsw.on .lever::before{top:55px;background:linear-gradient(180deg,#8effb9,#1BA45A);border-color:#0f7a40;box-shadow:0 0 22px rgba(27,164,90,.95),inset 0 1px 0 rgba(255,255,255,.4)}
+.klsw.on .lever::before{top:55px;background:linear-gradient(180deg,#8effb9,#247A45);border-color:#0f7a40;box-shadow:0 0 22px rgba(27,164,90,.95),inset 0 1px 0 rgba(255,255,255,.4)}
 .klsw.on .led{background:var(--go);box-shadow:0 0 12px var(--go),0 0 24px var(--go)}
 .klsw.flash::before{content:"";position:absolute;inset:-10px;border-radius:2px;pointer-events:none;box-shadow:0 0 44px 11px rgba(140,255,190,.95);animation:sparkflash .5s ease-out forwards}
 @keyframes sparkflash{0%{opacity:1}100%{opacity:0}}
@@ -235,7 +235,7 @@ section.s{padding:88px 0;border-top:1px solid var(--line-soft)}
 .pick input::after,.path__pick input::after{content:"";position:absolute;left:50%;top:5px;transform:translateX(-50%);width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 6px rgba(255,85,70,.75);transition:background .25s,box-shadow .25s}
 .pick input::before,.path__pick input::before{content:"";position:absolute;left:50%;transform:translateX(-50%);width:26px;height:15px;border-radius:2px;top:17px;background:linear-gradient(180deg,#d2d6df,#868a94);border:1px solid #5a5e68;box-shadow:0 2px 5px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.4);transition:top .22s cubic-bezier(.18,2.4,.42,1),background .25s,box-shadow .25s,border-color .25s;z-index:2}
 .pick input:checked,.path__pick input:checked{border-color:var(--go);box-shadow:inset 0 2px 6px rgba(0,0,0,.5),0 0 18px -3px rgba(27,164,90,.72)}
-.pick input:checked::before,.path__pick input:checked::before{top:34px;background:linear-gradient(180deg,#8effb9,#1BA45A);border-color:#0f7a40;box-shadow:0 0 14px rgba(27,164,90,.9),inset 0 1px 0 rgba(255,255,255,.4)}
+.pick input:checked::before,.path__pick input:checked::before{top:34px;background:linear-gradient(180deg,#8effb9,#247A45);border-color:#0f7a40;box-shadow:0 0 14px rgba(27,164,90,.9),inset 0 1px 0 rgba(255,255,255,.4)}
 .pick input:checked::after,.path__pick input:checked::after{background:var(--go);box-shadow:0 0 8px var(--go),0 0 14px var(--go)}
 .pick input:focus-visible,.path__pick input:focus-visible{outline:2px solid var(--go);outline-offset:3px}
 

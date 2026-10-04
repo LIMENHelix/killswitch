@@ -1,5 +1,5 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://killswitchwebsites.com/sitemap.xml
-Sitemap: https://killswitchwebsites.com/sitemap-sites.xml
+Sitemap: https://sunflowerwebsites.com/sitemap.xml
+Sitemap: https://sunflowerwebsites.com/sitemap-sites.xml

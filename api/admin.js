@@ -1,4 +1,4 @@
-// Killswitch Websites admin API. TWO roles, see lib/roles.js.
+// Sunflower Websites admin API. TWO roles, see lib/roles.js.
 //
 //   owner (ADMIN_KEY / SWITCH_TOKEN) -- everything
 //   rep   (REP_KEYS "name:key,...")  -- read the board, record what happened
@@ -335,7 +335,7 @@ export default async function handler(req, res) {
         const report = await collectWeeklyScorecard(new Date());
         const a = report.acquisition, activity = report.activity, economics = report.economics, operations = report.operations;
         const notify = await notifyOperator({
-          subject: `Weekly Killswitch scorecard - ${report.period.startDate} to ${report.period.endDate}`,
+          subject: `Weekly Sunflower scorecard - ${report.period.startDate} to ${report.period.endDate}`,
           heading: 'Your weekly operating scorecard is ready',
           lines: [
             `Period: ${report.period.startDate} through ${report.period.endDate} (end exclusive)`,

@@ -20,8 +20,8 @@ const check = (n, c, d) => { if (c) { console.log('  PASS  ' + n); pass++; } els
 const LEAD = { name: 'Lee Auto Repair', trade: 'auto repair' };
 const front = P.frontHtml(LEAD);
 const back = P.backHtml(LEAD);
-const delivered = P.frontHtml({ ...LEAD, siteUrl: 'killswitchwebsites.com/s/lee-auto' });
-const deliveredBack = P.backHtml({ ...LEAD, siteUrl: 'killswitchwebsites.com/s/lee-auto' });
+const delivered = P.frontHtml({ ...LEAD, siteUrl: 'sunflowerwebsites.com/s/lee-auto' });
+const deliveredBack = P.backHtml({ ...LEAD, siteUrl: 'sunflowerwebsites.com/s/lee-auto' });
 
 console.log('\nBOTH NUMBERS ARE ON THE CARD');
 
@@ -66,7 +66,7 @@ console.log('\nNOTHING THAT ALREADY WORKED WAS TAKEN AWAY');
 check('the offer card leads with the free-website headline', /Your business website\./.test(front) && /Free\./.test(front));
 check('the offer card states the terms plainly', front.includes('Yours to keep. No contract. No card required.'));
 check('the delivery card still leads with "already built"', /already built/.test(delivered));
-check('the delivery card still prints where the site is', delivered.includes('killswitchwebsites.com/s/lee-auto'));
+check('the delivery card still prints where the site is', delivered.includes('sunflowerwebsites.com/s/lee-auto'));
 check('the trade is still pluralised for the audience', /Built for auto shops/.test(back),
   (back.match(/Built for [^<]*/) || [''])[0]);
 check('the business name is still on the delivery card', delivered.includes('Lee Auto Repair'));
@@ -89,17 +89,17 @@ for (const [label, html] of [['offer front', front], ['offer back', back], ['del
 }
 
 // The QR and the printed URL point at the same working destination.
-check('the offer back carries the QR image', back.includes('https://killswitchwebsites.com/qr-start.png'));
-check('the QR alt text names the destination', back.includes('killswitch.domains/start'));
-check('the printed CTA is killswitch.domains/start on the front', front.includes('killswitch.domains/start'));
-check('the printed CTA is killswitch.domains/start on the back', (back.match(/killswitch\.domains\/start/g) || []).length >= 2);
+check('the offer back carries the QR image', back.includes('https://sunflowerwebsites.com/qr-start.png'));
+check('the QR alt text names the destination', back.includes('sunflowerwebsites.com/start'));
+check('the printed CTA is sunflowerwebsites.com/start on the front', front.includes('sunflowerwebsites.com/start'));
+check('the printed CTA is sunflowerwebsites.com/start on the back', (back.match(/sunflowerwebsites\.com\/start/g) || []).length >= 2);
 check('the delivery card has no intake QR (its destination is the site itself)', !deliveredBack.includes('qr-start.png'));
-check('the delivery card keeps its own URL CTA', deliveredBack.includes('killswitchwebsites.com/s/lee-auto'));
+check('the delivery card keeps its own URL CTA', deliveredBack.includes('sunflowerwebsites.com/s/lee-auto'));
 
 // A business name with an ampersand must not break the markup. Note this has to
 // be tested on the DELIVERY card: the offer card never prints the name at all,
 // so asserting against it proves nothing.
-const NASTY = { name: 'Bob & Sons <script>alert(1)</script>', trade: 'plumber', siteUrl: 'killswitchwebsites.com/s/bob' };
+const NASTY = { name: 'Bob & Sons <script>alert(1)</script>', trade: 'plumber', siteUrl: 'sunflowerwebsites.com/s/bob' };
 const nastyFront = P.frontHtml(NASTY);
 const nastyBack = P.backHtml(NASTY);
 check('the delivery card really does print the name, so this test is not vacuous',

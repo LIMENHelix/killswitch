@@ -63,7 +63,7 @@ function mkRes() {
   r.setHeader = (k, v) => { r.headers[k] = v; };
   return r;
 }
-const req = (body, method = 'POST') => ({ method, body, query: {}, headers: { host: 'killswitchwebsites.com', 'x-forwarded-for': '198.51.100.7' } });
+const req = (body, method = 'POST') => ({ method, body, query: {}, headers: { host: 'sunflowerwebsites.com', 'x-forwarded-for': '198.51.100.7' } });
 const call = async (body, method) => { const r = mkRes(); await theme(req(body, method), r); return r; };
 
 // --- two customers, so "cannot touch somebody else's site" is testable --------
@@ -101,14 +101,14 @@ const set = await call({ e: MINE, t: tokMine, action: 'set', theme: 'midnight' }
 check('set returns 200 and reports the new look', set.code === 200 && set.body.current === 'midnight', JSON.stringify(set.body));
 check('it is written to the site record', (await getSite('daves-auto')).theme === 'midnight', (await getSite('daves-auto')).theme);
 const res5 = mkRes();
-await siteApi({ method: 'GET', query: { slug: 'daves-auto' }, headers: { host: 'killswitchwebsites.com' } }, res5);
+await siteApi({ method: 'GET', query: { slug: 'daves-auto' }, headers: { host: 'sunflowerwebsites.com' } }, res5);
 check('the LIVE page is served with the dark background', res5.code === 200 && res5.sent.includes('--bg:' + THEMES.midnight.bg), String(res5.code));
 check('and with the theme\'s own accent, not the old green',
   res5.sent.includes('--ac:' + THEMES.midnight.ac) && !res5.sent.includes('--ac:' + FACTORY_ACCENT));
 const back = await call({ e: MINE, t: tokMine, action: 'set', theme: 'warm' });
 check('set warm returns 200', back.code === 200 && back.body.current === 'warm');
 const res6 = mkRes();
-await siteApi({ method: 'GET', query: { slug: 'daves-auto' }, headers: { host: 'killswitchwebsites.com' } }, res6);
+await siteApi({ method: 'GET', query: { slug: 'daves-auto' }, headers: { host: 'sunflowerwebsites.com' } }, res6);
 check('the live page is the original cream and green again',
   res6.sent.includes('--bg:#F6F1E7') && res6.sent.includes('--ac:' + FACTORY_ACCENT));
 
@@ -202,7 +202,7 @@ check('siteUrl means the same thing in both replies: the address of their live s
 check('and applied:false, not a blanked link, is what says the page did not change',
   wSet.body.applied === false && wSet.body.written === true);
 const wPage = mkRes();
-await siteApi({ method: 'GET', query: { slug: 'ana-custom' }, headers: { host: 'killswitchwebsites.com' } }, wPage);
+await siteApi({ method: 'GET', query: { slug: 'ana-custom' }, headers: { host: 'sunflowerwebsites.com' } }, wPage);
 check('the served page really is unchanged, which is what applied:false claims',
   wPage.code === 200 && !wPage.sent.includes(THEMES.midnight.bg), String(wPage.code));
 
@@ -247,7 +247,7 @@ check('still reported as not applied', wSet2.body.applied === false);
 // choice must be the one that takes effect.
 await upsertSite({ slug: 'ana-custom', html: '', htmlAt: '' });
 const unwritten = mkRes();
-await siteApi({ method: 'GET', query: { slug: 'ana-custom' }, headers: { host: 'killswitchwebsites.com' } }, unwritten);
+await siteApi({ method: 'GET', query: { slug: 'ana-custom' }, headers: { host: 'sunflowerwebsites.com' } }, unwritten);
 check('once the bespoke page is dropped, the stored look is what renders',
   unwritten.sent.includes('--bg:' + THEMES.coastal.bg), 'coastal bg not found');
 const afterUnwrite = await call({ e: W, t: tokW, action: 'list' });
