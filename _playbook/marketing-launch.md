@@ -1,4 +1,4 @@
-# Killswitch marketing launch
+# Sunflower marketing launch
 
 Status date: September 4, 2026
 
@@ -75,7 +75,7 @@ Stop-loss rules:
 ### 4. Direct outreach — consent and suppression required
 
 - Continue personalized postcards and owner-requested follow-ups.
-- Every email identifies Killswitch and includes an opt-out path.
+- Every email identifies Sunflower and includes an opt-out path.
 - Do not automate cold SMS or prerecorded/AI calls without documented consent and a legal review of the target jurisdiction.
 - Suppression requests are permanent and apply across every channel.
 
@@ -101,7 +101,7 @@ utm_term=<keyword>  # paid search only
 Example:
 
 ```text
-https://killswitchwebsites.com/free-website-for-plumbers-in-kansas-city?utm_source=google&utm_medium=cpc&utm_campaign=kc-free-site-v1&utm_content=plumber-proof
+https://sunflowerwebsites.com/free-website-for-plumbers-in-kansas-city?utm_source=google&utm_medium=cpc&utm_campaign=kc-free-site-v1&utm_content=plumber-proof
 ```
 
 ## Weekly operating scorecard

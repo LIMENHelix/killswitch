@@ -3,6 +3,6 @@
 // so this is just a no-op so the build's functions pattern matches.
 // Vercel trigger rebuild
 export default function handler(req, res) {
-  res.status(200).json({ ok: true, service: 'killswitch' });
+  res.status(200).json({ ok: true, service: 'sunflower' });
 }
 

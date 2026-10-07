@@ -35,7 +35,7 @@ const opts = Object.keys(t.options || {});
 check('channels carry a per-touch cost in cents',
   opts.length >= 2 && Number.isFinite(t.options[opts[0]]),
   JSON.stringify(t.options));
-check('the channels Killswitch actually has are modelled',
+check('the channels Sunflower actually has are modelled',
   ['call', 'text', 'email', 'mailer'].every((c) => c in (t.options || {})), opts.join(','));
 
 // newPlay takes ONE fields object; allocate groups by p.segment and keys the

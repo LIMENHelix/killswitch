@@ -1,13 +1,13 @@
-# Killswitch AI Sales Rep — Product Package
+# Sunflower AI Sales Rep — Product Package
 
 ## One-liner
 **An AI sales rep that fills your calendar with qualified meetings — on autopilot.
-Done for you by Killswitch.**
+Done for you by Sunflower.**
 
 ## Name (pick one)
 - **Meet "Switch" — your AI sales rep** ← recommended (persona = memorable, on-brand, the category sells this way: Artisan's "Ava," 11x's "Alice")
-- Killswitch Outbound (clean, descriptive)
-- Killswitch Pipeline
+- Sunflower Outbound (clean, descriptive)
+- Sunflower Pipeline
 
 ## What it does (HONEST scope — sell exactly this)
 Finds your ideal customers → writes a personal pitch to each → sends and follows up
@@ -42,7 +42,7 @@ Self-serve SaaS dashboard comes later, once it's dialed. Don't sell the SaaS yet
 **Sub:** Finds your ideal customers, reaches out to each one personally, follows up
 relentlessly, and drops qualified meetings straight on your calendar. No salary, no PTO,
 no bad days — a fraction of the cost of a hire.
-**Proof (honest, now):** "We built this to grow Killswitch — it's how we book our own
+**Proof (honest, now):** "We built this to grow Sunflower — it's how we book our own
 clients. Now we'll run it for you." *(Add real numbers the moment you have them.)*
 
 ## Objections → answers
@@ -52,4 +52,4 @@ clients. Now we'll run it for you." *(Add real numbers the moment you have them.
 - **"Why not just hire an SDR?"** → An SDR is $4–6k/mo + benefits + 3-month ramp + turnover. This is a fraction, no management, no HR, scales the day you need it.
 
 ## Roadmap
-**V1 done-for-you (now)** → V2 semi-self-serve dashboard → V3 SaaS. Sell the service, build toward the product. Prove every claim on Killswitch first.
+**V1 done-for-you (now)** → V2 semi-self-serve dashboard → V3 SaaS. Sell the service, build toward the product. Prove every claim on Sunflower first.

@@ -69,7 +69,7 @@ check('a wrong owner key is refused', result.code === 401);
 result = await adminCall('run-scorecard');
 check('the owner can run the report manually', result.code === 200 && result.body.sent === true, JSON.stringify(result.body));
 check('one report sends one email', emails.length === 1);
-check('the email names the scorecard', emails[0].subject.includes('Weekly Killswitch scorecard'));
+check('the email names the scorecard', emails[0].subject.includes('Weekly Sunflower scorecard'));
 check('the empty system reports zero instead of inventing activity', result.body.report.acquisition.validSignups === 0 && result.body.report.economics.trackedSpendCents === 0);
 check('the sent report is retained for Master/audit use', KV.has('ks:scorecard:last'));
 result = await adminCall('run-scorecard');

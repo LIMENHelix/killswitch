@@ -1,10 +1,10 @@
 {
   "_README": [
-    "Tool definitions for the Killswitch voice agent, in the schema xAI documents",
+    "Tool definitions for the Sunflower voice agent, in the schema xAI documents",
     "for session.update tools[]. In the Voice Agent Builder, add these under Tools.",
     "",
     "ENDPOINT for every one of them (same URL, the action is in the body):",
-    "  POST https://killswitchwebsites.com/api/agent?token=YOUR_AGENT_TOKEN",
+    "  POST https://sunflowerwebsites.com/api/agent?token=YOUR_AGENT_TOKEN",
     "",
     "The token is in the URL on purpose so no custom header is needed. If the",
     "console DOES offer a header field, use x-agent-token instead and drop the",

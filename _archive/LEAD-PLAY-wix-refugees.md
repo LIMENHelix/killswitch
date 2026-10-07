@@ -1,4 +1,4 @@
-# KILLSWITCH — The Wix-Refugee Lead Play
+# SUNFLOWER — The Wix-Refugee Lead Play
 
 People stuck with an abandoned/ugly Wix or Squarespace site — or NO site at all —
 are your warmest market. They already know they need it, they've already failed at
@@ -28,18 +28,18 @@ DIY, and you're the "done-for-you, real human, live today" answer. Lead with the
 ## THE OUTREACH (pick the channel)
 
 ### Cold call / voicemail (best for local services)
-> "Hi [name], this is Chris with Killswitch — I build websites for Kansas City businesses. I noticed [business] doesn't have a website yet / has a Wix one that looks unfinished. I can build you a clean, professional one — **live this week, starting at $149** — and I'll even mock one up **free** so you can see it first. Call me back at [number], or grab a time at **killswitch.domains**."
+> "Hi [name], this is Chris with Sunflower — I build websites for Kansas City businesses. I noticed [business] doesn't have a website yet / has a Wix one that looks unfinished. I can build you a clean, professional one — **live this week, starting at $149** — and I'll even mock one up **free** so you can see it first. Call me back at [number], or grab a time at **sunflowerwebsites.com**."
 
 ### Cold DM / email (short — they skim)
 > **Subject:** Quick website for [business]?
 >
-> Hey [name] — Chris here, I build websites for KC businesses. Noticed [business] is on a free Wix site (or doesn't have one yet). I do clean, **done-for-you** sites — **live in a day, from $149, and you own everything.** Want me to throw together a **free mockup** so you can see what yours could look like? No pressure. — killswitch.domains
+> Hey [name] — Chris here, I build websites for KC businesses. Noticed [business] is on a free Wix site (or doesn't have one yet). I do clean, **done-for-you** sites — **live in a day, from $149, and you own everything.** Want me to throw together a **free mockup** so you can see what yours could look like? No pressure. — sunflowerwebsites.com
 
 ### Facebook group reply (when someone asks)
-> "I do this — Killswitch, KC. Clean done-for-you sites, **live fast, from $149**, you own everything. Happy to mock something up free. killswitch.domains"
+> "I do this — Sunflower, KC. Clean done-for-you sites, **live fast, from $149**, you own everything. Happy to mock something up free. sunflowerwebsites.com"
 
 ### Walk-in (shops, restaurants, salons)
-> Show your phone with **killswitch.domains** open. "Hey — I build websites for local spots. Noticed you don't have one / yours is a Wix. I can have you **live this week for $149.** Want me to show you a quick mockup?"
+> Show your phone with **sunflowerwebsites.com** open. "Hey — I build websites for local spots. Noticed you don't have one / yours is a Wix. I can have you **live this week for $149.** Want me to show you a quick mockup?"
 
 ---
 

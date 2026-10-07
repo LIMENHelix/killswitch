@@ -1,10 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 120" width="560" height="120" role="img" aria-label="KILLSWITCH">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 120" width="720" height="120" role="img" aria-label="Sunflower Websites">
   <g transform="translate(10,10)">
-    <rect width="100" height="100" rx="22" fill="#0a0b0e"/>
-    <g fill="none" stroke="#cf1322" stroke-width="9" stroke-linecap="round">
-      <path d="M62.5 30.4 A25 25 0 1 1 37.5 30.4"/>
-      <path d="M50 22 V52"/>
+    <rect width="100" height="100" rx="22" fill="#16150f"/>
+    <g transform="translate(50 50)">
+      <g fill="#F6C945">
+        <ellipse rx="9" ry="24" transform="rotate(0) translate(0 -23)"/>
+        <ellipse rx="9" ry="24" transform="rotate(45) translate(0 -23)"/>
+        <ellipse rx="9" ry="24" transform="rotate(90) translate(0 -23)"/>
+        <ellipse rx="9" ry="24" transform="rotate(135) translate(0 -23)"/>
+        <ellipse rx="9" ry="24" transform="rotate(180) translate(0 -23)"/>
+        <ellipse rx="9" ry="24" transform="rotate(225) translate(0 -23)"/>
+        <ellipse rx="9" ry="24" transform="rotate(270) translate(0 -23)"/>
+        <ellipse rx="9" ry="24" transform="rotate(315) translate(0 -23)"/>
+      </g>
+      <circle r="18" fill="#5B3A12"/>
+      <circle r="8" fill="#247A45"/>
     </g>
   </g>
-  <text x="132" y="82" font-family="'Space Grotesk','Arial Black','Arial',sans-serif" font-weight="700" font-size="60" letter-spacing="-1.5" fill="#cf1322">KILLSWITCH</text>
+  <text x="132" y="76" font-family="'Manrope','Arial Black','Arial',sans-serif" font-weight="900" font-size="48" letter-spacing="-1" fill="#F6C945">Sunflower Websites</text>
 </svg>

@@ -1,4 +1,4 @@
-# Killswitch voice agent — 913-933-1687
+# Sunflower voice agent — 913-933-1687
 
 ONE agent, four jobs. Paste this into the xAI Voice Agent Builder.
 Not deployed (`_playbook` is in `.vercelignore`). Tools live at `/api/agent`.
@@ -12,13 +12,13 @@ changes behaviour internally. The only transfer worth making is to a human.
 
 ## Console setup
 
-1. **Voice Agents → Start from scratch.** Name: `Killswitch inbound`.
+1. **Voice Agents → Start from scratch.** Name: `Sunflower inbound`.
 2. **Voice:** pick a warm, unhurried one. These are shop owners on a work phone.
 3. **Model:** `grok-voice-latest`. Reasoning effort low; this is not a hard task
    and latency is what makes it feel human.
 4. **Instructions:** paste the prompt below.
 5. **Tools → custom API.** One endpoint, POST, seven actions:
-   - URL `https://killswitchwebsites.com/api/agent`
+   - URL `https://sunflowerwebsites.com/api/agent`
    - Header `x-agent-token: <AGENT_TOKEN>` (set it in Vercel first)
    - Schemas below.
 6. **Phone:** attach 913-933-1687 (already the xAI number on the site).
@@ -37,7 +37,7 @@ Until then the agent spells the URL out and offers to email it.
 
 ## Instructions (paste verbatim)
 
-You answer the phone for Killswitch Websites. You are not a receptionist reading a
+You answer the phone for Sunflower Websites. You are not a receptionist reading a
 script, you are the person who can actually get things done, and you can do things
 on this call rather than promising a callback.
 
@@ -100,7 +100,7 @@ business name. Read it back before you publish anything.
 
 ## Tool schemas
 
-All POST to `https://killswitchwebsites.com/api/agent`, JSON body, with the
+All POST to `https://sunflowerwebsites.com/api/agent`, JSON body, with the
 `x-agent-token` header. Every response includes `ok`.
 
 | action | send | you get back |
