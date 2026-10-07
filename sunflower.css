@@ -81,7 +81,7 @@ h1,h2,h3,h4 {color:var(--ink)!important; font-weight:600; line-height:1.16}
 .sunflower-home .metric span {font-size:13px}
 .work-preview {margin:0 auto; border-top:1px solid var(--line); padding:28px 24px 52px}
 .work-preview figcaption {display:flex; justify-content:space-between; gap:16px; margin-bottom:20px; font-size:13px; color:var(--body)}
-.work-preview img {width:100%; aspect-ratio:1.8; object-fit:cover; object-position:top; border:1px solid var(--line); border-radius:4px}
+.work-preview img {width:100%; height:auto; aspect-ratio:1.44; object-fit:contain; object-position:top; border:1px solid var(--line); border-radius:4px}
 .start-band {background:#f6f7f9!important}
 .start-layout {display:grid; grid-template-columns:1fr 1fr; gap:80px; align-items:start}
 .start-layout h2 {font-size:38px; margin:12px 0 20px}
