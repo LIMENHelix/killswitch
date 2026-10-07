@@ -603,3 +603,120 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
   *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
   .reveal,[data-reveal]{opacity:1;transform:none}
 }
+
+/* ============================================================
+   Sunflower public-page finish
+   These pages originally inherited the old industrial Killswitch skin.
+   Keep the underlying forms, checkout links and scripts, but present the
+   public site as a restrained service studio.
+   ============================================================ */
+:root{
+  --amber:#d8a51f;
+  --amber-dim:#f1d78a;
+  --red:#b86a34;
+  --go:#174b33;
+  --go-ink:#ffffff;
+  --ok:#23734d;
+  --bg:#fbf7ee;
+  --bg-dark:#102b1d;
+  --panel:#fffdf8;
+  --metal:#f6efdf;
+  --metal-hi:#ffffff;
+  --line:#d8ccb3;
+  --line-soft:#e8ddc5;
+  --ink:#132017;
+  --mute:#48544b;
+  --mute-2:#778075;
+  --shadow:0 18px 46px rgba(54,45,25,.12);
+  --shadow-lg:0 30px 80px rgba(54,45,25,.16);
+}
+body{
+  background:linear-gradient(180deg,#fffaf0 0%,#fbf7ee 38%,#f6efdf 100%);
+  color:var(--mute);
+}
+.hazard{display:none!important}
+#pglow{display:none!important}
+.nav{
+  background:rgba(251,247,238,.9)!important;
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid rgba(216,204,179,.78)!important;
+  box-shadow:none;
+}
+.nav-in{min-height:76px}
+.brand,.foot-brand{
+  color:var(--ink)!important;
+  letter-spacing:-.01em!important;
+}
+.brand-ic{color:var(--go)}
+.nav-links a[href="/switch"],.foot-links a[href="/switch"]{display:none!important}
+.nav-links a{color:var(--mute)!important}
+.nav-links a:hover{color:var(--go)!important}
+.nav-cta,.btn,.path__buy{
+  border-radius:999px!important;
+  background:var(--go)!important;
+  border-color:var(--go)!important;
+  color:#fff!important;
+  box-shadow:0 14px 30px rgba(23,75,51,.18)!important;
+}
+.nav-cta:hover,.btn:hover,.path__buy:hover{
+  color:#fff!important;
+  filter:none!important;
+  transform:translateY(-2px);
+}
+.price-hero,.hero,.section:first-of-type{
+  background:
+    linear-gradient(180deg,#fffaf0 0%,#fbf7ee 100%)!important;
+}
+.price-hero h1,.section__title,h1,h2{
+  color:var(--ink)!important;
+  letter-spacing:-.035em;
+}
+.price-hero p,.section__sub,.byo__intro p,.path__v,.path__more-body p,.legal p,.legal li{
+  color:var(--mute)!important;
+}
+.eyebrow{
+  color:var(--go)!important;
+  letter-spacing:.15em!important;
+}
+.path__rung,.tier,.dash,.legal .note,.intake input[type=text],.intake input[type=email],.intake input[type=tel],.intake select,.intake textarea,.intake .opt,.start-done{
+  background:rgba(255,253,248,.82)!important;
+  border-color:var(--line)!important;
+  border-radius:8px!important;
+  box-shadow:none;
+}
+.path__rung--free,.tier--featured,.start-done{
+  border-color:var(--go)!important;
+  box-shadow:0 18px 46px rgba(23,75,51,.10)!important;
+}
+.path__phase,.path__k,.path__tag,.tier__tag{
+  color:var(--go)!important;
+  background:rgba(23,75,51,.08)!important;
+}
+.path__items span{
+  background:#f3ead8!important;
+  border-color:var(--line-soft)!important;
+  color:var(--mute)!important;
+  border-radius:999px!important;
+}
+.path__price,.tier__price,.path__price small{
+  color:var(--ink)!important;
+}
+.path__buy-alt,.caps__foot a,.legal a,.intake .agree a{
+  color:var(--go)!important;
+}
+.intake input[type=text],.intake input[type=email],.intake input[type=tel],.intake select,.intake textarea{
+  color:var(--ink)!important;
+}
+.intake input::placeholder,.intake textarea::placeholder{color:var(--mute-2)!important}
+footer,.footer{
+  background:var(--bg-dark)!important;
+  border-top:0!important;
+}
+footer .foot-brand,footer .brand{color:#fff!important}
+footer .foot-tag,footer .copy,footer .foot-links a{color:#d3e0d6!important}
+.chat__launch,.chat{display:none!important}
+@media(max-width:560px){
+  .nav-in{gap:12px}
+  .nav-links{gap:16px}
+  .nav-links a[href="/services"],.nav-links a[href="/work"]{display:none!important}
+}
