@@ -1,0 +1,129 @@
+/* Shared presentation for public pages and existing business tools. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+:root {
+  --bg:#fff; --paper:#fff; --paper2:#f4f5f7; --panel:#fff;
+  --metal:#f4f5f7; --metal-hi:#fff; --line:#dfe2e6; --line-soft:#ebedf0;
+  --ink:#202326; --body:#555b63; --mute:#555b63; --muted:#69717a;
+  --mute-2:#69717a; --mute2:#69717a; --green:#2447b2; --green2:#1b3586;
+  --go:#2447b2; --go-ink:#fff; --ok:#18764c; --amber:#e8b82e;
+  --amber-dim:#a47a0c; --accent:#2447b2; --red:#b73e32; --blue:#2447b2;
+  --gold:#f0c443; --gold2:#f9e9ad; --bg-dark:#202326; --r:6px;
+  --shadow:none; --shadow-lg:none;
+}
+body.sunflower-public,body.sunflower-console {
+  background:#fff!important; color:var(--ink); font-family:Inter,system-ui,sans-serif;
+  background-attachment:initial; line-height:1.65;
+}
+body::before,.hero::before,#pglow,.hazard {display:none!important}
+h1,h2,h3,h4,.serif,.display,.brand,.foot-brand,.btn,.nav-cta {
+  font-family:Inter,system-ui,sans-serif!important; letter-spacing:0!important;
+}
+h1,h2,h3,h4 {color:var(--ink)!important; font-weight:600; line-height:1.16}
+.nav,header.nav {background:#fff!important; backdrop-filter:none; border-bottom:1px solid var(--line)!important}
+.nav-in {height:auto!important; min-height:80px; gap:24px; padding:16px 24px!important}
+.brand {color:var(--ink)!important; font-size:17px; font-weight:700!important; white-space:nowrap}
+.brand img,.brand-ic {width:30px; height:30px; flex-shrink:0}
+.nav-links {gap:24px}
+.nav-links a {color:var(--body)!important; font-size:14px; font-weight:500}
+.nav-links .nav-cta,.nav-cta {color:#fff!important}
+.btn,.nav-cta,.path__buy {
+  border-radius:4px!important; box-shadow:none!important; text-transform:none!important;
+  background:var(--go)!important; border:1px solid var(--go)!important; color:#fff!important;
+  font-weight:600!important; white-space:normal; text-align:center; min-height:44px;
+}
+.btn:hover,.nav-cta:hover,.path__buy:hover {background:var(--green2)!important; transform:none; filter:none}
+.btn-gold {background:var(--gold)!important; border-color:var(--gold)!important; color:var(--ink)!important}
+.btn-outline,.btn--ghost,.btn-ghost,.btn.ghost {
+  color:var(--ink)!important; background:#fff!important; border-color:#c4c9cf!important;
+}
+.eyebrow,.mono,.step__no,.path__phase,.path__k {font-family:Inter,system-ui,sans-serif!important; letter-spacing:0!important; color:var(--body)!important}
+.eyebrow {font-size:12px; text-transform:uppercase; font-weight:600}
+.section,.hero,.price-hero {background:#fff!important; border-color:var(--line)!important}
+.section--alt {background:#f6f7f9!important}
+.section__title,.price-hero h1 {font-size:44px; max-width:850px; margin-left:auto; margin-right:auto; letter-spacing:0!important}
+.section__sub,.price-hero p {font-size:17px; line-height:1.75; max-width:670px}
+.section__head,.section-head {margin-bottom:36px}
+.section-head h2 {font-size:36px}
+.section {padding:64px 0}
+.section-head {text-align:left; margin-left:0; max-width:740px}
+.cap,.mod,.step,.offer,.faq-item,.tier,.path__rung {
+  background:#fff!important; color:var(--ink); border:1px solid var(--line)!important;
+  border-radius:6px!important; box-shadow:none!important;
+}
+.cap p,.mod p,.step p,.offer p,.faq-item p {color:var(--body)!important}
+.cap__ic {background:#f1f4fc!important; color:var(--go)!important; box-shadow:none!important}
+.path__rung--free,.tier--featured {border-color:var(--go)!important}
+.path__price,.tier__price,.price-big {font-family:Inter,system-ui,sans-serif!important; letter-spacing:0!important}
+.path__phase,.path__tag,.tier__tag {background:#f1f4fc!important; color:var(--go)!important}
+.path__items span {background:#f6f7f9!important; color:var(--body)!important; border-radius:4px!important}
+.intake {color:var(--ink); background:#fff!important}
+.intake input,.intake select,.intake textarea,.sunflower-console input,.sunflower-console select,.sunflower-console textarea {
+  background:#fff!important; border:1px solid #bfc5cd!important; border-radius:4px!important;
+  color:var(--ink)!important; font-family:Inter,system-ui,sans-serif;
+}
+.intake label,.lab {color:var(--body)!important}
+.intake input:focus,.intake textarea:focus,.intake select:focus {outline:2px solid var(--go); outline-offset:2px}
+.intake .fine {color:var(--body)!important}
+.intake .opt,.start-done,.legal .note {background:#f6f7f9!important; border-color:var(--line)!important}
+.statement {color:var(--ink)!important; letter-spacing:0!important}
+.dash,.dash__bar,.metric,.faq__q {background:#f6f7f9!important; color:var(--ink)!important; border-color:var(--line)!important}
+.sunflower-public footer {background:#202326!important; color:#e4e6e9!important; padding:44px 0}
+.sunflower-public footer .brand,.sunflower-public footer .foot-brand {color:#fff!important}
+.sunflower-public footer a,.sunflower-public footer p,.sunflower-public footer .copy {color:#e4e6e9!important}
+.operator {opacity:1!important}
+.sunflower-home .hero {padding:72px 0 46px; border:0}
+.sunflower-home .hero-grid {display:block}
+.sunflower-home h1 {font-size:64px; max-width:850px; margin:18px 0 0; font-weight:600; line-height:1.08}
+.sunflower-home .lead {font-size:19px; max-width:640px; margin-top:24px}
+.sunflower-home .metrics {display:flex; gap:40px; max-width:none; margin-top:38px}
+.sunflower-home .metric {background:transparent!important; border:0; padding:0}
+.sunflower-home .metric b {font-size:17px}
+.sunflower-home .metric span {font-size:13px}
+.work-preview {margin:0 auto; border-top:1px solid var(--line); padding:28px 24px 52px}
+.work-preview figcaption {display:flex; justify-content:space-between; gap:16px; margin-bottom:20px; font-size:13px; color:var(--body)}
+.work-preview img {width:100%; aspect-ratio:1.8; object-fit:cover; object-position:top; border:1px solid var(--line); border-radius:4px}
+.start-band {background:#f6f7f9!important}
+.start-layout {display:grid; grid-template-columns:1fr 1fr; gap:80px; align-items:start}
+.start-layout h2 {font-size:38px; margin:12px 0 20px}
+.start-layout .intake {padding:28px; border:1px solid var(--line); border-radius:6px}
+.sunflower-home .num {border-radius:4px; background:var(--gold2)}
+.sunflower-home .price {border:1px solid var(--line); border-radius:6px; box-shadow:none}
+.sunflower-home .final {background:#f6f7f9!important; color:var(--body)}
+.sunflower-home .final h2 {color:var(--ink)!important; font-size:40px}
+.sunflower-home .example {display:block; background:#f6f7f9; border:0; border-radius:0}
+.sunflower-home .example-panel {display:none}
+.sunflower-console h1 {font-size:24px}
+.sunflower-console h2 {font-size:18px}
+.sunflower-console .board,.sunflower-console .laser,.sunflower-console .card,
+.sunflower-console .tile,.sunflower-console .stg,.sunflower-console .sb-card {
+  background:#fff!important; border-color:var(--line)!important; border-radius:6px!important; box-shadow:none!important;
+}
+.sunflower-console .board {background:#f6f7f9!important}
+.sunflower-console .top {border-bottom:1px solid var(--line); padding-bottom:20px}
+.sunflower-console .track {background:#e4e7eb!important}
+.sunflower-console .fill {background:var(--go)!important}
+.sunflower-console button {border-radius:4px!important; font-family:Inter,system-ui,sans-serif!important; letter-spacing:0!important}
+@media(max-width:760px) {
+  .nav-in {min-height:72px; flex-wrap:wrap; gap:12px}
+  .brand {font-size:16px}
+  .nav-links {display:flex; flex-wrap:wrap; width:100%; gap:18px}
+  .nav-links a:not(.nav-cta) {display:block!important}
+  .nav-links a[href="/switch"] {display:none!important}
+  .nav-links .nav-cta {margin-left:auto; padding:8px 12px; font-size:13px}
+  .nav-links a.phone {display:none!important}
+  .section {padding:44px 0}
+  .section__title,.price-hero h1 {font-size:32px; line-height:1.2}
+  .section-head h2 {font-size:30px}
+  .sunflower-home .hero {padding:42px 0 32px}
+  .sunflower-home h1 {font-size:42px}
+  .sunflower-home .lead {font-size:17px}
+  .sunflower-home .metrics {gap:20px; flex-wrap:wrap}
+  .sunflower-home .metric {flex:1; min-width:90px}
+  .sunflower-home .metric b {font-size:15px}
+  .start-layout {grid-template-columns:1fr; gap:28px}
+  .start-layout h2 {font-size:30px}
+  .work-preview figcaption {flex-wrap:wrap}
+  .work-preview img {aspect-ratio:1.44}
+  .sunflower-home .final h2 {font-size:30px}
+  .sunflower-home .offers,.sunflower-home .steps {grid-template-columns:1fr}
+}
