@@ -3,9 +3,9 @@
 Internal. Lives in `_playbook/` so it never deploys. This is the source of truth
 for the sunflowerwebsites.com copy rewrite and for every FB-group post and DM.
 
-> **Note:** sunflowerwebsites.com did not resolve (DNS: not found) when this brief
-> was written, so the "cut list" below is what to check for, not a line-by-line
-> audit of live copy. Run it against the site once the domain is up.
+Live site audited 2026-10-12 (deployed from the `sunflower-public-polish` branch).
+The homepage rewrite in this branch applies §4. Other pages still carry the
+old pitch; see §3a.
 
 ---
 
@@ -59,6 +59,27 @@ The free site is item one. Everything after it is the monthly relationship.
 - [ ] Generic "contact us" forms as the only path. A form can stay; it can't be the headline CTA.
 
 ---
+
+## 3a. What the live site still says (beyond the homepage)
+
+Found on the 2026-10-12 audit. Not changed yet. Each one is a decision, not a typo.
+
+- **The phone line is an AI.** 913-933-1687 is answered by the xAI voice agent
+  (`_playbook/voice-agent.md`), with transfer to Chris. The homepage says "call or
+  text" but deliberately does *not* say "a real person answers." To go fully
+  human: route the number to a person (or put a person's text line on the site),
+  then add that line everywhere.
+- **Chat widget** "Sunflower Websites Assistant — Typically replies instantly" on
+  services, pricing, work, trades, contact. It's a bot, front and centre. Remove it
+  or replace it with "Text us."
+- **AI products on pricing:** "24/7 AI Assistant", "AI Sales Agent & Custom
+  Software (The Switch)", and the pricing meta description leads with them.
+- **Services page** sells "dashboards, CRMs, AI assistants, automations": an
+  agency menu, not "your presence, handled."
+- **Speed claims** still on pricing FAQ ("live in minutes") and start.html
+  confirmation ("usually within minutes"). Fine as reassurance; they shouldn't be the pitch.
+- **Socials aren't a product yet.** Nothing on pricing covers Facebook/Instagram
+  upkeep, so the homepage doesn't promise it. Add it to the plan before the copy says it.
 
 ## 4. Homepage copy (drop-in)
 
@@ -167,6 +188,8 @@ Then stop. One follow-up, never three.
 ## Open decisions
 
 - [ ] Monthly price for the "handled" plan (and whether to show it on the homepage).
+- [ ] Does 913-933-1687 stay on the AI voice agent?
+- [ ] Do the chat widget and AI add-ons stay?
 - [ ] Whose name/face fronts the site and DMs.
 - [ ] Public phone number for "Text [Name]".
 - [ ] Which services are in the base plan vs. add-ons.
