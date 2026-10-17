@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import os from 'node:os';
+import { APP_HTML } from '../lib/admin-app-html.js';
 
 // Repo root, derived from this file's own location so the suite runs
 // from any checkout rather than only from C:/Users/Chris/sunflower.
@@ -52,6 +53,7 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       const body = JSON.parse(b || '{}');
       res.setHeader('content-type', 'application/json');
+      if (body.action === 'shell') return res.end(JSON.stringify({ ok: true, app: APP_HTML }));
       if (body.action === 'list') return res.end(JSON.stringify({ ok: true, leads: LEADS, role: ROLE, name: ROLE === 'rep' ? 'dana' : 'operator' }));
       if (body.action === 'config') return res.end(JSON.stringify({ ok: true, config: { enabled: false, dailyCap: 0, budgetCeiling: 0 } }));
       // The shape /api/admin action:'funnel' really returns. FUNNEL is swapped

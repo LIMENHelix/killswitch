@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import os from 'node:os';
+import { APP_HTML } from '../lib/master-app-html.js';
 
 // Repo root, derived from this file's own location so the suite runs
 // from any checkout rather than only from C:/Users/Chris/sunflower.
@@ -28,6 +29,7 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       const body = JSON.parse(b || '{}');
       res.setHeader('content-type', 'application/json');
+      if (body.action === 'shell') return res.end(JSON.stringify({ ok: true, app: APP_HTML }));
       if (body.action === 'scorecard') return res.end(JSON.stringify({ ok: true, report: {
         period: { startDate: '2026-08-24', endDate: '2026-08-31' },
         acquisition: { validSignups: 3, claimedSites: 2, paidActivations: 1, signupToClaimedRate: 66.7, claimedToPaidRate: 50, breakdown: [{ source: 'google', medium: 'cpc', campaign: 'kc-free-site', trade: 'plumber', city: 'Kansas City', count: 3 }] },

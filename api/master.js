@@ -27,6 +27,7 @@ import { listBillingEvents } from '../lib/billing-events.js';
 import { collectWeeklyScorecard } from '../lib/scorecard.js';
 import { getSuppression } from '../lib/suppression.js';
 import { validatePublishable } from '../lib/site-quality.js';
+import { APP_HTML } from '../lib/master-app-html.js';
 
 // Everything the website editor is allowed to write. A save applies ONLY the
 // keys it was actually sent, so a partial save is a partial update. This used to
@@ -153,6 +154,14 @@ export default async function handler(req, res) {
   const action = body.action || 'list';
 
   try {
+    if (action === 'shell') {
+      // The panel's operational markup is protected content: it leaves the
+      // server only after the owner key above has validated, so the public
+      // master.html carries nothing but a login form.
+      res.status(200).json({ ok: true, app: APP_HTML });
+      return;
+    }
+
     if (action === 'scorecard') {
       res.status(200).json({ ok: true, report: await collectWeeklyScorecard() });
       return;

@@ -10,6 +10,7 @@
 // money and opens every customer's billing.
 //
 // Actions (POST {action, token, ...}):
+//   shell   -> the panel's app markup, injected after sign-in         (both roles)
 //   list    -> all leads, merged with per-lead stage/notes/owner  (both roles)
 //   config  -> legacy autopilot blob, read only, HISTORICAL       (both roles)
 //   update / suppress -> record an outcome or do-not-contact      (both roles)
@@ -49,6 +50,7 @@ import { cmd, pipeline, parseHash } from '../lib/kv.js';
 import { drainFollowups } from './cron-followups.js';
 import { followupStatus } from '../lib/automation.js';
 import { runMaintenance } from './cron-maintenance.js';
+import { APP_HTML } from '../lib/admin-app-html.js';
 
 const OWNER_ONLY = new Set(['setconfig', 'run-autopilot', 'mail', 'seed', 'unsuppress', 'suppression-list', 'disc-setconfig', 'draft-setconfig', 'outreach-status', 'outreach-setconfig', 'outreach-runs', 'outreach-effects', 'outreach-readiness', 'run-outreach', 'run-scorecard', 'run-followups', 'followup-status', 'run-maintenance', 'site-reseed']);
 
@@ -113,6 +115,15 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (action === 'shell') {
+      // The panel's operational markup is protected content: it leaves the
+      // server only after a key above has validated, so the public admin.html
+      // carries nothing but a login form. Both roles may load it — a rep
+      // legitimately works this call list — so 'shell' is NOT in OWNER_ONLY.
+      res.status(200).json({ ok: true, app: APP_HTML });
+      return;
+    }
+
     // The funnel board: stage counts, per-transition conversion, and the plays
     // laser.js ranks. Read-only, so a rep can see what is working.
     if (action === 'funnel') {

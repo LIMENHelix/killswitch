@@ -108,250 +108,7 @@
     <div class="err" id="loginErr"></div>
   </div>
 
-  <div id="app">
-    <div class="top">
-      <div><h1>Master Panel</h1><div class="sub">Every customer, their plan and switches, and revenue. Onboard a new one below.</div></div>
-      <div class="links">
-        <a class="btn ghost sm" href="/switch-brain" target="_blank" rel="noopener">AI sales rep →</a>
-        <a class="btn ghost sm" href="/admin">Outreach admin →</a>
-        <button class="btn ghost sm" id="signout">Sign out</button>
-      </div>
-    </div>
-
-    <div class="tiles" id="tiles"></div>
-
-    <div class="card" id="scorecardCard">
-      <h2>Weekly operating scorecard</h2>
-      <div class="h-sub" id="scPeriod">Loading the previous complete week…</div>
-      <div class="tiles" id="scTiles" style="margin-bottom:12px"></div>
-      <div class="onres" id="scMsg"></div>
-      <div class="wrapt"><table><thead><tr><th>Source</th><th>Medium</th><th>Campaign</th><th>Trade</th><th>City</th><th>Valid signups</th></tr></thead><tbody id="scTb"></tbody></table></div>
-      <div class="fine2" id="scGaps"></div>
-    </div>
-
-    <div class="card">
-      <h2>Onboard a customer</h2>
-      <div class="h-sub">Creates their free account and emails a $0 receipt with their portal link. No card, no Stripe.</div>
-      <div class="row">
-        <label class="f">Email<input id="oEmail" type="email" placeholder="owner@shop.com" /></label>
-        <label class="f">Site<input id="oSite" type="text" placeholder="theirshop.com" /></label>
-        <label class="f">Name<input id="oName" type="text" placeholder="First name" /></label>
-        <label class="f">Their site slug<input id="oSlug" type="text" placeholder="daves-trusted-auto" list="slugList" /><datalist id="slugList"></datalist></label>
-        <button class="btn sm" id="oBtn">Create &amp; send receipt</button>
-      </div>
-      <div class="onres" id="oRes"></div>
-    </div>
-
-    <div class="card" id="workCard">
-      <h2>Customer work orders</h2>
-      <div class="h-sub">Paid change requests stay here until the work is actually marked complete. Completion records the lifecycle event and emails the customer.</div>
-      <div class="onres" id="wMsg"></div>
-      <div class="wrapt"><table><thead><tr><th>Customer</th><th>Requested</th><th>Work</th><th>Status</th><th></th></tr></thead><tbody id="wTb"></tbody></table></div>
-    </div>
-
-    <div class="card" id="billingCard">
-      <h2>Billing exceptions</h2>
-      <div class="h-sub">Failed payments, refunds, and disputes from verified Stripe webhooks. These records remain here even after the issue is resolved.</div>
-      <div class="onres" id="bMsg"></div>
-      <div class="wrapt"><table><thead><tr><th>When</th><th>Event</th><th>Customer</th><th>Amount</th><th>Status / reason</th></tr></thead><tbody id="bTb"></tbody></table></div>
-    </div>
-
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
-        <div>
-          <h2>Customer websites</h2>
-          <div class="h-sub">One template, many sites. Fill in the details, tick the modules, publish. Turning a module off here removes it from their live site.</div>
-        </div>
-        <button class="btn ghost sm" id="sNew">+ New website</button>
-      </div>
-
-      <!-- TAKE A PAGE THAT ALREADY EXISTS AND MAKE IT THEIRS.
-           This used to live inside the editor, which meant opening a record and
-           retyping a business name that is already in the page's own <title>,
-           to describe a site that is already built. Nothing here is a second
-           website: the record is the container that lets /s/<slug> serve the
-           page and lets their switches change it. Slug comes from the URL,
-           business name comes from the title, content comes from the page. -->
-      <div style="margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:14px">
-        <div class="rl">Step 1 &middot; Show the owner what we built</div>
-        <div class="fine2">Point it at a page we have already built. It reads the business name off the page, puts it live at its own address, and emails the owner their panel link. <b>Google cannot see it yet</b>: the page carries noindex until you press Step 2, so if they go quiet, nothing of theirs was ever public. Nothing is retyped and nothing is duplicated.</div>
-        <div class="row" style="margin-top:10px">
-          <label style="flex:2 1 320px">Page
-            <input id="gvSrc" placeholder="/demos/auto-tech-shawnee" />
-          </label>
-          <label style="flex:1 1 220px">Owner email
-            <input id="gvEmail" type="email" placeholder="owner@theirshop.com" />
-          </label>
-          <label style="flex:1 1 150px">Owner name
-            <input id="gvName" placeholder="First name" />
-          </label>
-        </div>
-        <div class="row" style="margin-top:10px;align-items:center">
-          <button class="btn" type="button" id="gvGo">Send it to the owner</button>
-          <button class="btn ghost sm" type="button" id="gvCheck">Check settings</button>
-        </div>
-        <div class="onres" id="gvRes"></div>
-
-        <!-- STEP 2, deliberately its own act. Claiming is the only thing that
-             removes noindex, so it is the moment a business's name becomes
-             public on a page they did not ask for if it is done too early. -->
-        <div class="rl" style="margin-top:18px">Step 2 &middot; They said yes</div>
-        <div class="fine2">Only press this once the owner has actually accepted. It removes the noindex, which is the point of no return: from here Google can find and keep their page. Everything before this is invisible to search.</div>
-        <div class="row" style="margin-top:10px;align-items:center">
-          <label style="flex:1 1 300px">Their web address (slug)
-            <input id="gvClaimSlug" placeholder="their-business-name" />
-          </label>
-          <button class="btn" type="button" id="gvClaim" style="background:var(--amber);border-color:var(--amber);color:#161311">Accepted, let Google see it</button>
-        </div>
-        <div class="onres" id="gvClaimRes"></div>
-      </div>
-
-      <!-- Bulk drafting. A draft is a hard 404 until someone publishes it, which
-           is what makes it safe to build one for a business that has agreed to
-           nothing. Published-but-unclaimed is reachable by its link and noindex.
-           Claimed, which happens when you onboard them, is the only indexable state. -->
-      <div class="bulk" id="bulkBox">
-        <div class="bulk-h">
-          <b>Build a draft site for every lead</b>
-          <span class="bulk-n" id="bulkCounts"></span>
-        </div>
-        <p class="bulk-p">Drafts are invisible: the URL returns 404 until you or a rep publishes it, which is how the delivery call and the postcard work. Nothing here is shown to a business or to Google until then.</p>
-        <div class="bulk-row">
-          <button class="btn sm" id="bulkGo">Generate drafts</button>
-          <button class="btn ghost sm" id="bulkStop" disabled>Stop</button>
-          <button class="btn ghost sm" id="sMigrate">Migrate old store</button>
-          <span class="bulk-n" id="bulkMsg"></span>
-        </div>
-        <div class="track" id="bulkTrack" hidden><div class="fill" id="bulkFill"></div></div>
-      </div>
-
-      <!-- Lead finder. Runs Google Places and shows what the classifier makes of
-           each result. Costs real money per search, so it is one click, one city,
-           and it reports the split rather than silently adding rows. -->
-      <div class="bulk" id="findBox">
-        <div class="bulk-h">
-          <b>Find leads</b>
-          <span class="bulk-n">placeholder sites count as targets</span>
-        </div>
-        <p class="bulk-p">Searches Google Places for one trade in one city and sorts what it finds: no website, social only, a directory listing, or a site they built themselves. Businesses with a real website of their own are dropped, and permanently closed ones never appear.</p>
-        <div class="bulk-row">
-          <select id="fdTrade"></select>
-          <input class="f" id="fdCity" placeholder="Overland Park, KS" style="min-width:200px">
-          <button class="btn sm" id="fdGo">Search</button>
-          <span class="bulk-n" id="fdMsg"></span>
-        </div>
-        <div class="wrapt" id="fdWrap" style="margin-top:12px;display:none"><table><thead><tr>
-          <th>Business</th><th>Their "website"</th><th>Reputation</th><th>Looks like</th><th>Hours</th><th>Phone</th>
-        </tr></thead><tbody id="fdTb"></tbody></table></div>
-        <p class="bulk-p" id="fdDropped" style="margin-top:10px"></p>
-      </div>
-
-      <div class="bar" style="margin-top:14px">
-        <input class="f" id="sQ" placeholder="Search business, slug or city...">
-        <select id="sState"><option value="">Draft and live</option><option value="1">Live only</option><option value="0">Drafts only</option></select>
-        <select id="sSrc"><option value="">Any source</option><option value="draft-bulk">Generated from a lead</option><option value="hand">Made by hand</option></select>
-        <span class="bulk-n" id="sCount"></span>
-      </div>
-
-      <div class="wrapt" style="margin-top:12px"><table><thead><tr>
-        <th>Business</th><th>Slug</th><th>Owner email</th><th>Modules on</th><th>State</th><th></th>
-      </tr></thead><tbody id="sTb"></tbody></table></div>
-      <div class="bulk-row" style="margin-top:10px">
-        <button class="btn ghost sm" id="sMore" hidden>Show more</button>
-      </div>
-
-      <div id="sEd" style="display:none;margin-top:18px;border-top:1px solid var(--line);padding-top:16px">
-        <h2 id="sEdT" style="margin-bottom:12px">New website</h2>
-        <!-- THE FIELDS BELOW DO NOT ALWAYS RENDER. api/site.js serves site.html
-             verbatim when the record has one and only falls back to the template
-             when it is empty, so on an imported page every field here is inert.
-             It said nothing about that, which made this whole screen a lie for
-             exactly the customers whose pages we care most about. -->
-        <div id="sHtmlWarn" hidden style="background:rgba(255,196,46,.12);border:1px solid rgba(255,196,46,.45);color:#ffe9a8;border-radius:10px;padding:10px 13px;font-size:.83rem;margin-bottom:12px"></div>
-
-        <div class="grid2">
-          <label class="f">Business name<input id="f_business" placeholder="Dave's Trusted Auto" /></label>
-          <label class="f">Web address (slug)<input id="f_slug" placeholder="daves-trusted-auto" /></label>
-          <label class="f">Owner email (links their panel)<input id="f_email" type="email" placeholder="dave@davesauto.com" /></label>
-          <label class="f">Trade<input id="f_trade" placeholder="auto repair" /></label>
-          <label class="f">Public phone<input id="f_phone" placeholder="(816) 555-0142" /></label>
-          <label class="f">Public email<input id="f_email_public" placeholder="hello@davesauto.com" /></label>
-          <label class="f">Street<input id="f_street" placeholder="123 Main St" /></label>
-          <label class="f">City<input id="f_city" placeholder="Grandview" /></label>
-          <label class="f">State<input id="f_state" placeholder="MO" /></label>
-          <label class="f">ZIP<input id="f_zip" placeholder="64030" /></label>
-          <label class="f">Brand colour<input id="f_accent" placeholder="#12703C" /></label>
-          <label class="f">Google Business Profile<input id="f_googleBusinessProfile" placeholder="https://maps.app.goo.gl/..." /></label>
-          <label class="f">Booking link (optional)<input id="f_bookingUrl" placeholder="https://calendly.com/..." /></label>
-          <label class="f">Payment link (optional)<input id="f_payUrl" placeholder="https://buy.stripe.com/..." /></label>
-        </div>
-
-        <label class="f" style="margin-top:12px;display:block">One-line tagline<input id="f_tagline" style="width:100%" placeholder="Honest auto repair in Grandview since 1998." /></label>
-        <label class="f" style="margin-top:12px;display:block">About<textarea id="f_about" rows="3" placeholder="Family run for 25 years..."></textarea></label>
-
-        <div class="reps">
-          <div>
-            <div class="rl">Opening hours</div>
-            <div id="r_hours"></div>
-            <button class="btn ghost sm" type="button" data-add="hours">+ Add hours</button>
-          </div>
-          <div>
-            <div class="rl">Services</div>
-            <div id="r_services"></div>
-            <button class="btn ghost sm" type="button" data-add="services">+ Add service</button>
-          </div>
-          <div>
-            <div class="rl">Updates / posts <span style="color:var(--mute2);font-weight:400">(needs module P2)</span></div>
-            <div id="r_posts"></div>
-            <button class="btn ghost sm" type="button" data-add="posts">+ Add post</button>
-          </div>
-        </div>
-
-        <div class="rl" style="margin-top:18px">Modules switched on</div>
-        <div class="mods" id="f_mods"></div>
-        <div class="fine2">P4, P5, P6, P10 and P11 are real products but back-office, so they change nothing on the page. They are listed so this screen matches what the customer is billed for.</div>
-
-        <!-- Their page, editable. Whatever is in here IS the website when it is
-             not empty; clearing it hands rendering back to the fields above. -->
-        <div style="margin-top:18px">
-          <div class="rl">Their page <span id="sHtmlSize" style="text-transform:none;letter-spacing:0"></span></div>
-          <div class="fine2" id="sHtmlNote" style="margin-top:0;margin-bottom:8px"></div>
-          <textarea id="f_html" rows="12" spellcheck="false" style="font-family:'IBM Plex Mono',monospace;font-size:.78rem" placeholder="Empty, so the fields above render this site from the shared template."></textarea>
-          <div class="row" style="margin-top:8px;align-items:center">
-            <button class="btn ghost sm" type="button" id="sTemplate">Use the shared template instead</button>
-            <span class="fine2" style="margin:0">Clears their own page, so the fields above become the website again.</span>
-          </div>
-        </div>
-
-        <div class="row" style="margin-top:18px;align-items:center">
-          <label class="chk"><input type="checkbox" id="f_published" /> <span>Published (live to the public)</span></label>
-          <button class="btn" id="sSave">Save website</button>
-          <a class="btn ghost sm" id="sView" target="_blank" rel="noopener" style="display:none">View live →</a>
-          <button class="btn ghost sm" type="button" id="sCancel">Cancel</button>
-        </div>
-        <div class="onres" id="sRes"></div>
-
-        <!-- TAKING IT DOWN. Two different asks. Unpublish is what you want when
-             an owner says "get it off the internet now": instant, a hard 404,
-             and everything we built is still here when the conversation turns.
-             Delete is for when it is over, and it asks first because it cannot
-             be undone from this screen. -->
-        <div class="row" style="margin-top:18px;align-items:center;gap:10px">
-          <button class="btn ghost sm" type="button" id="sDown" style="border-color:var(--gold);color:var(--gold)">Take offline</button>
-          <button class="btn ghost sm" type="button" id="sDel" style="border-color:var(--red);color:var(--red)">Delete permanently</button>
-          <span class="fine2" style="margin:0">Take offline makes it a 404 and keeps the page. Delete removes the record for good.</span>
-        </div>
-        <div class="onres" id="sDelRes"></div>
-
-      </div>
-    </div>
-
-    <div class="trunc" id="trunc"></div>
-    <div class="msg" id="msg"></div>
-    <div class="wrapt"><table><thead><tr>
-      <th>Customer</th><th>Site</th><th>Switches on</th><th>MRR</th><th>Lifecycle</th><th>Renews / Ends</th><th>Joined</th><th>Portal</th><th>Website attached</th>
-    </tr></thead><tbody id="tb"></tbody></table></div>
-  </div>
+  <div id="app"></div>
 </div>
 
 <script>
@@ -400,11 +157,6 @@ function readReps(kind){
     return o;
   }).filter(o=>Object.values(o).some(v=>v));
 }
-document.addEventListener('click',e=>{
-  const a=e.target.getAttribute&&e.target.getAttribute('data-add');
-  if(a) $('r_'+a).appendChild(repRow(a,null));
-});
-
 function drawMods(on){
   $('f_mods').innerHTML='';
   MODS.forEach(([id,label,bo])=>{
@@ -451,144 +203,23 @@ function openEditor(site){
 }
 /* ---- bulk drafting, driven from here so no single request has to finish it ---- */
 let bulkRunning=false, bulkMade=0;
-$('bulkGo').onclick=async()=>{
-  if(bulkRunning) return;
-  if(!confirm('Build a draft website for every lead that does not have one yet?\n\nDrafts are INVISIBLE: the URL returns 404 until someone publishes it. Nothing is shown to any business and nothing can be indexed.')) return;
-  bulkRunning=true; bulkMade=0;
-  $('bulkGo').disabled=true; $('bulkStop').disabled=false; $('bulkTrack').hidden=false;
-  let total=0;
-  while(bulkRunning){
-    const r=await api('site-bulk-draft',{limit:200});
-    if(!r.ok){ $('bulkMsg').textContent='Stopped: '+(r.d.error||r.status); break; }
-    bulkMade+=r.d.created;
-    if(!total) total=bulkMade+r.d.remaining;
-    const pct=total?Math.round(bulkMade/total*100):100;
-    $('bulkFill').style.width=pct+'%';
-    $('bulkMsg').textContent=bulkMade+' built, '+r.d.remaining+' to go'+(r.d.skippedNoId?(' ('+r.d.skippedNoId+' leads have no id and were skipped)'):'');
-    if(r.d.created===0||r.d.remaining===0){ $('bulkMsg').textContent=bulkMade+' drafts built. They are all 404 until published.'; break; }
-  }
-  bulkRunning=false; $('bulkGo').disabled=false; $('bulkStop').disabled=true;
-  sitePage=0; loadSites();
-};
-$('bulkStop').onclick=()=>{ bulkRunning=false; $('bulkMsg').textContent='Stopping after this batch...'; };
-$('sMigrate').onclick=async()=>{
-  const r=await api('site-migrate');
-  $('bulkMsg').textContent = r.ok
-    ? (r.d.alreadySplit ? 'Nothing to migrate, already split into one key per site.' : r.d.migrated+' site(s) moved out of the old single-blob store.')
-    : ('Error: '+(r.d.error||r.status));
-  sitePage=0; loadSites();
-};
 let sTimer=null;
-['sQ','sState','sSrc'].forEach(id=>$(id).oninput=()=>{ clearTimeout(sTimer); sTimer=setTimeout(()=>{ sitePage=0; loadSites(); },220); });
-$('sMore').onclick=()=>{ sitePage++; loadSites(true); };
-
 /* ---- lead finder ---- */
 const FD_TRADES=['auto repair','electrician','nails/beauty','pet groomer','bakery','cafe/coffee','hvac','plumber','salon/barber','florist','painter','clinic/doctor','cleaning','roofer','landscaper','vet','dentist','gym/fitness','restaurant'];
-$('fdTrade').innerHTML=FD_TRADES.map(t=>`<option>${esc(t)}</option>`).join('');
 const FD_LABEL={none:'nothing at all',facebook_only:'social only',directory_only:'a directory listing',diy_builder:'built it themselves',booking_only:'a booking page only'};
 // Labels, deliberately not a ranking. Which segment actually converts is what
 // the call board is for; nobody has that data yet.
 const FD_SEG={unproven:'barely rated yet',new_or_small:'new or small',established_strong:'busy, well rated',established_mixed:'established, mixed',reputation_problem:'reputation problem'};
-$('fdGo').onclick=async()=>{
-  const city=$('fdCity').value.trim();
-  if(!city){ $('fdMsg').textContent='Enter a city, like "Overland Park, KS".'; return; }
-  $('fdGo').disabled=true; $('fdMsg').textContent='Searching Google Places...';
-  // Same owner key the rest of this page uses; /api/find accepts it now.
-  const r=await fetch('/api/find',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({token:KEY,trade:$('fdTrade').value,city})});
-  const d=await r.json().catch(()=>({}));
-  $('fdGo').disabled=false;
-  if(!r.ok){ $('fdMsg').textContent='Error: '+(d.error||r.status); return; }
-  const parts=Object.keys(d.byStatus||{}).map(k=>`${d.byStatus[k]} ${FD_LABEL[k]||k}`);
-  $('fdMsg').textContent=`${d.count} worth building for (${parts.join(', ')}). Dropped ${d.skipped.hasSite} with a real site`
-    +(d.skipped.chain?`, ${d.skipped.chain} extra locations of a chain`:'')
-    +`, ${d.skipped.closed} closed. ${d.withHours} have hours.`;
-  // What got dropped, by host. A domain appearing more than once is a platform
-  // we should probably be treating as a placeholder, not thirty separate sites.
-  const dp=d.dropped||[];
-  $('fdDropped').innerHTML = dp.length
-    ? '<b>Dropped as "their own site":</b> '+dp.map(([h,n])=>`${esc(h)}${n>1?` <b style="color:var(--amber)">&times;${n}</b>`:''}`).join(' · ')
-      + (dp.some(([,n])=>n>1) ? '<br><span style="color:var(--amber)">A host appearing more than once is probably a platform worth classifying. Tell Claude which ones.</span>' : '')
-    : '';
-  $('fdWrap').style.display='block';
-  $('fdTb').innerHTML=(d.leads||[]).map(l=>`<tr>
-    <td class="email">${esc(l.name)}${l.category?'<div class="sub">'+esc(l.category)+'</div>':''}</td>
-    <td>${l.web_url?`<a href="${esc(l.web_url)}" target="_blank" rel="noopener">${esc(l.web_label)}</a>`:'<span style="color:var(--mute2)">nothing at all</span>'}</td>
-    <td class="mono">${l.rating?esc(l.rating)+' ('+esc(l.reviews_count)+')':'<span style="color:var(--mute2)">—</span>'}</td>
-    <td style="color:var(--mute2);font-size:.8rem">${esc(FD_SEG[l.segment]||l.segment||'')}</td>
-    <td class="mono">${l.hours&&l.hours.length?esc(l.hours.length)+' days':'<span style="color:var(--mute2)">—</span>'}</td>
-    <td class="mono">${esc(l.phone||'—')}</td>
-  </tr>`).join('')||'<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--mute2)">Nothing matched.</td></tr>';
-};
-$('fdCity').onkeydown=e=>{ if(e.key==='Enter') $('fdGo').click(); };
-
-$('sNew').onclick=()=>openEditor(null);
 // Step 2. Separate from Step 1 on purpose: this is the only thing that removes
 // noindex, so it is the moment their business becomes findable. Confirmed,
 // because "they accepted" is a claim about a conversation, not about the data.
-$('gvClaim').onclick=async()=>{
-  const slug=slugify($('gvClaimSlug').value.trim());
-  const say=(m,bad)=>{ $('gvClaimRes').style.color=bad?'var(--red)':'var(--go)'; $('gvClaimRes').innerHTML=m; };
-  if(!slug){ say('Which site? Put their web address in the box.',true); return; }
-  if(!confirm('Has '+slug+' actually accepted?\n\nThis removes the noindex and lets Google find and keep their page. Until now nothing of theirs has been visible in search.')) return;
-  $('gvClaim').disabled=true; say('Marking accepted…');
-  const r=await api('site-claim',{slug,claimed:true});
-  $('gvClaim').disabled=false;
-  if(!r.ok){
-    say(r.d.error==='publish_it_first'
-      ? 'That site is not live yet, so there is nothing for Google to see. Do Step 1 first.'
-      : 'Could not do that: '+esc(r.d.error||r.status), true);
-    return;
-  }
-  say('<b>'+esc(r.d.business||slug)+'</b> is accepted and indexable at <a href="'+esc(r.d.url)+'" target="_blank" rel="noopener">'+esc(r.d.url)+'</a>.');
-  loadSites();
-};
-
 // Throwing away a page somebody built is not something to do on a stray click.
-$('sTemplate').onclick=()=>{
-  if(!$('f_html').value.trim()){ $('sHtmlNote').textContent='There is no page to clear.'; return; }
-  if(!confirm('Clear their own page?\n\nThe fields above will render this site from the shared template instead. The page is not saved anywhere else, so copy it first if you might want it back.\n\nNothing changes until you press Save website.')) return;
-  $('f_html').value='';
-  $('sHtmlSize').textContent='· empty';
-  $('sHtmlWarn').hidden=true;
-  $('sHtmlNote').textContent='Cleared. Press Save website to make the fields above the live site.';
-};
-
 function curSlug(){ return ($('f_slug')&&$('f_slug').value.trim())||slugify(($('f_business')&&$('f_business').value.trim())||''); }
 function delSay(m,bad){ $('sDelRes').style.color=bad?'var(--red)':'var(--go)'; $('sDelRes').innerHTML=m; }
 
 // Instant. The owner asked for it off the internet, not for it to be discussed.
-$('sDown').onclick=async()=>{
-  const slug=curSlug(); if(!slug){ delSay('Open a website first.',true); return; }
-  $('sDown').disabled=true; delSay('Taking it offline…');
-  const r=await api('site-unpublish',{slug});
-  $('sDown').disabled=false;
-  if(!r.ok){ delSay('Could not take it down: '+esc(r.d.error||r.status),true); return; }
-  delSay('Offline. <b>/s/'+esc(slug)+'</b> is now a 404 and it is out of the sitemap.'
-    +(r.d.keptPage?' The page itself is kept, so putting it back is one click.':'')
-    +' It is also no longer marked claimed, so it cannot be indexed if it goes back up by accident.');
-  $('f_published').checked=false;
-  loadSites();
-};
-
 // Not undoable from here, so it asks, and the API makes the caller name the
 // slug twice rather than trusting one field on one screen.
-$('sDel').onclick=async()=>{
-  const slug=curSlug(); if(!slug){ delSay('Open a website first.',true); return; }
-  if(!confirm('Delete "'+slug+'" permanently?\n\nThe record, its page, its place in the list and its link to the customer all go. This cannot be undone from here.\n\nIf you only want it off the internet, press Take offline instead.')) return;
-  $('sDel').disabled=true; delSay('Deleting…');
-  const r=await api('site-delete',{slug,confirm:slug});
-  $('sDel').disabled=false;
-  if(!r.ok){ delSay('Could not delete: '+esc(r.d.error||r.status),true); return; }
-  delSay('Deleted <b>'+esc(r.d.business||slug)+'</b>. The record, the list entry and the customer link are all gone.'
-    +(r.d.wasPublished?' It was live, so it is now a 404.':''));
-  $('sEd').style.display='none'; editing=null;
-  loadSites();
-};
-
-$('sCancel').onclick=()=>{ $('sEd').style.display='none'; editing=null; };
-$('f_business').addEventListener('blur',()=>{ if(!$('f_slug').value.trim()) $('f_slug').value=slugify($('f_business').value); });
-
 let sitePage=0, siteTotal=0;
 const PAGE=100;
 
@@ -649,12 +280,6 @@ function gvConfig(c){
   return '<div style="color:var(--red);margin-top:6px"><b>Not configured yet:</b><br>'
     +c.missing.map(k=>esc(k)+' &mdash; without it we cannot '+esc(c.why[k])).join('<br>')+'</div>';
 }
-$('gvCheck').onclick=async()=>{
-  gvSay('Checking…');
-  const r=await api('preflight');
-  if(!r.ok){ gvSay('Could not check: '+esc(r.d.error||r.status),true); return; }
-  gvSay(gvConfig(r.d.config));
-};
 // The page already knows what it is. Its address is the slug and its <title>
 // is the business name, so neither has to be typed again to publish it.
 function slugFromSrc(src){
@@ -668,88 +293,20 @@ function titleOf(html){
   // Titles are usually "Business — what they do in a place". Keep the business.
   return t.split(/\s+[—–|·]\s+|\s+-\s+/)[0].trim();
 }
-$('gvGo').onclick=async()=>{
-  const src=$('gvSrc').value.trim();
-  const email=$('gvEmail').value.trim();
-  // Values from the editor win when one is open, because that is a deliberate
-  // choice someone made. Otherwise everything comes off the page itself.
-  const edSlug=($('f_slug')&&$('f_slug').value.trim())||'';
-  const edBiz=($('f_business')&&$('f_business').value.trim())||'';
-  if(!src && !edSlug && !edBiz){ gvSay('Give it a page to publish.',true); return; }
-  $('gvGo').disabled=true;
-
-  let html='';
-  if(src){
-    gvSay('Reading '+esc(src)+'…');
-    try{
-      const p=await fetch(src,{credentials:'omit'});
-      if(!p.ok) throw new Error('HTTP '+p.status);
-      html=await p.text();
-      if(!/<\/html>/i.test(html)) throw new Error('that did not look like a web page');
-    }catch(e){ $('gvGo').disabled=false; gvSay('Could not read that page: '+esc(e.message)+'. Nothing was changed.',true); return; }
-  }
-
-  const slug=edSlug||slugFromSrc(src);
-  const business=edBiz||titleOf(html);
-  if(!slug){ $('gvGo').disabled=false; gvSay('Could not work out an address from that page.',true); return; }
-
-  gvSay('Publishing '+esc(business||slug)+'…');
-  const r=await api('site-golive',{slug,html,src,email,name:$('gvName').value.trim(),business});
-  $('gvGo').disabled=false;
-  if(!r.ok){ gvSay('Could not publish: '+esc(r.d.error||r.status),true); return; }
-
-  const s=r.d.steps||{}, c=s.customer;
-  let out='<div style="color:var(--go)"><b>Live at their link:</b> <a href="'+esc(r.d.url)+'" target="_blank" rel="noopener">'+esc(r.d.url)+'</a>'
-    +(s.site&&s.site.bytes?' ('+Math.round(s.site.bytes/1024)+'KB page)':'')+'</div>';
-  out+= (s.site&&s.site.claimed)
-    ? '<div class="sub" style="color:var(--amber)">Already accepted, so Google can index it.</div>'
-    : '<div class="sub">Invisible to Google. If they never reply, nothing of theirs was ever public. Press Step 2 when they accept.</div>';
-  // Save the slug so Step 2 is one press rather than retyping it from memory.
-  if($('gvClaimSlug') && !$('gvClaimSlug').value.trim()) $('gvClaimSlug').value=r.d.slug||'';
-  if(c){
-    out+=c.ok
-      ? '<div style="margin-top:6px">'+(c.emailed?'Panel link emailed to ':'Account made for ')+esc(c.email)
-        +(c.emailed?'':' <span style="color:var(--red)">but the email did NOT send</span>')
-        +'.<br><a href="'+esc(c.portalUrl)+'" target="_blank" rel="noopener">Open their panel</a>'
-        +(c.link&&!c.link.linked?' <span style="color:var(--red)">Their account is not joined to this website ('+esc(c.link.reason)+'), so their switches will do nothing.</span>':'')
-        +'</div>'
-      : '<div style="color:var(--red);margin-top:6px">The site is live but the owner was not set up: '+esc(c.error)+'</div>';
-  } else {
-    out+='<div style="margin-top:6px;color:var(--mute2)">Published only. No owner email given, so nobody was handed anything.</div>';
-  }
-  out+=gvConfig(r.d.config);
-  gvSay(out);
-  loadSites();
-};
-
-$('sSave').onclick=async()=>{
-  const site={};
-  FIELDS.forEach(f=>{ const el=$('f_'+f); if(el) site[f]=el.value.trim(); });
-  // NOT trimmed and always sent: this is a whole document, and an empty string
-  // is a real instruction meaning "go back to the template", not a missing value.
-  site.html=$('f_html').value;
-  if(!site.business){ $('sRes').style.color='var(--red)'; $('sRes').textContent='Business name is required.'; return; }
-  if(!site.slug) site.slug=slugify(site.business);
-  Object.keys(REPS).forEach(k=>site[k]=readReps(k));
-  site.modules=readMods();
-  site.published=$('f_published').checked;
-
-  $('sSave').disabled=true; $('sRes').style.color='var(--mute)'; $('sRes').textContent='Saving…';
-  const r=await api('site-save',{site});
-  $('sSave').disabled=false;
-  if(!r.ok){ $('sRes').style.color='var(--red)'; $('sRes').textContent='Could not save: '+(r.d.error||r.status); return; }
-  $('sRes').style.color='var(--go)';
-  $('sRes').innerHTML='Saved. <a href="/s/'+esc(r.d.site.slug)+'" target="_blank" rel="noopener">/s/'+esc(r.d.site.slug)+'</a>'
-    +(site.published?'':' <span style="color:var(--mute2)">(still a draft, tick Published to make it public)</span>');
-  const v=$('sView'); v.style.display='inline-block'; v.href='/s/'+r.d.site.slug;
-  loadSites();
-};
-
 async function boot(){
   if(!KEY){ showLogin(); return; }
   const res=await api('list');
   if(res.status===401){ showLogin('Wrong admin key.'); return; }
   if(!res.ok){ showLogin('Error: '+(res.d.error||res.status)); return; }
+  // The app markup is served by the API only after the owner key validates.
+  // Inject it before any element ids are wired or painted.
+  if(!$('app').dataset.loaded){
+    const shell=await api('shell');
+    if(!shell.ok||!shell.d.app){ showLogin('Error: '+(shell.d.error||'panel unavailable')); return; }
+    $('app').innerHTML=shell.d.app;
+    $('app').dataset.loaded='1';
+    wire();
+  }
   $('login').style.display='none'; $('app').style.display='block';
   paint(res.d);
   loadScorecard();
@@ -900,27 +457,239 @@ async function resendPortal(btn){
   if(d.repaired) loadSites();
 }
 
-$('oBtn').onclick=async()=>{
-  const email=$('oEmail').value.trim(); if(!email){ $('oRes').style.color='var(--red)'; $('oRes').textContent='Enter an email.'; return; }
-  $('oBtn').disabled=true; $('oRes').style.color='var(--mute)'; $('oRes').textContent='Creating...';
-  // Passing the slug is what turns their draft into a real customer site: it gets
-  // their email, goes live, and becomes indexable. Without it the account is made
-  // but no website is attached to it.
-  const r=await api('onboard',{email,site:$('oSite').value.trim(),name:$('oName').value.trim(),slug:$('oSlug').value.trim()});
-  $('oBtn').disabled=false;
-  if(r.ok){
-    $('oRes').style.color='var(--go)';
-    $('oRes').innerHTML='Done. '+(r.d.emailed?'Receipt emailed. ':'(Email did not send, send this link) ')
-      +(r.d.claimedSlug?('Site <b>/s/'+esc(r.d.claimedSlug)+'</b> is now theirs and may be indexed. '):'<b>No site attached</b> (leave a slug next time to link one). ')
-      +'Portal: <a href="'+esc(r.d.portalUrl)+'" target="_blank" rel="noopener">'+esc(r.d.portalUrl)+'</a>';
-    $('oEmail').value=$('oSite').value=$('oName').value=$('oSlug').value='';
-    boot();
-  } else { $('oRes').style.color='var(--red)'; $('oRes').textContent='Error: '+(r.d.error||r.status); }
-};
+function wire(){
+  document.addEventListener('click',e=>{
+    const a=e.target.getAttribute&&e.target.getAttribute('data-add');
+    if(a) $('r_'+a).appendChild(repRow(a,null));
+  });
+
+  $('bulkGo').onclick=async()=>{
+    if(bulkRunning) return;
+    if(!confirm('Build a draft website for every lead that does not have one yet?\n\nDrafts are INVISIBLE: the URL returns 404 until someone publishes it. Nothing is shown to any business and nothing can be indexed.')) return;
+    bulkRunning=true; bulkMade=0;
+    $('bulkGo').disabled=true; $('bulkStop').disabled=false; $('bulkTrack').hidden=false;
+    let total=0;
+    while(bulkRunning){
+      const r=await api('site-bulk-draft',{limit:200});
+      if(!r.ok){ $('bulkMsg').textContent='Stopped: '+(r.d.error||r.status); break; }
+      bulkMade+=r.d.created;
+      if(!total) total=bulkMade+r.d.remaining;
+      const pct=total?Math.round(bulkMade/total*100):100;
+      $('bulkFill').style.width=pct+'%';
+      $('bulkMsg').textContent=bulkMade+' built, '+r.d.remaining+' to go'+(r.d.skippedNoId?(' ('+r.d.skippedNoId+' leads have no id and were skipped)'):'');
+      if(r.d.created===0||r.d.remaining===0){ $('bulkMsg').textContent=bulkMade+' drafts built. They are all 404 until published.'; break; }
+    }
+    bulkRunning=false; $('bulkGo').disabled=false; $('bulkStop').disabled=true;
+    sitePage=0; loadSites();
+  };
+  $('bulkStop').onclick=()=>{ bulkRunning=false; $('bulkMsg').textContent='Stopping after this batch...'; };
+  $('sMigrate').onclick=async()=>{
+    const r=await api('site-migrate');
+    $('bulkMsg').textContent = r.ok
+      ? (r.d.alreadySplit ? 'Nothing to migrate, already split into one key per site.' : r.d.migrated+' site(s) moved out of the old single-blob store.')
+      : ('Error: '+(r.d.error||r.status));
+    sitePage=0; loadSites();
+  };
+  ['sQ','sState','sSrc'].forEach(id=>$(id).oninput=()=>{ clearTimeout(sTimer); sTimer=setTimeout(()=>{ sitePage=0; loadSites(); },220); });
+  $('sMore').onclick=()=>{ sitePage++; loadSites(true); };
+
+  $('fdTrade').innerHTML=FD_TRADES.map(t=>`<option>${esc(t)}</option>`).join('');
+  $('fdGo').onclick=async()=>{
+    const city=$('fdCity').value.trim();
+    if(!city){ $('fdMsg').textContent='Enter a city, like "Overland Park, KS".'; return; }
+    $('fdGo').disabled=true; $('fdMsg').textContent='Searching Google Places...';
+    // Same owner key the rest of this page uses; /api/find accepts it now.
+    const r=await fetch('/api/find',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({token:KEY,trade:$('fdTrade').value,city})});
+    const d=await r.json().catch(()=>({}));
+    $('fdGo').disabled=false;
+    if(!r.ok){ $('fdMsg').textContent='Error: '+(d.error||r.status); return; }
+    const parts=Object.keys(d.byStatus||{}).map(k=>`${d.byStatus[k]} ${FD_LABEL[k]||k}`);
+    $('fdMsg').textContent=`${d.count} worth building for (${parts.join(', ')}). Dropped ${d.skipped.hasSite} with a real site`
+      +(d.skipped.chain?`, ${d.skipped.chain} extra locations of a chain`:'')
+      +`, ${d.skipped.closed} closed. ${d.withHours} have hours.`;
+    // What got dropped, by host. A domain appearing more than once is a platform
+    // we should probably be treating as a placeholder, not thirty separate sites.
+    const dp=d.dropped||[];
+    $('fdDropped').innerHTML = dp.length
+      ? '<b>Dropped as "their own site":</b> '+dp.map(([h,n])=>`${esc(h)}${n>1?` <b style="color:var(--amber)">&times;${n}</b>`:''}`).join(' · ')
+        + (dp.some(([,n])=>n>1) ? '<br><span style="color:var(--amber)">A host appearing more than once is probably a platform worth classifying. Tell Claude which ones.</span>' : '')
+      : '';
+    $('fdWrap').style.display='block';
+    $('fdTb').innerHTML=(d.leads||[]).map(l=>`<tr>
+      <td class="email">${esc(l.name)}${l.category?'<div class="sub">'+esc(l.category)+'</div>':''}</td>
+      <td>${l.web_url?`<a href="${esc(l.web_url)}" target="_blank" rel="noopener">${esc(l.web_label)}</a>`:'<span style="color:var(--mute2)">nothing at all</span>'}</td>
+      <td class="mono">${l.rating?esc(l.rating)+' ('+esc(l.reviews_count)+')':'<span style="color:var(--mute2)">—</span>'}</td>
+      <td style="color:var(--mute2);font-size:.8rem">${esc(FD_SEG[l.segment]||l.segment||'')}</td>
+      <td class="mono">${l.hours&&l.hours.length?esc(l.hours.length)+' days':'<span style="color:var(--mute2)">—</span>'}</td>
+      <td class="mono">${esc(l.phone||'—')}</td>
+    </tr>`).join('')||'<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--mute2)">Nothing matched.</td></tr>';
+  };
+  $('fdCity').onkeydown=e=>{ if(e.key==='Enter') $('fdGo').click(); };
+
+  $('sNew').onclick=()=>openEditor(null);
+  $('gvClaim').onclick=async()=>{
+    const slug=slugify($('gvClaimSlug').value.trim());
+    const say=(m,bad)=>{ $('gvClaimRes').style.color=bad?'var(--red)':'var(--go)'; $('gvClaimRes').innerHTML=m; };
+    if(!slug){ say('Which site? Put their web address in the box.',true); return; }
+    if(!confirm('Has '+slug+' actually accepted?\n\nThis removes the noindex and lets Google find and keep their page. Until now nothing of theirs has been visible in search.')) return;
+    $('gvClaim').disabled=true; say('Marking accepted…');
+    const r=await api('site-claim',{slug,claimed:true});
+    $('gvClaim').disabled=false;
+    if(!r.ok){
+      say(r.d.error==='publish_it_first'
+        ? 'That site is not live yet, so there is nothing for Google to see. Do Step 1 first.'
+        : 'Could not do that: '+esc(r.d.error||r.status), true);
+      return;
+    }
+    say('<b>'+esc(r.d.business||slug)+'</b> is accepted and indexable at <a href="'+esc(r.d.url)+'" target="_blank" rel="noopener">'+esc(r.d.url)+'</a>.');
+    loadSites();
+  };
+
+  $('sTemplate').onclick=()=>{
+    if(!$('f_html').value.trim()){ $('sHtmlNote').textContent='There is no page to clear.'; return; }
+    if(!confirm('Clear their own page?\n\nThe fields above will render this site from the shared template instead. The page is not saved anywhere else, so copy it first if you might want it back.\n\nNothing changes until you press Save website.')) return;
+    $('f_html').value='';
+    $('sHtmlSize').textContent='· empty';
+    $('sHtmlWarn').hidden=true;
+    $('sHtmlNote').textContent='Cleared. Press Save website to make the fields above the live site.';
+  };
+
+  $('sDown').onclick=async()=>{
+    const slug=curSlug(); if(!slug){ delSay('Open a website first.',true); return; }
+    $('sDown').disabled=true; delSay('Taking it offline…');
+    const r=await api('site-unpublish',{slug});
+    $('sDown').disabled=false;
+    if(!r.ok){ delSay('Could not take it down: '+esc(r.d.error||r.status),true); return; }
+    delSay('Offline. <b>/s/'+esc(slug)+'</b> is now a 404 and it is out of the sitemap.'
+      +(r.d.keptPage?' The page itself is kept, so putting it back is one click.':'')
+      +' It is also no longer marked claimed, so it cannot be indexed if it goes back up by accident.');
+    $('f_published').checked=false;
+    loadSites();
+  };
+
+  $('sDel').onclick=async()=>{
+    const slug=curSlug(); if(!slug){ delSay('Open a website first.',true); return; }
+    if(!confirm('Delete "'+slug+'" permanently?\n\nThe record, its page, its place in the list and its link to the customer all go. This cannot be undone from here.\n\nIf you only want it off the internet, press Take offline instead.')) return;
+    $('sDel').disabled=true; delSay('Deleting…');
+    const r=await api('site-delete',{slug,confirm:slug});
+    $('sDel').disabled=false;
+    if(!r.ok){ delSay('Could not delete: '+esc(r.d.error||r.status),true); return; }
+    delSay('Deleted <b>'+esc(r.d.business||slug)+'</b>. The record, the list entry and the customer link are all gone.'
+      +(r.d.wasPublished?' It was live, so it is now a 404.':''));
+    $('sEd').style.display='none'; editing=null;
+    loadSites();
+  };
+
+  $('sCancel').onclick=()=>{ $('sEd').style.display='none'; editing=null; };
+  $('f_business').addEventListener('blur',()=>{ if(!$('f_slug').value.trim()) $('f_slug').value=slugify($('f_business').value); });
+
+  $('gvCheck').onclick=async()=>{
+    gvSay('Checking…');
+    const r=await api('preflight');
+    if(!r.ok){ gvSay('Could not check: '+esc(r.d.error||r.status),true); return; }
+    gvSay(gvConfig(r.d.config));
+  };
+  $('gvGo').onclick=async()=>{
+    const src=$('gvSrc').value.trim();
+    const email=$('gvEmail').value.trim();
+    // Values from the editor win when one is open, because that is a deliberate
+    // choice someone made. Otherwise everything comes off the page itself.
+    const edSlug=($('f_slug')&&$('f_slug').value.trim())||'';
+    const edBiz=($('f_business')&&$('f_business').value.trim())||'';
+    if(!src && !edSlug && !edBiz){ gvSay('Give it a page to publish.',true); return; }
+    $('gvGo').disabled=true;
+
+    let html='';
+    if(src){
+      gvSay('Reading '+esc(src)+'…');
+      try{
+        const p=await fetch(src,{credentials:'omit'});
+        if(!p.ok) throw new Error('HTTP '+p.status);
+        html=await p.text();
+        if(!/<\/html>/i.test(html)) throw new Error('that did not look like a web page');
+      }catch(e){ $('gvGo').disabled=false; gvSay('Could not read that page: '+esc(e.message)+'. Nothing was changed.',true); return; }
+    }
+
+    const slug=edSlug||slugFromSrc(src);
+    const business=edBiz||titleOf(html);
+    if(!slug){ $('gvGo').disabled=false; gvSay('Could not work out an address from that page.',true); return; }
+
+    gvSay('Publishing '+esc(business||slug)+'…');
+    const r=await api('site-golive',{slug,html,src,email,name:$('gvName').value.trim(),business});
+    $('gvGo').disabled=false;
+    if(!r.ok){ gvSay('Could not publish: '+esc(r.d.error||r.status),true); return; }
+
+    const s=r.d.steps||{}, c=s.customer;
+    let out='<div style="color:var(--go)"><b>Live at their link:</b> <a href="'+esc(r.d.url)+'" target="_blank" rel="noopener">'+esc(r.d.url)+'</a>'
+      +(s.site&&s.site.bytes?' ('+Math.round(s.site.bytes/1024)+'KB page)':'')+'</div>';
+    out+= (s.site&&s.site.claimed)
+      ? '<div class="sub" style="color:var(--amber)">Already accepted, so Google can index it.</div>'
+      : '<div class="sub">Invisible to Google. If they never reply, nothing of theirs was ever public. Press Step 2 when they accept.</div>';
+    // Save the slug so Step 2 is one press rather than retyping it from memory.
+    if($('gvClaimSlug') && !$('gvClaimSlug').value.trim()) $('gvClaimSlug').value=r.d.slug||'';
+    if(c){
+      out+=c.ok
+        ? '<div style="margin-top:6px">'+(c.emailed?'Panel link emailed to ':'Account made for ')+esc(c.email)
+          +(c.emailed?'':' <span style="color:var(--red)">but the email did NOT send</span>')
+          +'.<br><a href="'+esc(c.portalUrl)+'" target="_blank" rel="noopener">Open their panel</a>'
+          +(c.link&&!c.link.linked?' <span style="color:var(--red)">Their account is not joined to this website ('+esc(c.link.reason)+'), so their switches will do nothing.</span>':'')
+          +'</div>'
+        : '<div style="color:var(--red);margin-top:6px">The site is live but the owner was not set up: '+esc(c.error)+'</div>';
+    } else {
+      out+='<div style="margin-top:6px;color:var(--mute2)">Published only. No owner email given, so nobody was handed anything.</div>';
+    }
+    out+=gvConfig(r.d.config);
+    gvSay(out);
+    loadSites();
+  };
+
+  $('sSave').onclick=async()=>{
+    const site={};
+    FIELDS.forEach(f=>{ const el=$('f_'+f); if(el) site[f]=el.value.trim(); });
+    // NOT trimmed and always sent: this is a whole document, and an empty string
+    // is a real instruction meaning "go back to the template", not a missing value.
+    site.html=$('f_html').value;
+    if(!site.business){ $('sRes').style.color='var(--red)'; $('sRes').textContent='Business name is required.'; return; }
+    if(!site.slug) site.slug=slugify(site.business);
+    Object.keys(REPS).forEach(k=>site[k]=readReps(k));
+    site.modules=readMods();
+    site.published=$('f_published').checked;
+
+    $('sSave').disabled=true; $('sRes').style.color='var(--mute)'; $('sRes').textContent='Saving…';
+    const r=await api('site-save',{site});
+    $('sSave').disabled=false;
+    if(!r.ok){ $('sRes').style.color='var(--red)'; $('sRes').textContent='Could not save: '+(r.d.error||r.status); return; }
+    $('sRes').style.color='var(--go)';
+    $('sRes').innerHTML='Saved. <a href="/s/'+esc(r.d.site.slug)+'" target="_blank" rel="noopener">/s/'+esc(r.d.site.slug)+'</a>'
+      +(site.published?'':' <span style="color:var(--mute2)">(still a draft, tick Published to make it public)</span>');
+    const v=$('sView'); v.style.display='inline-block'; v.href='/s/'+r.d.site.slug;
+    loadSites();
+  };
+
+  $('oBtn').onclick=async()=>{
+    const email=$('oEmail').value.trim(); if(!email){ $('oRes').style.color='var(--red)'; $('oRes').textContent='Enter an email.'; return; }
+    $('oBtn').disabled=true; $('oRes').style.color='var(--mute)'; $('oRes').textContent='Creating...';
+    // Passing the slug is what turns their draft into a real customer site: it gets
+    // their email, goes live, and becomes indexable. Without it the account is made
+    // but no website is attached to it.
+    const r=await api('onboard',{email,site:$('oSite').value.trim(),name:$('oName').value.trim(),slug:$('oSlug').value.trim()});
+    $('oBtn').disabled=false;
+    if(r.ok){
+      $('oRes').style.color='var(--go)';
+      $('oRes').innerHTML='Done. '+(r.d.emailed?'Receipt emailed. ':'(Email did not send, send this link) ')
+        +(r.d.claimedSlug?('Site <b>/s/'+esc(r.d.claimedSlug)+'</b> is now theirs and may be indexed. '):'<b>No site attached</b> (leave a slug next time to link one). ')
+        +'Portal: <a href="'+esc(r.d.portalUrl)+'" target="_blank" rel="noopener">'+esc(r.d.portalUrl)+'</a>';
+      $('oEmail').value=$('oSite').value=$('oName').value=$('oSlug').value='';
+      boot();
+    } else { $('oRes').style.color='var(--red)'; $('oRes').textContent='Error: '+(r.d.error||r.status); }
+  };
+
+  $('signout').onclick=()=>{ localStorage.removeItem('ks-admin-key'); KEY=''; showLogin(); };
+}
 
 $('loginBtn').onclick=()=>{ KEY=$('key').value.trim(); boot(); };
 $('key').onkeydown=e=>{ if(e.key==='Enter') $('loginBtn').click(); };
-$('signout').onclick=()=>{ localStorage.removeItem('ks-admin-key'); KEY=''; showLogin(); };
 boot();
 </script>
 </body>
