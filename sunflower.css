@@ -57,12 +57,12 @@ h1,h2,h3,h4 {color:var(--ink)!important; font-weight:600; line-height:1.16}
 .path__phase,.path__tag,.tier__tag {background:#f1f4fc!important; color:var(--go)!important}
 .path__items span {background:#f6f7f9!important; color:var(--body)!important; border-radius:4px!important}
 .intake {color:var(--ink); background:#fff!important}
-.intake input,.intake select,.intake textarea,.sunflower-console input,.sunflower-console select,.sunflower-console textarea {
+.intake input,.intake select,.intake textarea,.contact__form input,.contact__form select,.contact__form textarea,.sunflower-console input,.sunflower-console select,.sunflower-console textarea {
   background:#fff!important; border:1px solid #bfc5cd!important; border-radius:4px!important;
   color:var(--ink)!important; font-family:Inter,system-ui,sans-serif;
 }
 .intake label,.lab {color:var(--body)!important}
-.intake input:focus,.intake textarea:focus,.intake select:focus {outline:2px solid var(--go); outline-offset:2px}
+.intake input:focus,.intake textarea:focus,.intake select:focus,.contact__form input:focus,.contact__form textarea:focus,.contact__form select:focus {outline:2px solid var(--go); outline-offset:2px}
 .intake .fine {color:var(--body)!important}
 .intake .opt,.start-done,.legal .note {background:#f6f7f9!important; border-color:var(--line)!important}
 .statement {color:var(--ink)!important; letter-spacing:0!important}
