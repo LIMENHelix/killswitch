@@ -65,7 +65,7 @@ const server = http.createServer((req, res) => {
 await new Promise((r) => server.listen(0, r));
 const PORT = server.address().port;
 
-const CHROME = ['/usr/bin/chromium','C:/Program Files/Google/Chrome/Application/chrome.exe',
+const CHROME = ['C:/Program Files/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable'].find((p) => fs.existsSync(p));
 if (!CHROME) { console.log('Chrome not found, cannot run the DOM check'); process.exit(2); }
 const userDir = path.join(os.tmpdir(), 'ks-analytics-' + PORT);
