@@ -1573,10 +1573,12 @@ const { getAccounts, saveAccounts } = await import('../lib/store.js');
 const P1PRICE = 'price_1ToXlLPmxnF3rtBM5NRurfkt';   // Get Found on Google
 const P3PRICE = 'price_1ToXlsPmxnF3rtBM9Dc9mDul';   // Online Booking
 
-// Their cycle is paid through the 11th.
-const PAID_TO = Math.floor(Date.parse('2026-10-11T00:00:00Z') / 1000);
-const ON_THE_2ND = Date.parse('2026-10-02T09:00:00Z');
-const ON_THE_12TH = Date.parse('2026-10-12T09:00:00Z');
+// Their cycle is paid through nine days from now. Anchoring these to the
+// current clock keeps the scenario valid instead of expiring on a fixed date.
+const DAY = 86400 * 1000;
+const PAID_TO = Math.floor((Date.now() + 9 * DAY) / 1000);
+const ON_THE_2ND = Date.now() + 2 * DAY;
+const ON_THE_12TH = Date.now() + 10 * DAY;
 
 function seedPaid(prices) {
   seed();

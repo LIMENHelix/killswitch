@@ -212,5 +212,6 @@ footer{background:#102b1d;color:#d3e0d6;padding:38px 0}
 (function(){var form=document.getElementById('capForm');var err=document.getElementById('capErr');function showErr(msg){err.textContent=msg;err.classList.add('show')}form.addEventListener('submit',function(e){e.preventDefault();err.classList.remove('show');var business=document.getElementById('fBiz').value.trim();var phone=document.getElementById('fPhone').value.trim();var email=document.getElementById('fEmail').value.trim();if(business.length<2){showErr('Add your business name so we know what to build.');document.getElementById('fBiz').focus();return}if(phone.replace(/\D/g,'').length<10){showErr('Add a 10 digit phone so we can send you the link.');document.getElementById('fPhone').focus();return}if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){showErr('Check the email address so the link reaches you.');document.getElementById('fEmail').focus();return}try{sessionStorage.setItem('ks:intake',JSON.stringify({business:business,phone:phone,email:email}))}catch(e2){}if(window.ksEvent)ksEvent('intake_started',{source:'homepage'});window.location.href='/start'})})();
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
+<script defer src="/ks-analytics.js"></script>
 </body>
 </html>
