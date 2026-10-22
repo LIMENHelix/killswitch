@@ -153,7 +153,7 @@
     ksEvent('demo_viewed', { demo: location.pathname.replace('/demos/', '') });
   }
   // A customer's own site at /s/<slug> deliberately does NOT load this file.
-  // Their visitors are not Killswitch's visitors, and counting them here would
+  // Their visitors are not Sunflower's visitors, and counting them here would
   // inflate the numbers this whole exercise exists to make trustworthy. Those
   // sites have their own counter (P8) that reports to the customer instead.
 })();

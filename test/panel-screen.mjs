@@ -19,7 +19,7 @@ import path from 'node:path';
 import os from 'node:os';
 
 // Repo root, derived from this file's own location so the suite runs
-// from any checkout rather than only from C:/Users/Chris/killswitch.
+// from any checkout rather than only from C:/Users/Chris/sunflower.
 const ROOT = path.join(import.meta.dirname, '..');
 
 const PANEL = path.join(ROOT, 'panel.html');

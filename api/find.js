@@ -2,7 +2,7 @@ import { classify, segment } from '../lib/web-presence.js';
 import { identify, isOwner } from '../lib/roles.js';
 import { placesSearch, parseAddr } from '../lib/discovery.js';
 
-// Killswitch Websites lead finder — server-side Google Places (New) search.
+// Sunflower Websites lead finder — server-side Google Places (New) search.
 // GOOGLE_PLACES_API_KEY is a Sensitive Vercel var (can't be pulled locally), so
 // the search runs here where the key lives and returns no-website business leads
 // as JSON. Called by _outreach/pull.py and the /master finder panel. Gated by

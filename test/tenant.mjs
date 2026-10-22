@@ -9,7 +9,7 @@
 // tenants are separated is that the keys they touch are different.
 process.env.KV_REST_API_URL = 'https://kv.test/';
 process.env.KV_REST_API_TOKEN = 'kvtok';
-process.env.KS_HOME_DOMAINS = 'killswitchwebsites.com,localhost';
+process.env.KS_HOME_DOMAINS = 'sunflowerwebsites.com,localhost';
 
 const KV = new Map();
 const seenKeys = [];      // every key that actually reached the wire
@@ -131,7 +131,7 @@ check('a pipeline scopes EVERY command in the batch, not just the first',
 
 console.log('\nAN UNKNOWN DOMAIN IS A REFUSAL, NEVER A FALLBACK');
 
-check('the home domain is root', (await T.tenantForHost('killswitchwebsites.com')).root === true);
+check('the home domain is root', (await T.tenantForHost('sunflowerwebsites.com')).root === true);
 check('with a port attached, as a browser sends it', (await T.tenantForHost('localhost:3000')).root === true);
 check('and no host at all is root, which is how crons and scripts run',
   (await T.tenantForHost('')).id === ROOT);
@@ -145,8 +145,8 @@ check('an unregistered domain THROWS rather than quietly serving root data',
 // can never be in a list. Without this, turning tenants on would 404 every
 // preview build and any production hit that arrived on the deployment URL.
 check('our own deployment URLs are root, so previews keep working',
-  (await T.tenantForHost('killswitch-2o6v6vnld-limen-helix.vercel.app')).root === true);
-check('and so is the bare project URL', (await T.tenantForHost('killswitch.vercel.app')).root === true);
+  (await T.tenantForHost('sunflower-2o6v6vnld-limen-helix.vercel.app')).root === true);
+check('and so is the bare project URL', (await T.tenantForHost('sunflower.vercel.app')).root === true);
 
 const added = await T.addTenant({ id: 'bob', domain: 'BobsSites.com', name: "Bob's Sites" });
 check('a franchisee can be registered', added.ok && added.domain === 'bobssites.com', JSON.stringify(added));

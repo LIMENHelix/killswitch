@@ -6,7 +6,7 @@
 
 process.env.KV_REST_API_URL = 'https://kv.k6ready.test';
 process.env.KV_REST_API_TOKEN = 'token';
-process.env.KS_FROM_NAME = 'Killswitch Websites';
+process.env.KS_FROM_NAME = 'Sunflower Websites';
 process.env.KS_FROM_LINE1 = '123 Main St';
 process.env.KS_FROM_CITY = 'Kansas City';
 process.env.KS_FROM_STATE = 'KS';

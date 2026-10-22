@@ -9,5 +9,5 @@ const lead = { name: 'Proof Auto Repair', trade: 'auto repair' };
 const dir = import.meta.dirname;
 const localQr = 'file:///' + path.resolve(dir, '../../qr-start.png').replace(/\\/g, '/');
 fs.writeFileSync(path.join(dir, '_front.html'), m.frontHtml(lead));
-fs.writeFileSync(path.join(dir, '_back.html'), m.backHtml(lead).replace('https://killswitchwebsites.com/qr-start.png', localQr));
+fs.writeFileSync(path.join(dir, '_back.html'), m.backHtml(lead).replace('https://sunflowerwebsites.com/qr-start.png', localQr));
 console.log('proof html written');

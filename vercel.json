@@ -30,13 +30,25 @@
     {
       "source": "/",
       "has": [{ "type": "host", "value": "killswitch.domains" }],
-      "destination": "https://killswitchwebsites.com/",
+      "destination": "https://sunflowerwebsites.com/",
       "permanent": true
     },
     {
       "source": "/:path*",
       "has": [{ "type": "host", "value": "killswitch.domains" }],
-      "destination": "https://killswitchwebsites.com/:path*",
+      "destination": "https://sunflowerwebsites.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "killswitchwebsites.com" }],
+      "destination": "https://sunflowerwebsites.com/",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "killswitchwebsites.com" }],
+      "destination": "https://sunflowerwebsites.com/:path*",
       "permanent": true
     },
     { "source": "/menu", "destination": "/pricing", "permanent": false },

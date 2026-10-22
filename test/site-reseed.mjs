@@ -11,7 +11,7 @@ process.env.KV_REST_API_URL = 'https://kv.reseed.test';
 process.env.KV_REST_API_TOKEN = 'token';
 process.env.ADMIN_KEY = 'owner-key';
 process.env.REP_KEYS = 'dana:r_dana_key';
-process.env.KS_FROM_NAME = 'Killswitch Websites';
+process.env.KS_FROM_NAME = 'Sunflower Websites';
 process.env.LOB_API_KEY = 'test_secret_marker_9x8y7z';
 delete process.env.VERCEL_ENV;
 

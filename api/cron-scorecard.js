@@ -40,7 +40,7 @@ export default async function handler(req, res) {
     const report = await collectWeeklyScorecard(now);
     const a = report.acquisition, activity = report.activity, economics = report.economics, operations = report.operations;
     const notice = await notifyOperator({
-      subject: `Weekly Killswitch scorecard - ${report.period.startDate} to ${report.period.endDate}`,
+      subject: `Weekly Sunflower scorecard - ${report.period.startDate} to ${report.period.endDate}`,
       heading: 'Your weekly operating scorecard is ready',
       lines: [
         `Period: ${report.period.startDate} through ${report.period.endDate} (end exclusive)`,

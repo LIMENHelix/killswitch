@@ -1,5 +1,5 @@
 // K6 pre-outreach safety tests for lib/mailer.js
-// Verifies the autopilot killswitches, suppression, address checks, and the
+// Verifies the autopilot sunfloweres, suppression, address checks, and the
 // sendPostcard channel adapter without calling real providers.
 import path from 'node:path';
 const ROOT = path.join(import.meta.dirname, '..');
@@ -7,7 +7,7 @@ const ROOT = path.join(import.meta.dirname, '..');
 process.env.KV_REST_API_URL = 'https://kv.mailer.test';
 process.env.KV_REST_API_TOKEN = 'mailertok';
 process.env.LOB_API_KEY = 'lob_test_key';
-process.env.KS_FROM_NAME = 'Killswitch Websites';
+process.env.KS_FROM_NAME = 'Sunflower Websites';
 process.env.KS_FROM_LINE1 = '123 Main St';
 process.env.KS_FROM_CITY = 'Kansas City';
 process.env.KS_FROM_STATE = 'KS';
@@ -218,7 +218,7 @@ await upsertSite({
 a = await sendPostcard({ lead: lead({ siteSlug: 'river-auto' }), idempotencyKey: 'oe-k5:0' });
 check('an unpublished destination still sends, as the plain offer', a.ok === true && lobCalls.length === 1);
 check('the card is the offer variant, not the delivery variant', lobCalls[0].front.includes('Your business website.') && !lobCalls[0].front.includes('already built'));
-check('the offer card carries the /start QR and URL', lobCalls[0].back.includes('qr-start.png') && lobCalls[0].back.includes('killswitch.domains/start'));
+check('the offer card carries the /start QR and URL', lobCalls[0].back.includes('qr-start.png') && lobCalls[0].back.includes('sunflowerwebsites.com/start'));
 let siteAfter = await getSite('river-auto');
 check('the draft stays unpublished', siteAfter.published === false);
 check('the draft stays unclaimed', siteAfter.claimed === false);
@@ -243,7 +243,7 @@ await upsertSite({
 });
 a = await sendPostcard({ lead: lead({ siteSlug: 'river-auto' }), idempotencyKey: 'oe-k5b:0' });
 check('an already-public site may be referenced', a.ok === true);
-check('the delivery card names the live site', lobCalls[0].front.includes('already built') && lobCalls[0].front.includes('killswitchwebsites.com/s/river-auto'));
+check('the delivery card names the live site', lobCalls[0].front.includes('already built') && lobCalls[0].front.includes('sunflowerwebsites.com/s/river-auto'));
 siteAfter = await getSite('river-auto');
 check('the public site is not modified by the send', siteAfter.published === true && siteAfter.claimed === false && JSON.stringify(siteAfter.modules) === JSON.stringify(['P0']));
 

@@ -1,9 +1,9 @@
-# KILLSWITCH — Autonomous Outbound Engine (V1)
-### Tested on Killswitch first → then it becomes the product.
+# SUNFLOWER — Autonomous Outbound Engine (V1)
+### Tested on Sunflower first → then it becomes the product.
 
 **What it is:** your AI sales rep. It finds Wix-refugee businesses, personalizes a
 pitch to each, sends a multi-touch sequence, follows up, and books meetings on your
-Calendly — hands-off. You only touch the warm replies. Run it on Killswitch's own
+Calendly — hands-off. You only touch the warm replies. Run it on Sunflower's own
 outreach; once it's booking *you* clients, it's the product you sell to others.
 
 **The honest scope:** it autonomously does **find → personalize → send → follow up →
@@ -14,7 +14,7 @@ that gets refunds.
 ---
 
 ## THE STACK
-1. **Sending domain — NOT killswitch.domains.** Buy a throwaway like `getkillswitchkc.com` (~$12). Protects your main domain's reputation.
+1. **Sending domain — NOT sunflowerwebsites.com.** Buy a throwaway like `getsunflowerkc.com` (~$12). Protects your main domain's reputation.
 2. **Cold-email tool:** **Instantly.ai** or **Smartlead** (~$37/mo). Add 1–2 mailboxes on the new domain, turn on **warmup** (runs ~14 days before you send anything cold).
 3. **Lead source:** **Outscraper** — pulls KC businesses by category *with emails + website URL* straight from Google Maps. Export CSV.
 4. **AI personalization:** the tool's built-in AI (or a `{{personalization}}` variable).
@@ -38,7 +38,7 @@ Subject: `{{companyName}}'s website`
 >
 > I do clean, **done-for-you** sites — live in a day, from **$149**, and you own everything. Want me to mock one up **free** so you can see what yours could look like? No pressure either way.
 >
-> — Chris · killswitch.domains
+> — Chris · sunflowerwebsites.com
 
 **Email 2 — Day 3** (replies to the same thread)
 Subject: `re: {{companyName}}'s website`
@@ -47,7 +47,7 @@ Subject: `re: {{companyName}}'s website`
 
 **Email 3 — Day 6**
 > Last note from me, {{firstName}} — if a clean website that's live this week (from $149) is ever useful, I'm one quick call away: [Calendly link]. Either way, best of luck with {{companyName}}.
-> — Chris · Killswitch
+> — Chris · Sunflower
 
 *The "free mockup" line is your weapon — you can build a one-pager in 30 min, so for anyone who replies, actually do it and send a screenshot. That converts like nothing else.*
 
@@ -60,8 +60,8 @@ Subject: `re: {{companyName}}'s website`
 - Be honest in subject + body (CAN-SPAM). No fake "re:" tricks beyond a genuine threaded follow-up.
 
 ## V1 → PRODUCT
-Once this books Killswitch clients, you have a **working engine + proof.** Package it:
-> **"Killswitch AI Sales Rep — qualified meetings on autopilot. $X/mo."**
+Once this books Sunflower clients, you have a **working engine + proof.** Package it:
+> **"Sunflower AI Sales Rep — qualified meetings on autopilot. $X/mo."**
 Sell it with the most powerful case study there is: *"this is the exact system that built my own company."* Lead with the upside ("a tireless rep that never sleeps, scales instantly, costs a fraction of a hire") — **not** "dodge labor laws." Same result, no landmine.
 
 ## DO THIS NOW

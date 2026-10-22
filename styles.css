@@ -1,21 +1,21 @@
 /* ============================================================
-   Killswitch Websites — design system
+   Sunflower Websites — design system
    One accent variable drives the whole brand.
    ============================================================ */
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;900&display=swap');
 :root {
-  --accent: #FFC42E;
+  --accent: #F6C945;
   --accent-ink: #15161a;
-  --go: #1BA45A;
+  --go: #247A45;
   --go-ink: #ffffff;
-  --brand-red: #FF5546;
+  --brand-red: #C66A2C;
   --ink: #FFFFFF;
   --body: #b6bac2;
   --muted: #888c96;
-  --line: #34343c;
-  --line-soft: #26262c;
-  --bg: #121214;
-  --bg-alt: #1a1a1e;
+  --line: #403b2a;
+  --line-soft: #302d20;
+  --bg: #14140f;
+  --bg-alt: #1f1e16;
   --bg-dark: #0d0d0f;
   --radius: 18px;
   --radius-sm: 10px;

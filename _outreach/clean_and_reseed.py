@@ -13,7 +13,7 @@ import os, csv, re, json, hashlib, urllib.request, urllib.error
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LEADS = os.path.join(HERE, "leads.csv")
-BASE = os.environ.get("KS_BASE", "https://killswitchwebsites.com").rstrip("/")
+BASE = os.environ.get("KS_BASE", "https://sunflowerwebsites.com").rstrip("/")
 TOKEN = os.environ.get("ADMIN_KEY") or os.environ.get("SWITCH_TOKEN")
 if not TOKEN:
     raise SystemExit("ADMIN_KEY or SWITCH_TOKEN is required in the environment; there is no built-in default.")

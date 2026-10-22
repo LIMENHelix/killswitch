@@ -4,7 +4,7 @@ process.env.KV_REST_API_URL = 'https://kv.work.test/';
 process.env.KV_REST_API_TOKEN = 'kvtok';
 process.env.KS_PANEL_SECRET = 'panel-secret';
 process.env.ADMIN_KEY = 'admin-key';
-process.env.PUBLIC_SITE_ORIGIN = 'https://killswitchwebsites.com';
+process.env.PUBLIC_SITE_ORIGIN = 'https://sunflowerwebsites.com';
 delete process.env.RESEND_API_KEY;
 delete process.env.VERCEL_ENV;
 

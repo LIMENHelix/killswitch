@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Killswitch Websites lead puller — calls the server-side Places finder (/api/find, where
+Sunflower Websites lead puller — calls the server-side Places finder (/api/find, where
 the Sensitive GOOGLE_PLACES_API_KEY lives) for each trade x city, keeps the
 no-website businesses it returns, and merges them into leads.csv, preserving any
 'mailed'/'bad_address' status. Same CSV format find.py/mail.py use.
@@ -14,7 +14,7 @@ import os, csv, json, time, urllib.request, urllib.error
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LEADS = os.environ.get("KS_LEADS_OUT") or os.path.join(HERE, "leads.csv")
-BASE = os.environ.get("KS_BASE", "https://killswitchwebsites.com").rstrip("/")
+BASE = os.environ.get("KS_BASE", "https://sunflowerwebsites.com").rstrip("/")
 TOKEN = os.environ.get("SWITCH_TOKEN")
 if not TOKEN:
     raise SystemExit("SWITCH_TOKEN is required in the environment; there is no built-in default.")

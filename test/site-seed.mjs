@@ -166,9 +166,9 @@ const bare = { ...SITE_DEFAULT, slug: 'old-school-iron', business: 'Old School I
   trade: 'Gym & fitness', city: 'Kansas City', state: 'MO', phone: '816-555-0100',
   modules: ['P0'], published: true, services: [], about: '' };
 
-const bareHtml = renderSite(bare, { base: 'https://killswitchwebsites.com' });
+const bareHtml = renderSite(bare, { base: 'https://sunflowerwebsites.com' });
 const seeded = { ...bare, ...seedMissing({ ...bare, trade: 'gym/fitness' }) };
-const seededHtml = renderSite(seeded, { base: 'https://killswitchwebsites.com' });
+const seededHtml = renderSite(seeded, { base: 'https://sunflowerwebsites.com' });
 
 check('the bare record really is the reported defect: one section',
   sections(bareHtml).length === 1, sections(bareHtml).join(','));
@@ -182,14 +182,14 @@ check('and it is materially bigger than the bare page',
   `${bareHtml.length} -> ${seededHtml.length}`);
 
 // BOTH halves are required. Content in the old shape is still not the demo.
-const seededClassic = renderSite({ ...seeded, layout: 'classic' }, { base: 'https://killswitchwebsites.com' });
+const seededClassic = renderSite({ ...seeded, layout: 'classic' }, { base: 'https://sunflowerwebsites.com' });
 check('content alone is not enough: Classic still lacks the about section',
   !sections(seededClassic).includes('about'), sections(seededClassic).join(','));
 check('the Trade shape is what carries it', sections(seededHtml).includes('about'));
 
 // Every colour must survive the seeded record, since seeding now picks one.
 for (const t of THEME_NAMES) {
-  const html = renderSite({ ...seeded, theme: t }, { base: 'https://killswitchwebsites.com' });
+  const html = renderSite({ ...seeded, theme: t }, { base: 'https://sunflowerwebsites.com' });
   check(`theme ${t} renders the seeded page`, html.length > 12000 && html.includes('Old School Iron'));
 }
 

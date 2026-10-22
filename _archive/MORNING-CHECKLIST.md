@@ -1,10 +1,10 @@
-# ☀️ Killswitch — Morning Outreach Checklist (~45 min/day)
+# ☀️ Sunflower — Morning Outreach Checklist (~45 min/day)
 
 **Goal:** ~10 fresh emails + your follow-ups, every weekday.
 **Math:** 10/day × 5 days ≈ 200/month → a few % reply → **~4–6 new clients/month.**
 
 **Your tools (bookmark these):**
-- Switch brain → **killswitch.domains/switch-brain** · token: **`sw_kcbrain_7Q2f9x`**
+- Switch brain → **sunflowerwebsites.com/switch-brain** · token: **`sw_kcbrain_7Q2f9x`**
 - Send from → **limenhelix@proton.me** (Proton set as default mail app)
 - Booking link → **calendly.com/chrishubbel72/30min**
 - Tracking sheet → one Google Sheet (columns below)

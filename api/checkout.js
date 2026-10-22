@@ -1,4 +1,4 @@
-// Killswitch Websites growth-path multi-select checkout, from the public page.
+// Sunflower Websites growth-path multi-select checkout, from the public page.
 // The client posts { email, phases: ["P1","P3", ...] }; the server maps each
 // phase to its MONTHLY subscription price and creates ONE Stripe Checkout
 // Session so the customer pays for the whole selection at once.
@@ -156,12 +156,12 @@ export default async function handler(req, res) {
     });
     data = await r.json().catch(() => ({}));
     if (!r.ok || !data.url) {
-      console.error('[killswitch checkout] stripe error', r.status, data && data.error);
+      console.error('[sunflower checkout] stripe error', r.status, data && data.error);
       res.status(502).json({ error: (data && data.error && data.error.message) || 'stripe_error' });
       return;
     }
   } catch (e) {
-    console.error('[killswitch checkout] error', e);
+    console.error('[sunflower checkout] error', e);
     res.status(500).json({ error: 'server_error' });
     return;
   }
