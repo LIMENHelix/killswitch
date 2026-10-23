@@ -29,6 +29,8 @@
     spHeadline: $('#spHeadline'),
     spSub: $('#spSub'),
     spGrid: $('#spGrid'),
+    spFootCity: $('#spFootCity'),
+    spAboutCity: $('#spAboutCity'),
   };
 
   const state = {
@@ -327,6 +329,8 @@
     els.spTrade.textContent = trade.label + ' · ' + city;
     els.spHeadline.textContent = trade.headline;
     els.spSub.textContent = `Serving ${city} and nearby areas. Call for a same-day quote.`;
+    if (els.spFootCity) els.spFootCity.textContent = city;
+    if (els.spAboutCity) els.spAboutCity.textContent = city;
     els.spGrid.textContent = '';
     trade.services.forEach(([name, desc]) => {
       const card = document.createElement('div');
@@ -362,9 +366,10 @@
 
     setRainText(`${business} ${city} ${trade.label}`);
     els.input.blur();
+    if (window.matchMedia('(max-width: 820px)').matches) els.input.value = '';
     els.hint.hidden = true;
     els.windows.hidden = false;
-    $$('.win').forEach((w) => { w.classList.remove('show'); w.style.transform = ''; });
+    $$('.win').forEach((w) => { w.classList.remove('show', 'live'); w.style.transform = ''; });
     els.cta.hidden = true;
     els.cta.classList.remove('show');
     els.speakBtn.disabled = true;
@@ -409,7 +414,9 @@
     await sleep(260);
     line('> LIVE ............... publishing', 'cmd');
     await sleep(640);
-    line('[ OK ] site is live', 'ok');
+    line('[ OK ] site is live. preview ready.', 'ok');
+    const siteWin = document.getElementById('win-site');
+    if (siteWin) siteWin.classList.add('live');
     beep(620);
 
     line(' ', 'dim');
@@ -419,6 +426,11 @@
     els.speakBtn.disabled = false;
     els.cta.hidden = false;
     window.requestAnimationFrame(() => els.cta.classList.add('show'));
+    if (siteWin && window.matchMedia('(max-width: 820px)').matches) {
+      window.setTimeout(() => {
+        siteWin.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      }, 450);
+    }
     state.running = false;
   }
 

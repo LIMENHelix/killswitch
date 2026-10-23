@@ -18,13 +18,20 @@
 <header class="hud">
   <div class="hud-brand">LIMEN<span>//</span>BRAIN <em>v1.0</em></div>
   <div class="hud-right">
-    <span class="badge">DEMO MODE</span>
+    <span class="badge">SIMULATION</span>
     <span class="online"><i></i> ONLINE</span>
+    <a class="hud-link" href="/ops">OPS</a>
     <button id="soundBtn" class="hud-btn" type="button" aria-pressed="false">SOUND OFF</button>
   </div>
 </header>
 
 <main class="stage">
+  <section class="intro">
+    <p class="intro-kicker">LIMEN BRAIN // LIVE LOCAL SITES</p>
+    <h1>Type a business. Watch its site appear.</h1>
+    <p class="intro-sub">The machine scans the market, forges the page, and hands you the link. This is the demo we run in the shop.</p>
+  </section>
+
   <section class="terminal" id="terminal" aria-label="Terminal demo">
     <div class="term-bar">
       <span class="lights"><i></i><i></i><i></i></span>
@@ -53,6 +60,22 @@
           <p id="spSub">Serving your city and nearby areas.</p>
           <div class="sp-actions"><span class="sp-btn">Call now</span><span class="sp-btn ghost">Book online</span></div>
           <div class="sp-grid" id="spGrid"></div>
+          <div class="sp-trust"><span>Licensed</span><span>Insured</span><span>Same-day</span><span>Local</span></div>
+          <div class="sp-about">
+            <h3>Serving <span id="spAboutCity">Kansas City</span> and nearby</h3>
+            <p>Fast response, honest pricing, and work that holds up. Call for a same-day quote or book online.</p>
+          </div>
+          <div class="sp-hours">
+            <div><b>Mon&ndash;Fri</b><span>8am&ndash;5pm</span></div>
+            <div><b>Saturday</b><span>9am&ndash;1pm</span></div>
+            <div><b>Emergency</b><span>24/7</span></div>
+          </div>
+          <div class="sp-book">
+            <h3>Book a same-day visit</h3>
+            <div class="sp-form"><span>Name</span><span>Phone</span><span class="sp-form-btn">Book</span></div>
+          </div>
+          <div class="sp-review"><b>★★★★★</b> <span>Reviews, hours and booking pull from your Google profile.</span></div>
+          <div class="sp-foot"><span><span id="spFootCity">Kansas City</span> · (913) 933-1687</span><a href="/start">Claim this site →</a></div>
         </div>
         <p class="win-note">Starter site preview. The production build adds your photos, reviews, hours and booking.</p>
       </div>
@@ -100,7 +123,7 @@
 
 <footer class="foot">
   <span>LIVE LOCAL SITES // SITES IN HOURS</span>
-  <span id="clock">--:--:--</span>
+  <span class="foot-links"><a href="/ops">OPERATOR CONSOLE</a><span id="clock">--:--:--</span></span>
 </footer>
 
 <script src="/demo.js" defer></script>

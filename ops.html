@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OPS // Live Local Sites</title>
+<meta name="description" content="Operator console for Live Local Sites. Links to admin, CRM, discovery, pricing and billing." />
+<meta name="robots" content="noindex,nofollow" />
+<link rel="canonical" href="https://livelocalsites.com/ops" />
+<link rel="icon" href="/logo-mark.svg" />
+<link rel="stylesheet" href="/ops.css" />
+</head>
+<body>
+<div class="scanlines" aria-hidden="true"></div>
+
+<header class="hud">
+  <div class="hud-brand">LIMEN<span>//</span>OPS <em>v1.0</em></div>
+  <div class="hud-right">
+    <span class="chip" id="healthChip"><i></i> CHECKING</span>
+    <span class="chip dim">PRODUCTION</span>
+    <a class="hud-link" href="/demo">DEMO →</a>
+  </div>
+</header>
+
+<main class="stage">
+  <section class="intro">
+    <p class="kicker">CONTROL ROOM // LIVE LOCAL SITES</p>
+    <h1>Every system. One screen.</h1>
+    <p class="sub">Operator links for the live site. Every card opens an existing tool; admin and master stay login-gated. No credentials or tokens are stored on this page.</p>
+    <div class="status-row">
+      <span class="chip" id="sitemapChip">SITEMAP —</span>
+      <span class="chip">CANONICAL livelocalsites.com</span>
+      <span class="chip">AUTH 401</span>
+      <span class="chip dim" id="clock">--:--:--</span>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="systems">
+    <div class="section-head"><h2 id="systems">Systems</h2><span>09 MODULES</span></div>
+    <div class="grid">
+      <a class="card" href="/admin">
+        <span class="card-tag">LOGIN</span>
+        <h3>Admin</h3>
+        <p>Leads board, discovery, drafts, outreach, funnel, suppression, site publish and reseed.</p>
+        <span class="card-go">OPEN ADMIN →</span>
+      </a>
+      <a class="card" href="/master">
+        <span class="card-tag">OWNER</span>
+        <h3>CRM / Master</h3>
+        <p>Customers, sites, billing events, work orders, onboarding and the weekly scorecard.</p>
+        <span class="card-go">OPEN MASTER →</span>
+      </a>
+      <a class="card" href="/panel">
+        <span class="card-tag">TOKEN</span>
+        <h3>Customer Panel</h3>
+        <p>Module on/off switches, portal links, site edits and billing state for one customer.</p>
+        <span class="card-go">OPEN PANEL →</span>
+      </a>
+
+      <a class="card" href="/admin">
+        <span class="card-tag">OPS</span>
+        <h3>Discovery / Search</h3>
+        <p>Google Places lead finder, ranking, candidates and calls. Lives inside Admin under Discovery.</p>
+        <span class="card-go">OPEN DISCOVERY →</span>
+      </a>
+      <a class="card" href="/pricing">
+        <span class="card-tag">PUBLIC</span>
+        <h3>Pricing</h3>
+        <p>The public catalogue and Stripe checkout. P1-P9 plus the Care Plan, one subscription.</p>
+        <span class="card-go">OPEN PRICING →</span>
+      </a>
+      <a class="card" href="/switch">
+        <span class="card-tag">PUBLIC</span>
+        <h3>Switch AI</h3>
+        <p>The AI sales rep page. Finds prospects, follows up and books meetings; a human closes.</p>
+        <span class="card-go">OPEN SWITCH →</span>
+      </a>
+
+      <a class="card" href="/switch-brain">
+        <span class="card-tag">INTERNAL</span>
+        <h3>Switch Desk</h3>
+        <p>The internal voice and operator desk for Switch. Not linked from the public site.</p>
+        <span class="card-go">OPEN DESK →</span>
+      </a>
+      <a class="card" href="/start">
+        <span class="card-tag">PUBLIC</span>
+        <h3>Intake</h3>
+        <p>The free-site intake. Business, trade, city and contact, then the draft queue.</p>
+        <span class="card-go">OPEN INTAKE →</span>
+      </a>
+      <a class="card" href="/api/health">
+        <span class="card-tag">JSON</span>
+        <h3>Health</h3>
+        <p>The production health endpoint. <code>{ ok: true }</code> is the only expected response.</p>
+        <span class="card-go">VIEW HEALTH →</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="pricing">
+    <div class="section-head"><h2 id="pricing">Stripe pricing matrix</h2><span id="sellableCount">10 SELLABLE</span></div>
+    <div class="table-wrap">
+      <table class="price-table">
+        <thead><tr><th>Phase</th><th>Module</th><th>Monthly</th><th>Status</th><th>Control</th></tr></thead>
+        <tbody>
+          <tr><td>P1</td><td>Get Found on Google</td><td>$19</td><td><span class="ok">SELLABLE</span></td><td><a href="/panel">Panel</a> · <a href="/master">Master</a></td></tr>
+          <tr><td>P2</td><td>Content &amp; Email</td><td>$29</td><td><span class="ok">SELLABLE</span></td><td><a href="/panel">Panel</a> · <a href="/master">Master</a></td></tr>
+          <tr><td>P3</td><td>Online Booking</td><td>$19</td><td><span class="ok">SELLABLE</span></td><td><a href="/panel">Panel</a> · <a href="/master">Master</a></td></tr>
+          <tr><td>P4</td><td>Hosting &amp; Maintenance</td><td>$29</td><td><span class="ok">SELLABLE</span></td><td><a href="/panel">Panel</a> · <a href="/master">Master</a></td></tr>
+          <tr><td>P5</td><td>CRM</td><td>$29</td><td><span class="ok">SELLABLE</span></td><td><a href="/panel">Panel</a> · <a href="/master">Master</a></td></tr>
+          <tr><td>P6</td><td>Marketing Automation</td><td>$29</td><td><span class="ok">SELLABLE</span></td><td><a href="/panel">Panel</a> · <a href="/master">Master</a></td></tr>
+          <tr><td>P7</td><td>Payments</td><td>$19</td><td><span class="ok">SELLABLE</span></td><td><a href="/panel">Panel</a> · <a href="/master">Master</a></td></tr>
+          <tr><td>P8</td><td>Analytics</td><td>$19</td><td><span class="ok">SELLABLE</span></td><td><a href="/panel">Panel</a> · <a href="/master">Master</a></td></tr>
+          <tr><td>P9</td><td>24/7 AI Assistant</td><td>$29</td><td><span class="ok">SELLABLE</span></td><td><a href="/panel">Panel</a> · <a href="/master">Master</a></td></tr>
+          <tr><td>P11</td><td>Care Plan</td><td>$99</td><td><span class="ok">SELLABLE</span></td><td><a href="/panel">Panel</a> · <a href="/master">Master</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Prices are the single source of truth in <code>lib/prices.js</code>; the switch engine is <code>api/switch.js</code>. Change the amount in Stripe first, then update the map. <code>RETIRED</code> is currently empty.</p>
+  </section>
+
+  <section class="section" aria-labelledby="external">
+    <div class="section-head"><h2 id="external">External systems</h2><span>LOGIN REQUIRED</span></div>
+    <div class="links">
+      <a href="https://dashboard.stripe.com/prices" target="_blank" rel="noopener">Stripe prices ↗</a>
+      <a href="https://search.google.com/search-console" target="_blank" rel="noopener">Search Console ↗</a>
+      <a href="https://vercel.com/limen-helix/killswitch" target="_blank" rel="noopener">Vercel project ↗</a>
+      <a href="https://github.com/LIMENHelix/killswitch" target="_blank" rel="noopener">GitHub repo ↗</a>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <span>LIVE LOCAL SITES // OPS</span>
+  <span class="foot-links"><a href="/demo">DEMO</a><a href="/">SITE</a><a href="/api/health">HEALTH</a></span>
+</footer>
+
+<script src="/ops.js" defer></script>
+</body>
+</html>
