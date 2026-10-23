@@ -109,6 +109,12 @@ const evaluate = async (expr) => {
 
 let pass = 0, fail = 0;
 const check = (n, c, d) => { if (c) { console.log('  PASS  ' + n); pass++; } else { console.log('  FAIL  ' + n + (d ? '  <- ' + d : '')); fail++; } };
+// A form POST crosses a browser, the local server and the page's fetch handler.
+// A fixed sleep is a race on a loaded CI runner; wait for the request instead.
+const waitPosted = async (ms = 5000) => {
+  const end = Date.now() + ms;
+  while (posted === null && Date.now() < end) await new Promise((r) => setTimeout(r, 100));
+};
 
 console.log('\nA FREE SITE can be contacted, and gets nothing it has not paid for');
 await load(FREE);
@@ -128,7 +134,8 @@ await evaluate(`
   f.querySelector('[name=message]').value='Do you do brakes on a Tuesday?';
   f.requestSubmit ? f.requestSubmit() : f.querySelector('button').click();
 `);
-await new Promise((r) => setTimeout(r, 500));
+await waitPosted();
+await new Promise((r) => setTimeout(r, 200));
 check('submitting it reaches the server', posted !== null, 'nothing was posted');
 check('it is a contact action for this site', posted && posted.action === 'contact' && posted.slug === 'free-shop', JSON.stringify(posted));
 // This is the assertion the file exists for. If `f.name` resolved to the form's
@@ -170,7 +177,8 @@ await evaluate(`
   f.querySelector('[name=message]').value='The brakes are squeaking.';
   f.requestSubmit ? f.requestSubmit() : f.querySelector('button').click();
 `);
-await new Promise((r) => setTimeout(r, 500));
+await waitPosted();
+await new Promise((r) => setTimeout(r, 200));
 check('the demo quote form reaches the real contact pipeline after launch',
   posted && posted.action === 'contact' && posted.slug === 'auto-tech-shawnee', JSON.stringify(posted));
 check('design-specific fields are retained in the message',
@@ -185,7 +193,8 @@ await evaluate(`
   f.querySelector('[name=when]').value='Tuesday morning';
   f.requestSubmit ? f.requestSubmit() : f.querySelector('button[type=submit]').click();
 `);
-await new Promise((r) => setTimeout(r, 500));
+await waitPosted();
+await new Promise((r) => setTimeout(r, 200));
 check('the built-in booking request reaches the real booking pipeline',
   posted && posted.action === 'book' && posted.when === 'Tuesday morning', JSON.stringify(posted));
 
