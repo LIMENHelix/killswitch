@@ -15,6 +15,9 @@
   async function checkHealth() {
     try {
       const r = await fetch('/api/health', { cache: 'no-store' });
+      if (r.status === 404) { setChip(healthChip, 'NO ENDPOINT', 'warn'); return; }
+      const ct = r.headers.get('content-type') || '';
+      if (!ct.includes('json')) { setChip(healthChip, 'PROTECTED', 'warn'); return; }
       const j = await r.json();
       if (r.ok && j.ok) setChip(healthChip, 'ONLINE');
       else setChip(healthChip, 'DEGRADED', 'warn');
@@ -27,7 +30,9 @@
     try {
       const r = await fetch('/sitemap.xml', { cache: 'no-store' });
       if (!r.ok) throw new Error('status ' + r.status);
+      const ct = r.headers.get('content-type') || '';
       const xml = await r.text();
+      if (!ct.includes('xml') && !xml.includes('<urlset')) { setChip(sitemapChip, 'SITEMAP PROTECTED', 'warn'); return; }
       const count = (xml.match(/<loc>/g) || []).length;
       setChip(sitemapChip, count ? 'SITEMAP ' + count : 'SITEMAP EMPTY', count ? '' : 'warn');
     } catch (_) {

@@ -3,127 +3,125 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>LIMEN BRAIN // Live Local Sites</title>
-<meta name="description" content="A live demo: the machine scans a local business and forges a starter site in seconds." />
-<meta name="robots" content="noindex,follow" />
+<title>Site Builder | Live Local Sites</title>
+<meta name="description" content="Type a local business and watch a starter site appear: services, trust, hours and a way to call." />
+<meta name="robots" content="noindex,nofollow" />
 <link rel="canonical" href="https://livelocalsites.com/demo" />
-<link rel="icon" href="/logo-mark.svg" />
+<link rel="icon" href="/l-mark.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/demo.css" />
 </head>
 <body>
-<canvas id="rain" aria-hidden="true"></canvas>
-<div class="scanlines" aria-hidden="true"></div>
-<div class="vignette" aria-hidden="true"></div>
-
-<header class="hud">
-  <div class="hud-brand">LIMEN<span>//</span>BRAIN <em>v1.0</em></div>
-  <div class="hud-right">
-    <span class="badge">SIMULATION</span>
-    <span class="online"><i></i> ONLINE</span>
-    <a class="hud-link" href="/ops">OPS</a>
-    <button id="soundBtn" class="hud-btn" type="button" aria-pressed="false">SOUND OFF</button>
+<div class="intro" id="intro" aria-hidden="true">
+  <div class="intro-grid"></div>
+  <div class="intro-inner">
+    <div class="intro-mark"><img src="/l-mark.svg" alt="" width="28" height="28" /> LIVE LOCAL SITES</div>
+    <div class="intro-line">SITE BUILDER <span>//</span> READY</div>
+    <div class="intro-bar"><i></i></div>
   </div>
+</div>
+
+<header class="topbar">
+  <a class="brand" href="/"><img src="/l-mark.svg" alt="" width="28" height="28" /> Live Local Sites <span>/ Site Builder</span></a>
+  <div class="top-actions"><a class="ghost-link" href="/ops">OPS</a></div>
 </header>
 
-<main class="stage">
-  <section class="intro">
-    <p class="intro-kicker">LIMEN BRAIN // LIVE LOCAL SITES</p>
-    <h1>Type a business. Watch its site appear.</h1>
-    <p class="intro-sub">The machine scans the market, forges the page, and hands you the link. This is the demo we run in the shop.</p>
-  </section>
-
-  <section class="terminal" id="terminal" aria-label="Terminal demo">
-    <div class="term-bar">
-      <span class="lights"><i></i><i></i><i></i></span>
-      <span class="term-title">brain.exe</span>
-      <span class="term-id">tty0</span>
-    </div>
-    <div class="term-body" id="log" role="log" aria-live="polite"></div>
-    <form class="prompt" id="promptForm" autocomplete="off">
-      <span class="p-caret" aria-hidden="true">&gt;</span>
+<main class="shell">
+  <section class="hero">
+    <p class="kicker">Site builder</p>
+    <h1>Type a business.<br />Get a site.</h1>
+    <p class="sub">The page is the demo. Type a local business and watch the starter site appear &mdash; services, trust, hours, and a way to call.</p>
+    <form class="build-form" id="buildForm" autocomplete="off">
       <label class="sr-only" for="biz">Business name and city</label>
-      <input id="biz" name="biz" type="text" placeholder="identify business_" maxlength="80" spellcheck="false" />
-      <button type="button" id="micBtn" class="icon-btn" title="Speak the business name" aria-label="Speak the business name">MIC</button>
-      <button type="submit" class="forge-btn">FORGE</button>
+      <input id="biz" name="biz" type="text" placeholder="Business name, city" maxlength="80" spellcheck="false" />
+      <button type="button" id="micBtn" class="mic" title="Speak the business name" aria-label="Speak the business name">MIC</button>
+      <button type="submit" class="build-btn">Build site</button>
     </form>
-    <p class="hint" id="hint">Try <button type="button" class="linklike" data-example="Dave&rsquo;s Auto Repair, Kansas City">Dave&rsquo;s Auto Repair</button> &mdash; or speak it.</p>
+    <div class="hero-foot">
+      <p class="hint" id="hint">Try <button type="button" class="linklike" data-example="Dave&rsquo;s Auto Repair, Kansas City">Dave&rsquo;s Auto Repair</button></p>
+      <p class="activity" id="activity">Ready.</p>
+    </div>
   </section>
 
-  <section class="windows" id="windows" hidden aria-label="Generated output">
-    <article class="win" id="win-site">
-      <div class="win-bar"><span class="win-dot"></span> site.exe <span class="win-tag">OUTPUT</span></div>
-      <div class="win-body">
-        <div class="site-preview" id="sitePreview">
-          <div class="sp-top"><span id="spName">Business</span><span class="sp-call">CALL</span></div>
-          <p class="sp-trade" id="spTrade">Local services</p>
-          <h2 id="spHeadline">A name worth calling.</h2>
-          <p id="spSub">Serving your city and nearby areas.</p>
-          <div class="sp-actions"><span class="sp-btn">Call now</span><span class="sp-btn ghost">Book online</span></div>
-          <div class="sp-grid" id="spGrid"></div>
-          <div class="sp-trust"><span>Licensed</span><span>Insured</span><span>Same-day</span><span>Local</span></div>
-          <div class="sp-about">
-            <h3>Serving <span id="spAboutCity">Kansas City</span> and nearby</h3>
-            <p>Fast response, honest pricing, and work that holds up. Call for a same-day quote or book online.</p>
+  <section class="workbench">
+    <div class="preview-wrap">
+      <div class="panel preview-panel">
+        <div class="panel-head"><span>Generated site</span><span class="tag" id="liveTag">WAITING</span></div>
+        <div class="preview-body">
+          <div class="site-preview" id="sitePreview">
+            <div class="sp-top"><span id="spName">Your business</span><span class="sp-call">CALL</span></div>
+            <p class="sp-trade" id="spTrade">Local services &middot; your city</p>
+            <h2 id="spHeadline">A site that earns the call.</h2>
+            <p id="spSub">Type a business above to see it built.</p>
+            <div class="sp-actions"><span class="sp-btn">Call now</span><span class="sp-btn ghost">Book online</span></div>
+            <div class="sp-grid" id="spGrid">
+              <div class="sp-card"><b>Fast response</b><span>Same-day service</span></div>
+              <div class="sp-card"><b>Upfront pricing</b><span>No surprises</span></div>
+              <div class="sp-card"><b>Book online</b><span>One tap</span></div>
+            </div>
+            <div class="sp-trust"><span>Licensed</span><span>Insured</span><span>Same-day</span><span>Local</span></div>
+            <div class="sp-about">
+              <h3>Serving <span id="spAboutCity">your city</span> and nearby</h3>
+              <p>Fast response, honest pricing, and work that holds up. Call for a same-day quote or book online.</p>
+            </div>
+            <div class="sp-hours">
+              <div><b>Mon&ndash;Fri</b><span>8am&ndash;5pm</span></div>
+              <div><b>Saturday</b><span>9am&ndash;1pm</span></div>
+              <div><b>Emergency</b><span>24/7</span></div>
+            </div>
+            <div class="sp-book">
+              <h3>Book a same-day visit</h3>
+              <div class="sp-form"><span>Name</span><span>Phone</span><span class="sp-form-btn">Book</span></div>
+            </div>
+            <div class="sp-review"><b>★★★★★</b> <span>Reviews, hours and booking pull from your Google profile.</span></div>
+            <div class="sp-foot"><span><span id="spFootCity">Your city</span> &middot; (913) 933-1687</span><a href="/start">Claim this site →</a></div>
           </div>
-          <div class="sp-hours">
-            <div><b>Mon&ndash;Fri</b><span>8am&ndash;5pm</span></div>
-            <div><b>Saturday</b><span>9am&ndash;1pm</span></div>
-            <div><b>Emergency</b><span>24/7</span></div>
-          </div>
-          <div class="sp-book">
-            <h3>Book a same-day visit</h3>
-            <div class="sp-form"><span>Name</span><span>Phone</span><span class="sp-form-btn">Book</span></div>
-          </div>
-          <div class="sp-review"><b>★★★★★</b> <span>Reviews, hours and booking pull from your Google profile.</span></div>
-          <div class="sp-foot"><span><span id="spFootCity">Kansas City</span> · (913) 933-1687</span><a href="/start">Claim this site →</a></div>
         </div>
-        <p class="win-note">Starter site preview. The production build adds your photos, reviews, hours and booking.</p>
       </div>
-    </article>
+    </div>
 
-    <article class="win" id="win-leads">
-      <div class="win-bar"><span class="win-dot"></span> leads.exe <span class="win-tag">SAMPLE</span></div>
-      <div class="win-body">
-        <p class="win-kicker" id="leadsCity">LOCAL DEMAND // KANSAS CITY</p>
-        <ul class="leads" id="leadsList"></ul>
-        <p class="win-note">Sample market signal for the demo. Live numbers come from the production scan.</p>
+    <aside class="rail">
+      <div class="panel steps-panel">
+        <div class="panel-head"><span>Build</span><span class="tag" id="buildTag">IDLE</span></div>
+        <ol class="stepper" id="stepper">
+          <li data-step="scan"><i></i><span>Scan demand</span><b>&mdash;</b></li>
+          <li data-step="trace"><i></i><span>Trace market</span><b>&mdash;</b></li>
+          <li data-step="forge"><i></i><span>Forge site</span><b>&mdash;</b></li>
+          <li data-step="verify"><i></i><span>Verify</span><b>&mdash;</b></li>
+          <li data-step="live"><i></i><span>Publish</span><b>&mdash;</b></li>
+        </ol>
       </div>
-    </article>
-
-    <article class="win" id="win-brain">
-      <div class="win-bar"><span class="win-dot"></span> brain.exe <span class="win-tag">TRACE</span></div>
-      <div class="win-body">
-        <pre class="trace" id="trace"></pre>
-        <p class="win-note">Simulated reasoning trace. The production build streams the real model trace.</p>
+      <div class="panel">
+        <div class="panel-head"><span>Demand</span><span class="tag">SAMPLE</span></div>
+        <p class="panel-sub" id="leadsCity">Local demand</p>
+        <ul class="leads" id="leadsList"><li class="lead-empty">Build a site to scan the market.</li></ul>
       </div>
-    </article>
-
-    <article class="win" id="win-voice">
-      <div class="win-bar"><span class="win-dot"></span> voice.exe <span class="win-tag">AUDIO</span></div>
-      <div class="win-body voice-body">
-        <p class="voice-line" id="voiceLine">Press speak. The machine will pitch the site back to you.</p>
-        <div class="voice-actions">
-          <button type="button" id="speakBtn" class="voice-btn">SPEAK SUMMARY</button>
-          <button type="button" id="againBtn" class="voice-btn ghost">RUN AGAIN</button>
-        </div>
-        <div class="meter" id="meter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="panel">
+        <div class="panel-head"><span>Reasoning</span><span class="tag">TRACE</span></div>
+        <pre class="trace" id="trace">Waiting for a business.</pre>
       </div>
-    </article>
+      <div class="panel">
+        <div class="panel-head"><span>Voice</span><span class="tag">AUDIO</span></div>
+        <p class="voice-line" id="voiceLine">Build a site to hear the pitch.</p>
+        <button type="button" id="speakBtn" class="voice-btn" disabled>Hear the pitch</button>
+      </div>
+    </aside>
   </section>
 
   <section class="cta" id="cta" hidden>
-    <p class="cta-kicker">THE MACHINE IS THE DEMO. THE SITE IS THE PRODUCT.</p>
-    <h2>Want this for your business?</h2>
-    <div class="cta-actions">
-      <a class="cta-btn" href="/start">Start your site</a>
-      <a class="cta-btn ghost" href="tel:+19139331687">Call (913) 933-1687</a>
+    <div>
+      <p class="kicker">The page is the proof</p>
+      <h2>Want this for your business?</h2>
     </div>
+    <div class="cta-actions"><a class="build-btn" href="/start">Start your site</a><a class="ghost-link cta-call" href="tel:+19139331687">Call (913) 933-1687</a></div>
   </section>
 </main>
 
 <footer class="foot">
-  <span>LIVE LOCAL SITES // SITES IN HOURS</span>
-  <span class="foot-links"><a href="/ops">OPERATOR CONSOLE</a><span id="clock">--:--:--</span></span>
+  <span>Live Local Sites // Site Builder</span>
+  <span><a href="/">Site</a> <a href="/ops">Ops</a> <a href="/pricing">Pricing</a></span>
 </footer>
 
 <script src="/demo.js" defer></script>

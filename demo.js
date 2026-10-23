@@ -4,48 +4,44 @@
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
   const qs = new URLSearchParams(window.location.search);
-  const reduce = qs.get('motion') !== 'full' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const sleep = (ms) => new Promise((r) => setTimeout(r, reduce ? Math.min(ms, 40) : ms));
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, reduce ? 40 : ms));
 
   const els = {
-    log: $('#log'),
-    form: $('#promptForm'),
-    input: $('#biz'),
+    intro: $('#intro'),
+    form: $('#buildForm'),
+    biz: $('#biz'),
+    mic: $('#micBtn'),
     hint: $('#hint'),
-    windows: $('#windows'),
-    cta: $('#cta'),
+    activity: $('#activity'),
+    liveTag: $('#liveTag'),
+    buildTag: $('#buildTag'),
+    stepper: $('#stepper'),
+    leadsCity: $('#leadsCity'),
+    leadsList: $('#leadsList'),
+    trace: $('#trace'),
     voiceLine: $('#voiceLine'),
     speakBtn: $('#speakBtn'),
-    againBtn: $('#againBtn'),
-    micBtn: $('#micBtn'),
-    soundBtn: $('#soundBtn'),
-    meter: $('#meter'),
-    clock: $('#clock'),
-    leadsList: $('#leadsList'),
-    leadsCity: $('#leadsCity'),
-    trace: $('#trace'),
+    cta: $('#cta'),
+    previewWrap: $('.preview-wrap'),
+    preview: $('#sitePreview'),
     spName: $('#spName'),
     spTrade: $('#spTrade'),
     spHeadline: $('#spHeadline'),
     spSub: $('#spSub'),
     spGrid: $('#spGrid'),
-    spFootCity: $('#spFootCity'),
     spAboutCity: $('#spAboutCity'),
+    spFootCity: $('#spFootCity'),
   };
 
   const state = {
-    sound: false,
     running: false,
     listening: false,
     business: '',
     city: 'Kansas City',
-    trade: 'default',
     lastText: '',
     recognition: null,
-    audio: null,
   };
-
-  /* ---------- copy / data ---------- */
 
   const TRADES = {
     auto: {
@@ -127,27 +123,6 @@
     },
   };
 
-  const BOOT = [
-    ['LIMEN BRAIN // BOOT', 'sys'],
-    ['[ OK ]  kernel ......... loaded', 'ok'],
-    ['[ OK ]  lattice ........ ready', 'ok'],
-    ['[ OK ]  voice .......... armed', 'ok'],
-    ['[ OK ]  operator ....... present', 'ok'],
-    ['[ WAIT ] target ........ unidentified', 'dim'],
-    ['> identify business_', 'cmd'],
-  ];
-
-  /* ---------- utilities ---------- */
-
-  function line(text, cls = 'cmd') {
-    const div = document.createElement('div');
-    div.className = 'line ' + cls;
-    div.textContent = text;
-    els.log.appendChild(div);
-    els.log.scrollTop = els.log.scrollHeight;
-    return div;
-  }
-
   function seeded(key) {
     let h = 2166136261;
     for (let i = 0; i < key.length; i++) {
@@ -184,99 +159,25 @@
     return 'default';
   }
 
-  function cityLabel(city) {
-    return city.toUpperCase().replace(/\s+/g, ' ');
+  function setActivity(text, live = false) {
+    els.activity.textContent = text;
+    els.activity.classList.toggle('live', live);
   }
 
-  function beep(freq = 440, dur = 0.06) {
-    if (!state.sound) return;
-    try {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      state.audio = state.audio || new AC();
-      const ctx = state.audio;
-      if (ctx.state === 'suspended') ctx.resume();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'square';
-      osc.frequency.value = freq;
-      gain.gain.value = 0.025;
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + dur);
-    } catch (_) { /* audio is optional */ }
+  function resetSteps() {
+    $$('li', els.stepper).forEach((li) => {
+      li.className = '';
+      const b = li.querySelector('b');
+      if (b) b.textContent = '—';
+    });
   }
 
-  /* ---------- matrix rain ---------- */
-
-  const canvas = $('#rain');
-  const ctx = canvas.getContext('2d', { alpha: true });
-  const GLYPHS = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ0123456789:・."=*+-<>¦｜';
-  let rainChars = GLYPHS;
-  let cols = 0;
-  let drops = [];
-  let lastFrame = 0;
-  const fontSize = 14;
-
-  function setRainText(text) {
-    const clean = String(text || '').toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
-    rainChars = (clean + ' ' + GLYPHS).slice(0, 160);
-  }
-
-  function resizeRain() {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-    canvas.width = Math.floor(w * dpr);
-    canvas.height = Math.floor(h * dpr);
-    canvas.style.width = w + 'px';
-    canvas.style.height = h + 'px';
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    cols = Math.ceil(w / fontSize);
-    drops = Array.from({ length: cols }, () => Math.random() * (-h / fontSize));
-    if (reduce) drawStaticRain();
-  }
-
-  function drawStaticRain() {
-    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-    ctx.font = fontSize + 'px monospace';
-    ctx.fillStyle = 'rgba(57,255,20,.5)';
-    for (let i = 0; i < 140; i++) {
-      const ch = rainChars[Math.floor(Math.random() * rainChars.length)] || '0';
-      ctx.fillText(ch, Math.random() * window.innerWidth, Math.random() * window.innerHeight);
-    }
-  }
-
-  function drawRain(ts) {
-    if (reduce) return;
-    window.requestAnimationFrame(drawRain);
-    if (document.hidden) return;
-    if (ts - lastFrame < 55) return;
-    lastFrame = ts;
-    ctx.fillStyle = 'rgba(2,5,3,.06)';
-    ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-    ctx.font = fontSize + 'px monospace';
-    for (let i = 0; i < cols; i++) {
-      const ch = rainChars[Math.floor(Math.random() * rainChars.length)] || '0';
-      const x = i * fontSize;
-      const y = drops[i] * fontSize;
-      if (y > 0) {
-        ctx.fillStyle = Math.random() > 0.975 ? '#d9ffd2' : '#39ff14';
-        ctx.globalAlpha = 0.35 + Math.random() * 0.6;
-        ctx.fillText(ch, x, y);
-        ctx.globalAlpha = 1;
-      }
-      if (y > window.innerHeight && Math.random() > 0.975) drops[i] = 0;
-      drops[i] += 1;
-    }
-  }
-
-  /* ---------- rendering ---------- */
-
-  function revealWin(id) {
-    els.windows.hidden = false;
-    const el = document.getElementById(id);
-    if (el) el.classList.add('show');
+  function setStep(name, stateName, label) {
+    const li = els.stepper.querySelector(`[data-step="${name}"]`);
+    if (!li) return;
+    li.className = stateName;
+    const b = li.querySelector('b');
+    if (b && label) b.textContent = label;
   }
 
   function addLead(name, volText, pct, gap = false) {
@@ -298,7 +199,7 @@
   }
 
   function renderLeads(trade, city, business) {
-    els.leadsCity.textContent = 'LOCAL DEMAND // ' + cityLabel(city);
+    els.leadsCity.textContent = 'Local demand // ' + city;
     els.leadsList.textContent = '';
     const rows = trade.keywords.map(([name, base]) => ({
       name,
@@ -310,16 +211,15 @@
     addLead(`${gap} of 10 local competitors have no mobile site`, 'GAP', 62, true);
   }
 
-  function renderTrace(business, city, key) {
+  function renderTrace(city, key) {
     const cityKey = city.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
     const lines = [
-      `TRACE  trade=${key}`,
-      `TRACE  city=${cityKey}`,
-      'TRACE  intent=free_starter_site',
-      'TRACE  modules=hero,services,reviews,call,book',
-      'TRACE  constraint=no_template_no_wait',
-      'TRACE  next=claim_domain + google_profile',
-      '[ OK ] trace complete',
+      `trade=${key}`,
+      `city=${cityKey}`,
+      'intent=free_starter_site',
+      'modules=hero,services,reviews,call,book',
+      'constraint=no_template_no_wait',
+      'next=claim_domain + google_profile',
     ];
     els.trace.textContent = lines.join('\n');
   }
@@ -328,9 +228,9 @@
     els.spName.textContent = business;
     els.spTrade.textContent = trade.label + ' · ' + city;
     els.spHeadline.textContent = trade.headline;
-    els.spSub.textContent = `Serving ${city} and nearby areas. Call for a same-day quote.`;
-    if (els.spFootCity) els.spFootCity.textContent = city;
+    els.spSub.textContent = `Serving ${city} and nearby. Call for a same-day quote.`;
     if (els.spAboutCity) els.spAboutCity.textContent = city;
+    if (els.spFootCity) els.spFootCity.textContent = city;
     els.spGrid.textContent = '';
     trade.services.forEach(([name, desc]) => {
       const card = document.createElement('div');
@@ -344,14 +244,22 @@
     });
   }
 
-  /* ---------- boot / run ---------- */
-
-  async function bootSeq() {
-    els.log.textContent = '';
-    for (const [text, cls] of BOOT) {
-      line(text, cls);
-      await sleep(170);
-    }
+  function resetPreview(business, city, trade) {
+    els.spName.textContent = business;
+    els.spTrade.textContent = trade.label + ' · ' + city;
+    els.spHeadline.textContent = 'Forging your site…';
+    els.spSub.textContent = 'Building the page from the business, the city and the trade.';
+    if (els.spAboutCity) els.spAboutCity.textContent = city;
+    if (els.spFootCity) els.spFootCity.textContent = city;
+    els.spGrid.textContent = '';
+    [['Loading', 'Your services'], ['Loading', 'Your proof'], ['Loading', 'Your next step']].forEach(([a, b]) => {
+      const card = document.createElement('div');
+      card.className = 'sp-card';
+      const x = document.createElement('b'); x.textContent = a;
+      const y = document.createElement('span'); y.textContent = b;
+      card.append(x, y);
+      els.spGrid.appendChild(card);
+    });
   }
 
   async function runDemo(raw) {
@@ -361,88 +269,72 @@
     const trade = TRADES[key] || TRADES.default;
     state.business = business;
     state.city = city;
-    state.trade = key;
     state.running = true;
 
-    setRainText(`${business} ${city} ${trade.label}`);
-    els.input.blur();
-    if (window.matchMedia('(max-width: 820px)').matches) els.input.value = '';
+    els.biz.blur();
     els.hint.hidden = true;
-    els.windows.hidden = false;
-    $$('.win').forEach((w) => { w.classList.remove('show', 'live'); w.style.transform = ''; });
     els.cta.hidden = true;
-    els.cta.classList.remove('show');
+    els.liveTag.textContent = 'BUILDING';
+    els.liveTag.className = 'tag building';
+    els.buildTag.textContent = 'RUN';
     els.speakBtn.disabled = true;
     els.voiceLine.textContent = 'Building the summary…';
     if (window.speechSynthesis) window.speechSynthesis.cancel();
+    resetSteps();
+    resetPreview(business, city, trade);
 
-    els.log.textContent = '';
-    line('LIMEN BRAIN // ONLINE', 'sys');
-    line('> TARGET ' + business.toUpperCase() + ' // ' + cityLabel(city), 'cmd');
-    await sleep(260);
-
-    line('> SCAN ............... local demand', 'cmd');
-    await sleep(620);
-    line(`[ OK ] demand mapped ...... ${trade.label.toLowerCase()} / ${city}`, 'ok');
+    setActivity('Scanning local demand…');
+    setStep('scan', 'active', 'RUN');
+    await sleep(650);
     renderLeads(trade, city, business);
-    revealWin('win-leads');
-    beep(240);
+    setStep('scan', 'done', 'OK');
 
-    await sleep(260);
-    line('> TRACE .............. competitors', 'cmd');
-    await sleep(640);
-    line('[ OK ] competitors indexed', 'ok');
-    renderTrace(business, city, key);
-    revealWin('win-brain');
-    beep(300);
+    setActivity('Tracing the market…');
+    setStep('trace', 'active', 'RUN');
+    await sleep(650);
+    renderTrace(city, key);
+    setStep('trace', 'done', 'OK');
 
-    await sleep(260);
-    line('> FORGE .............. site.v1', 'cmd');
-    await sleep(760);
+    setActivity('Forging the page…');
+    setStep('forge', 'active', 'RUN');
+    await sleep(800);
     renderSite(business, city, trade);
-    revealWin('win-site');
-    line('[ OK ] site.v1 rendered ..... 4.18s', 'ok');
-    beep(380);
+    setStep('forge', 'done', 'OK');
 
-    await sleep(260);
-    line('> VERIFY ............. mobile / speed / schema', 'cmd');
-    await sleep(580);
-    line('[ OK ] mobile 98 / speed 99 / schema valid', 'ok');
-    revealWin('win-voice');
-    beep(460);
+    setActivity('Verifying mobile, speed and schema…');
+    setStep('verify', 'active', 'RUN');
+    await sleep(600);
+    setStep('verify', 'done', 'OK');
 
-    await sleep(260);
-    line('> LIVE ............... publishing', 'cmd');
-    await sleep(640);
-    line('[ OK ] site is live. preview ready.', 'ok');
-    const siteWin = document.getElementById('win-site');
-    if (siteWin) siteWin.classList.add('live');
-    beep(620);
+    setActivity('Publishing…');
+    setStep('live', 'active', 'RUN');
+    await sleep(600);
+    setStep('live', 'done', 'OK');
 
-    line(' ', 'dim');
-    line('> ' + business + ' is ready.', 'sys');
+    els.liveTag.textContent = 'LIVE';
+    els.liveTag.className = 'tag live';
+    els.buildTag.textContent = 'LIVE';
     state.lastText = `${business} in ${city}. I can have a starter site live today. Want the link?`;
     els.voiceLine.textContent = state.lastText;
     els.speakBtn.disabled = false;
     els.cta.hidden = false;
-    window.requestAnimationFrame(() => els.cta.classList.add('show'));
-    if (siteWin && window.matchMedia('(max-width: 820px)').matches) {
+    setActivity('Live. The page is ready.', true);
+
+    if (window.matchMedia('(max-width: 640px)').matches && els.previewWrap) {
       window.setTimeout(() => {
-        siteWin.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
-      }, 450);
+        els.previewWrap.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      }, 350);
     }
     state.running = false;
   }
 
-  /* ---------- voice ---------- */
-
   const VOICE_ERRORS = {
-    'not-allowed': 'microphone access is blocked. Allow the mic in your browser, then try again - or type the name.',
-    'service-not-allowed': 'speech recognition is blocked by this browser. Type the name instead.',
-    'audio-capture': 'no microphone was found. Type the name instead.',
-    network: 'speech recognition could not reach the service. Type the name instead.',
+    'not-allowed': 'Microphone access is blocked. Allow the mic in your browser, then try again — or type the name.',
+    'service-not-allowed': 'Speech recognition is blocked by this browser. Type the name instead.',
+    'audio-capture': 'No microphone was found. Type the name instead.',
+    network: 'Speech recognition could not reach the service. Type the name instead.',
     'no-speech': 'I did not hear anything. Try again, or type it.',
-    aborted: 'voice input stopped.',
+    aborted: 'Voice input stopped.',
   };
 
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -453,165 +345,99 @@
     rec.maxAlternatives = 1;
     rec.onstart = () => {
       state.listening = true;
-      els.micBtn.classList.add('listening');
-      els.micBtn.textContent = 'LISTEN';
-      line('> listening ...', 'dim');
+      els.mic.classList.add('listening');
+      els.mic.textContent = 'LISTEN';
+      setActivity('Listening…');
     };
     rec.onresult = (event) => {
       const text = event.results && event.results[0] && event.results[0][0] && event.results[0][0].transcript;
       if (!text) return;
-      els.input.value = text;
-      line('> heard: ' + text, 'cmd');
-      window.setTimeout(() => els.form.requestSubmit(), 350);
+      els.biz.value = text;
+      setActivity('Heard: ' + text);
+      window.setTimeout(() => els.form.requestSubmit(), 300);
     };
     rec.onerror = (event) => {
-      const msg = VOICE_ERRORS[event.error] || ('voice input failed: ' + (event.error || 'unknown'));
-      line('[ FAIL ] ' + msg, 'err');
+      const msg = VOICE_ERRORS[event.error] || ('Voice input failed: ' + (event.error || 'unknown'));
       els.voiceLine.textContent = msg;
-      els.hint.hidden = false;
-      els.input.focus({ preventScroll: true });
+      setActivity('Voice blocked. Type it instead.');
+      els.biz.focus({ preventScroll: true });
     };
     rec.onend = () => {
       state.listening = false;
-      els.micBtn.classList.remove('listening');
-      els.micBtn.textContent = 'MIC';
+      els.mic.classList.remove('listening');
+      els.mic.textContent = 'MIC';
     };
     state.recognition = rec;
   }
 
-  els.micBtn.addEventListener('click', () => {
+  els.mic.addEventListener('click', () => {
     if (!state.recognition) {
-      line('voice input is not supported in this browser. type it instead.', 'warn');
+      els.voiceLine.textContent = 'Voice input is not supported in this browser. Type the name instead.';
+      setActivity('Voice not supported.');
       return;
     }
-    if (state.listening) {
-      state.recognition.stop();
-      return;
-    }
+    if (state.listening) { state.recognition.stop(); return; }
     try { state.recognition.start(); }
-    catch (_) { line('voice input is busy. try again.', 'warn'); }
+    catch (_) { setActivity('Voice is busy. Try again.'); }
   });
 
   els.speakBtn.addEventListener('click', () => {
     if (!('speechSynthesis' in window)) {
-      line('speech output is not supported in this browser.', 'warn');
+      els.voiceLine.textContent = 'Speech output is not supported in this browser.';
       return;
     }
     if (!state.lastText) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(state.lastText);
     u.rate = 1;
-    u.pitch = 0.9;
+    u.pitch = 0.95;
     const voices = window.speechSynthesis.getVoices();
     const preferred = voices.find((v) => /Google US English|Samantha|Daniel|Alex/i.test(v.name)) ||
       voices.find((v) => v.lang === 'en-US');
     if (preferred) u.voice = preferred;
-    u.onstart = () => els.meter.classList.add('speaking');
-    u.onend = () => els.meter.classList.remove('speaking');
-    u.onerror = () => els.meter.classList.remove('speaking');
+    u.onstart = () => { els.speakBtn.textContent = 'SPEAKING…'; };
+    u.onend = () => { els.speakBtn.textContent = 'HEAR THE PITCH'; };
+    u.onerror = () => { els.speakBtn.textContent = 'HEAR THE PITCH'; };
     window.speechSynthesis.speak(u);
   });
 
-  /* ---------- interactions ---------- */
-
   els.form.addEventListener('submit', (e) => {
     e.preventDefault();
-    const raw = els.input.value.trim();
+    const raw = els.biz.value.trim();
     if (!raw) {
-      line('> need a business name.', 'warn');
-      els.input.focus();
+      setActivity('Need a business name.');
+      els.biz.focus();
       return;
     }
     runDemo(raw);
   });
 
-  els.soundBtn.addEventListener('click', () => {
-    state.sound = !state.sound;
-    els.soundBtn.setAttribute('aria-pressed', String(state.sound));
-    els.soundBtn.textContent = state.sound ? 'SOUND ON' : 'SOUND OFF';
-    if (state.sound) beep(660);
-  });
-
-  els.againBtn.addEventListener('click', async () => {
-    els.windows.hidden = true;
-    els.cta.hidden = true;
-    els.cta.classList.remove('show');
-    els.hint.hidden = false;
-    els.input.value = '';
-    state.lastText = '';
-    if (window.speechSynthesis) window.speechSynthesis.cancel();
-    await bootSeq();
-    els.input.focus({ preventScroll: true });
-  });
-
   $$('.linklike').forEach((btn) => {
     btn.addEventListener('click', () => {
-      els.input.value = btn.dataset.example || '';
+      els.biz.value = btn.dataset.example || '';
       els.form.requestSubmit();
     });
   });
 
-  /* ---------- draggable windows (desktop) ---------- */
-
-  if (window.matchMedia('(min-width: 821px)').matches) {
-    let z = 10;
-    $$('.win').forEach((win) => {
-      const bar = win.querySelector('.win-bar');
-      let sx = 0, sy = 0, ox = 0, oy = 0, dragging = false;
-      win.addEventListener('pointerdown', () => { win.style.zIndex = String(++z); });
-      bar.addEventListener('pointerdown', (e) => {
-        if (e.button !== 0) return;
-        dragging = true;
-        win.classList.add('dragging');
-        sx = e.clientX;
-        sy = e.clientY;
-        try {
-          const m = new DOMMatrixReadOnly(getComputedStyle(win).transform);
-          ox = m.m41;
-          oy = m.m42;
-        } catch (_) { ox = 0; oy = 0; }
-        try { bar.setPointerCapture(e.pointerId); } catch (_) {}
-        e.preventDefault();
-      });
-      bar.addEventListener('pointermove', (e) => {
-        if (!dragging) return;
-        win.style.transform = `translate(${ox + e.clientX - sx}px, ${oy + e.clientY - sy}px)`;
-      });
-      const end = (e) => {
-        if (!dragging) return;
-        dragging = false;
-        win.classList.remove('dragging');
-        try { bar.releasePointerCapture(e.pointerId); } catch (_) {}
-      };
-      bar.addEventListener('pointerup', end);
-      bar.addEventListener('pointercancel', end);
-      bar.addEventListener('dblclick', () => { win.style.transform = ''; });
-    });
-  }
-
-  /* ---------- clock / boot ---------- */
-
-  function tickClock() {
-    const d = new Date();
-    els.clock.textContent = d.toLocaleTimeString('en-US', { hour12: false });
-  }
-  tickClock();
-  window.setInterval(tickClock, 1000);
-
-  window.addEventListener('resize', resizeRain, { passive: true });
-  resizeRain();
-  if (!reduce) window.requestAnimationFrame(drawRain);
-
-  (async () => {
-    await bootSeq();
+  function afterIntro() {
     const biz = qs.get('biz');
     const city = qs.get('city');
     if (biz) {
-      els.input.value = biz + (city ? ', ' + city : '');
-      await sleep(400);
-      els.form.requestSubmit();
+      els.biz.value = biz + (city ? ', ' + city : '');
+      window.setTimeout(() => els.form.requestSubmit(), 350);
       return;
     }
-    els.input.focus({ preventScroll: true });
-  })();
+    els.biz.focus({ preventScroll: true });
+  }
+
+  if (reduce || !els.intro) {
+    if (els.intro) els.intro.remove();
+    afterIntro();
+  } else {
+    window.setTimeout(() => {
+      els.intro.classList.add('done');
+      window.setTimeout(() => els.intro.remove(), 500);
+      afterIntro();
+    }, 2200);
+  }
 })();
