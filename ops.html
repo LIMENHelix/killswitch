@@ -3,17 +3,23 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>OPS // Live Local Sites</title>
-<meta name="description" content="Operator console for Live Local Sites. Links to admin, CRM, discovery, pricing and billing." />
+<title>OPS // Back End | Live Local Sites</title>
+<meta name="description" content="The back end of Live Local Sites: admin, CRM, discovery, pricing, billing and the client systems." />
 <meta name="robots" content="noindex,nofollow" />
 <link rel="canonical" href="https://livelocalsites.com/ops" />
-<link rel="icon" href="/logo-mark.svg" />
+<link rel="icon" href="/l-mark.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/ops.css" />
 </head>
 <body>
+<canvas id="rain" aria-hidden="true"></canvas>
+<div class="scanlines" aria-hidden="true"></div>
 <header class="hud">
   <a class="hud-brand" href="/"><img src="/l-mark.svg" alt="" width="24" height="24" /> Live Local Sites <span>/ OPS</span></a>
   <div class="hud-right">
+    <span class="chip red">RED PILL</span>
     <span class="chip" id="healthChip"><i></i> CHECKING</span>
     <span class="chip dim">PRODUCTION</span>
     <a class="hud-link" href="/demo">DEMO →</a>
@@ -22,9 +28,9 @@
 
 <main class="stage">
   <section class="intro">
-    <p class="kicker">OPERATIONS // LIVE LOCAL SITES</p>
+    <p class="kicker">OPERATIONS // BACK END // RED PILL</p>
     <h1>Operator console.</h1>
-    <p class="sub">Links to the live systems. Admin and master stay login-gated; nothing on this page stores a credential or token.</p>
+    <p class="sub">You're looking at the machine behind the page. Every system that runs the business: admin, CRM, discovery, pricing, billing and the client sites. Admin and master stay login-gated; nothing on this page stores a credential or token.</p>
     <div class="status-row">
       <span class="chip" id="sitemapChip">SITEMAP —</span>
       <span class="chip">CANONICAL livelocalsites.com</span>
