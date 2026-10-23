@@ -424,6 +424,15 @@
 
   /* ---------- voice ---------- */
 
+  const VOICE_ERRORS = {
+    'not-allowed': 'microphone access is blocked. Allow the mic in your browser, then try again - or type the name.',
+    'service-not-allowed': 'speech recognition is blocked by this browser. Type the name instead.',
+    'audio-capture': 'no microphone was found. Type the name instead.',
+    network: 'speech recognition could not reach the service. Type the name instead.',
+    'no-speech': 'I did not hear anything. Try again, or type it.',
+    aborted: 'voice input stopped.',
+  };
+
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (SpeechRecognition) {
     const rec = new SpeechRecognition();
@@ -444,7 +453,11 @@
       window.setTimeout(() => els.form.requestSubmit(), 350);
     };
     rec.onerror = (event) => {
-      line('[ FAIL ] voice input: ' + (event.error || 'unavailable'), 'err');
+      const msg = VOICE_ERRORS[event.error] || ('voice input failed: ' + (event.error || 'unknown'));
+      line('[ FAIL ] ' + msg, 'err');
+      els.voiceLine.textContent = msg;
+      els.hint.hidden = false;
+      els.input.focus({ preventScroll: true });
     };
     rec.onend = () => {
       state.listening = false;
