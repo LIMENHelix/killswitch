@@ -1,4 +1,4 @@
-// Sunflower Websites growth-path multi-select checkout, from the public page.
+// Live Local Sites growth-path multi-select checkout, from the public page.
 // The client posts { email, phases: ["P1","P3", ...] }; the server maps each
 // phase to its MONTHLY subscription price and creates ONE Stripe Checkout
 // Session so the customer pays for the whole selection at once.

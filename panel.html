@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Your control panel · Sunflower Websites</title>
+<title>Your control panel · Live Local Sites</title>
 <meta name="robots" content="noindex" />
-<meta name="description" content="Your Sunflower Websites control panel: flip your modules on and off, and ask for changes to your site." />
+<meta name="description" content="Your Live Local Sites control panel: flip your modules on and off, and ask for changes to your site." />
 <link rel="icon" href="/logo-mark.svg?v=2" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -223,8 +223,8 @@
 <div id="pglow" aria-hidden="true"></div>
 <header class="nav">
   <div class="wrap nav-in">
-    <a href="https://sunflowerwebsites.com/" class="brand"><img class="brand-ic" src="/logo-mark.svg?v=2" alt="" width="30" height="30" />Sunflower Websites</a>
-    <a href="https://sunflowerwebsites.com/" class="back">← Back to site</a>
+    <a href="https://livelocalsites.com/" class="brand"><img class="brand-ic" src="/logo-mark.svg?v=2" alt="" width="30" height="30" />Live Local Sites</a>
+    <a href="https://livelocalsites.com/" class="back">← Back to site</a>
   </div>
 </header>
 
@@ -298,7 +298,7 @@
   <section class="s" id="connectionsWrap" hidden>
     <div class="s-lbl">Connect what you switched on</div>
     <div class="conn-grid" id="connectionsList"></div>
-    <p class="conn-safe">Paste only the public link customers should visit. Sunflower never asks for or stores your Google, calendar, or payment password.</p>
+    <p class="conn-safe">Paste only the public link customers should visit. Live Local Sites never asks for or stores your Google, calendar, or payment password.</p>
   </section>
 
   <section class="s">
@@ -323,7 +323,7 @@
 </div>
 
 <footer>
-  <div class="wrap">Sunflower Websites · a Limen Helix company · your site, your controls</div>
+  <div class="wrap">Live Local Sites · a Limen Helix company · your site, your controls</div>
 </footer>
 
 <script>
@@ -538,7 +538,7 @@
       if(newlyOn.length){
         var names=[], total=0;
         newlyOn.forEach(function(id){ var mm=MODULES.find(function(x){ return x.id===id; }); if(mm){ names.push(mm.name); total+=(mm.price||0); } });
-        if(!confirm('Start '+names.join(', ')+' for $'+total+'/mo.\n\nStripe charges the first billing amount now. If you already have an active Sunflower subscription, the new module is prorated to that billing date. You can switch anything off anytime; it keeps working through the date already paid, then stops and does not renew. Payments already made are not refunded.\n\nContinue?')) return;
+        if(!confirm('Start '+names.join(', ')+' for $'+total+'/mo.\n\nStripe charges the first billing amount now. If you already have an active Live Local Sites subscription, the new module is prorated to that billing date. You can switch anything off anytime; it keeps working through the date already paid, then stops and does not renew. Payments already made are not refunded.\n\nContinue?')) return;
       }
       var btn=document.getElementById('saveBtn'); btn.disabled=true;
       saveNote.style.color=''; saveNote.textContent='Saving your changes...';

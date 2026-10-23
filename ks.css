@@ -1,5 +1,5 @@
 /* ============================================================
-   Sunflower Websites — unified kill-switch design system
+   Live Local Sites — unified kill-switch design system
    ONE stylesheet for every page. index.html carries an inline
    copy of the core (kept in sync); every other page links this.
    Superset of the old styles.css vocabulary + the new kill-switch
@@ -605,7 +605,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
 }
 
 /* ============================================================
-   Sunflower public-page finish
+   Live Local Sites public-page finish
    These pages originally inherited the old industrial Killswitch skin.
    Keep the underlying forms, checkout links and scripts, but present the
    public site as a restrained service studio.

@@ -1,5 +1,5 @@
 /* ============================================================
-   Sunflower Websites Web Studio — interactions
+   Live Local Sites Web Studio — interactions
    Everything here is vanilla JS. No build step, no dependencies.
    Clone the folder, change text, push to Vercel — it's live.
    ============================================================ */
@@ -89,15 +89,15 @@ async function sendLead(payload, noteEl, formEl) {
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({
         access_key: WEB3FORMS_KEY,
-        subject: `🔔 New lead (${payload.source || 'website'}) — Sunflower Websites`,
-        from_name: 'Sunflower Websites Website',
+        subject: `🔔 New lead (${payload.source || 'website'}) — Live Local Sites`,
+        from_name: 'Live Local Sites Website',
         ...payload,
       }),
     });
     const data = await r.json().catch(() => ({}));
     ok = !!data.success;
     msg = data.message || ('HTTP ' + r.status);
-    console.log('[Sunflower Websites lead] status', r.status, data);
+    console.log('[Live Local Sites lead] status', r.status, data);
   } catch (e) { msg = String(e); }
   if (noteEl) {
     noteEl.hidden = false;
@@ -179,7 +179,7 @@ function openChat() {
   chatLaunch.style.display = 'none';
   if (!greeted) {
     greeted = true;
-    setTimeout(() => addMsg("Hey! 👋 I'm the Sunflower Websites assistant. Ask me about pricing, timelines, what we can build, or **Switch** (our AI sales rep).", 'bot'), 350);
+    setTimeout(() => addMsg("Hey! 👋 I'm the Live Local Sites assistant. Ask me about pricing, timelines, what we can build, or **Switch** (our AI sales rep).", 'bot'), 350);
   }
   setTimeout(() => chatText.focus(), 100);
 }

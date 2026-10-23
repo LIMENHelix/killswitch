@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex, nofollow" />
-<title>Sunflower Websites · Admin</title>
+<title>Live Local Sites · Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <link rel="icon" href="/logo-mark.svg?v=2" />
 <style>
@@ -190,7 +190,7 @@
 <body class="sunflower-console">
 <div class="wrap">
   <div id="login">
-    <h1>Sunflower Websites Admin</h1>
+    <h1>Live Local Sites Admin</h1>
     <div class="sub">Enter your admin key.</div>
     <input id="key" type="password" placeholder="Admin key" autocomplete="current-password" />
     <button class="btn" id="loginBtn" style="width:100%">Sign in</button>
@@ -823,7 +823,7 @@ function openScript(id){
     : 'So here\'s my offer: I\'ll build you a real website, free, yours to keep, no contract.';
 
   $('scSteps').innerHTML=[
-    stepHtml(1,'Disarm',`"Hi, is this ${esc(contact)}? My name's ${esc(ME==='operator'?'Chris':ME)}, I run a shop called Sunflower Websites. I'll be straight with you, this is a sales call, you can hang up and I won't take it personally. Thirty seconds?"`,true),
+    stepHtml(1,'Disarm',`"Hi, is this ${esc(contact)}? My name's ${esc(ME==='operator'?'Chris':ME)}, I run a shop called Live Local Sites. I'll be straight with you, this is a sales call, you can hang up and I won't take it personally. Thirty seconds?"`,true),
     stepHtml(2,'Their hook, the one true thing',`"Here's why I called <i>you</i>: ${esc(hook)}."`,true),
     stepHtml(3,'Deliver',`"${esc(deliver)}"`,true),
     stepHtml(4,'The catch, before they ask',`"The catch, before you ask: the add-ons are nineteen to twenty-nine bucks a month each, optional, off unless you flip them on. If you never do, you keep a free site and I lose the bet."`,true),
@@ -836,7 +836,7 @@ function openScript(id){
   ].join('');
 
   scText=siteUrl
-    ? `${r.name} - here's the site I built you, yours free: ${siteUrl}\nEverything on it is editable and it's yours to keep. The only things that ever cost anything are Google and online booking, $19/mo each, and they're off unless you say so. - Sunflower Websites`
+    ? `${r.name} - here's the site I built you, yours free: ${siteUrl}\nEverything on it is editable and it's yours to keep. The only things that ever cost anything are Google and online booking, $19/mo each, and they're off unless you say so. - Live Local Sites`
     : '';
   // Never hand out a link to a page that is still a 404.
   $('scCopyText').disabled=!scText||needsPublish;

@@ -22,7 +22,7 @@
 process.env.KV_REST_API_URL = 'https://kv.e2e.test';
 process.env.KV_REST_API_TOKEN = 'token';
 process.env.LOB_API_KEY = 'lob_test_key';
-process.env.KS_FROM_NAME = 'Sunflower Websites';
+process.env.KS_FROM_NAME = 'Live Local Sites';
 process.env.KS_FROM_LINE1 = '123 Main St';
 process.env.KS_FROM_CITY = 'Kansas City';
 process.env.KS_FROM_STATE = 'KS';
@@ -402,7 +402,7 @@ await inbound({
   },
 }, res);
 check('the claim is accepted', res.code === 200 && res.body.ok === true, res.code + ' ' + JSON.stringify(res.body));
-check('the customer landed on the SAME site the draft built', res.body.siteUrl === 'https://sunflowerwebsites.com/s/' + SLUG, res.body.siteUrl);
+check('the customer landed on the SAME site the draft built', res.body.siteUrl === 'https://livelocalsites.com/s/' + SLUG, res.body.siteUrl);
 site = await getSite(SLUG);
 check('the site is now published and claimed', site.published === true && site.claimed === true && site.email === EMAIL);
 let account = await getAccount(EMAIL);

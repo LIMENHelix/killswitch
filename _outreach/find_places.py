@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Sunflower Websites lead finder — Google Places (New) edition.
+Live Local Sites lead finder — Google Places (New) edition.
 
 Far better coverage and USPS-clean addresses than OSM, plus phone numbers.
 For each trade x city it runs a Places Text Search, keeps businesses with NO

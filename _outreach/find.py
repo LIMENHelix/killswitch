@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Sunflower Websites lead finder (DIY, free, no API key).
+Live Local Sites lead finder (DIY, free, no API key).
 
 Pulls local businesses from OpenStreetMap (Overpass API) inside a bounding box,
 keeps only the ones with NO website, and writes a CSV grouped by trade. Those

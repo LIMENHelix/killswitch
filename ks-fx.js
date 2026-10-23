@@ -1,5 +1,5 @@
 /* ============================================================
-   Sunflower Websites — shared light-up FX (interior pages)
+   Live Local Sites — shared light-up FX (interior pages)
    Brightens the whole screen the more switches/phases are on,
    darkens as they turn off. No sound, no lightning — just the
    cumulative glow + a quick flicker. Pairs with #pglow + ks.css.

@@ -9,7 +9,7 @@
 // tenants are separated is that the keys they touch are different.
 process.env.KV_REST_API_URL = 'https://kv.test/';
 process.env.KV_REST_API_TOKEN = 'kvtok';
-process.env.KS_HOME_DOMAINS = 'sunflowerwebsites.com,localhost';
+process.env.KS_HOME_DOMAINS = 'livelocalsites.com,localhost';
 
 const KV = new Map();
 const seenKeys = [];      // every key that actually reached the wire
@@ -131,7 +131,7 @@ check('a pipeline scopes EVERY command in the batch, not just the first',
 
 console.log('\nAN UNKNOWN DOMAIN IS A REFUSAL, NEVER A FALLBACK');
 
-check('the home domain is root', (await T.tenantForHost('sunflowerwebsites.com')).root === true);
+check('the home domain is root', (await T.tenantForHost('livelocalsites.com')).root === true);
 check('with a port attached, as a browser sends it', (await T.tenantForHost('localhost:3000')).root === true);
 check('and no host at all is root, which is how crons and scripts run',
   (await T.tenantForHost('')).id === ROOT);
