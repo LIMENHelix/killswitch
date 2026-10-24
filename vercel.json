@@ -26,12 +26,10 @@
     }
   ],
   "rewrites": [
-    { "source": "/ops", "destination": "/api/ops" },
     { "source": "/s/:slug", "destination": "/api/site?slug=:slug" },
     { "source": "/sitemap-sites.xml", "destination": "/api/sitemap-sites" }
   ],
   "redirects": [
-    { "source": "/ops.html", "destination": "/ops", "permanent": false },
     {
       "source": "/",
       "has": [{ "type": "host", "value": "killswitch.domains" }],
@@ -56,6 +54,8 @@
       "destination": "https://livelocalsites.com/:path*",
       "permanent": true
     },
+    { "source": "/ops", "destination": "/api/ops", "permanent": false },
+    { "source": "/ops.html", "destination": "/api/ops", "permanent": false },
     { "source": "/menu", "destination": "/pricing", "permanent": false },
     { "source": "/mckillswitches", "destination": "/pricing", "permanent": false },
     { "source": "/kitchen", "destination": "/pricing", "permanent": false },
