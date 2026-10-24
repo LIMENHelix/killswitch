@@ -2,6 +2,9 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "trailingSlash": false,
+  "functions": {
+    "api/ops.js": { "includeFiles": "ops.html" }
+  },
   "crons": [
     { "path": "/api/cron-mail", "schedule": "0 14,20 * * *" },
     { "path": "/api/cron-followups", "schedule": "*/5 * * * *" },
@@ -23,10 +26,12 @@
     }
   ],
   "rewrites": [
+    { "source": "/ops", "destination": "/api/ops" },
     { "source": "/s/:slug", "destination": "/api/site?slug=:slug" },
     { "source": "/sitemap-sites.xml", "destination": "/api/sitemap-sites" }
   ],
   "redirects": [
+    { "source": "/ops.html", "destination": "/ops", "permanent": false },
     {
       "source": "/",
       "has": [{ "type": "host", "value": "killswitch.domains" }],
