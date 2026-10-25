@@ -79,6 +79,8 @@ h1,h2,h3{font-family:Manrope,system-ui,sans-serif;color:var(--ink);letter-spacin
 .nav-actions{display:flex;align-items:center;gap:16px}
 .phone{color:var(--accent);font-weight:700;font-size:.9rem;border-bottom:1px solid rgba(20,107,69,.3)}
 .nav .btn{padding:10px 16px;font-size:.86rem}
+.nav-admin{font-family:var(--mono,ui-monospace,monospace);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--line);padding:7px 10px;border-radius:6px}
+.nav-admin:hover,.nav-admin:focus-visible{color:var(--accent);border-color:var(--line-strong);outline:none}
 
 .hero{padding:72px 0 48px}
 .hero-grid{display:grid;grid-template-columns:1.02fr .98fr;gap:56px;align-items:center}
@@ -201,6 +203,8 @@ h1,h2,h3{font-family:Manrope,system-ui,sans-serif;color:var(--ink);letter-spacin
 .foot-links{display:flex;gap:18px;flex-wrap:wrap;font-size:.82rem}
 .foot-links a:hover{color:#fff}
 .foot-bottom{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.12);margin-top:28px;padding-top:18px;font-size:.72rem;color:#8fa095}
+.foot-admin{font-family:var(--mono,ui-monospace,monospace);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:#8fa095;text-decoration:none}
+.foot-admin:hover{color:#fff}
 
 @media(max-width:980px){
   .hero-grid{grid-template-columns:1fr;gap:38px}
@@ -212,7 +216,9 @@ h1,h2,h3{font-family:Manrope,system-ui,sans-serif;color:var(--ink);letter-spacin
 }
 @media(max-width:640px){
   .wrap{padding:0 18px}
-  .nav-in{height:64px}
+  .nav-in{height:auto;min-height:64px;flex-wrap:wrap;padding:8px 0}
+  .nav-actions{gap:8px;flex-wrap:wrap}
+  .nav-admin{padding:6px 8px}
   .nav-actions .phone{display:none}
   .hero{padding:48px 0 36px}
   .hero h1{font-size:clamp(38px,11vw,52px)}
@@ -241,6 +247,7 @@ h1,h2,h3{font-family:Manrope,system-ui,sans-serif;color:var(--ink);letter-spacin
       <a href="/demo">Demo</a>
     </nav>
     <div class="nav-actions">
+      <a class="nav-admin" href="/ops">Admin</a>
       <a class="phone" href="tel:+19139331687">(913) 933-1687</a>
       <a class="btn btn-primary" href="#start">Start free</a>
     </div>
@@ -468,6 +475,7 @@ h1,h2,h3{font-family:Manrope,system-ui,sans-serif;color:var(--ink);letter-spacin
     <div class="foot-bottom">
       <span>&copy; 2026 Live Local Sites</span>
       <span>Websites for local business. Live in hours.</span>
+      <a class="foot-admin" href="/ops">Admin</a>
     </div>
   </div>
 </footer>
