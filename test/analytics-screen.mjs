@@ -176,28 +176,22 @@ await open('/');
 const before = inbound;
 await evaluate(`
   document.getElementById('fBiz').value = 'Test Plumbing';
+  document.getElementById('fTrade').value = 'plumber';
+  document.getElementById('fCity').value = 'Kansas City, MO';
   document.getElementById('fPhone').value = '816-555-0101';
   document.getElementById('fEmail').value = 'test@example.com';
+  document.getElementById('fAgree').checked = true;
   document.getElementById('capForm').requestSubmit();
 `);
-await new Promise((r) => setTimeout(r, 900));
-check('the homepage does NOT create the site itself: no /api/inbound call',
-  inbound === before, `${before} -> ${inbound}`);
-check('it hands off to /start instead', (await evaluate('location.pathname')) === '/start',
-  await evaluate('location.pathname'));
-check('the parked homepage intake prefills the /start form',
-  (await evaluate(`document.getElementById('f-business').value`)) === 'Test Plumbing');
-await evaluate(`
-  document.getElementById('f-name').value = 'Test Owner';
-  document.getElementById('agree').checked = true;
-  document.getElementById('startForm').requestSubmit();
-`);
-await new Promise((r) => setTimeout(r, 900));
-check('/start submits the signup to first-party /api/inbound',
+await new Promise((r) => setTimeout(r, 1200));
+check('the homepage creates the site directly',
   inbound === before + 1, `${before} -> ${inbound}`);
+check('and stays on the homepage', (await evaluate('location.pathname')) === '/',
+  await evaluate('location.pathname'));
+check('and shows the success card', !(await evaluate(`document.getElementById('capDone').hidden`)));
 check('and a signup is recorded', (await evaluate(NAMES)).includes('signup_submitted'), JSON.stringify(await evaluate(NAMES)));
 check('tagged with where it came from',
-  JSON.parse(await evaluate(EVENT('signup_submitted')) || 'null')?.source === 'start-page', await evaluate(EVENT('signup_submitted')));
+  JSON.parse(await evaluate(EVENT('signup_submitted')) || 'null')?.source === 'homepage', await evaluate(EVENT('signup_submitted')));
 
 await open('/');
 await evaluate(`

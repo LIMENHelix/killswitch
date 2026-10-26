@@ -182,6 +182,20 @@ h1,h2,h3{font-family:Manrope,system-ui,sans-serif;color:var(--ink);letter-spacin
 .field input{width:100%;border:1px solid var(--line-strong);border-radius:7px;padding:12px 13px;font:inherit;font-size:.92rem;color:var(--ink);background:#fff}
 .field input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
 .intake .btn{width:100%;margin-top:4px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field select{width:100%;border:1px solid var(--line-strong);border-radius:7px;padding:12px 13px;font:inherit;font-size:.92rem;color:var(--ink);background:#fff}
+.field select:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.field #fTradeOther{margin-top:8px}
+.agree-line{display:flex;align-items:flex-start;gap:8px;font-size:.78rem;color:var(--muted);margin:2px 0 12px;line-height:1.45}
+.agree-line input{margin-top:3px;flex:none}
+.agree-line a{color:var(--accent);text-decoration:underline}
+.intake-done{background:#fff;color:var(--ink);border-radius:16px;padding:28px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.done-mark{width:46px;height:46px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:22px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+.intake-done h3{font-size:1.3rem;margin-bottom:8px}
+.intake-done p{font-size:.9rem;color:var(--body);margin-bottom:16px}
+.intake-done .btn{width:100%}
+.intake-done .fine{margin-top:12px;margin-bottom:0}
+.intake-done .fine a{color:var(--accent);font-weight:700}
 .fine{font-size:.72rem;color:var(--muted);margin-top:10px;text-align:center}
 .form-err{min-height:18px;color:#b73e32;font-size:.78rem;margin-top:6px;text-align:center}
 
@@ -417,12 +431,40 @@ h1,h2,h3{font-family:Manrope,system-ui,sans-serif;color:var(--ink);letter-spacin
       <form class="intake" id="capForm" novalidate>
         <h3>Start with the basics.</h3>
         <div class="field"><label for="fBiz">Business name</label><input id="fBiz" name="business" type="text" required autocomplete="organization" placeholder="Dave's Auto Repair" /></div>
+        <div class="field-row">
+          <div class="field"><label for="fTrade">Trade</label>
+            <select id="fTrade" name="trade" required>
+              <option value="">Choose a trade</option>
+              <option value="plumber">Plumbing</option>
+              <option value="electrician">Electrical</option>
+              <option value="hvac">Heating &amp; cooling</option>
+              <option value="roofer">Roofing</option>
+              <option value="landscaper">Landscaping</option>
+              <option value="painter">Painting</option>
+              <option value="cleaning">Cleaning</option>
+              <option value="auto repair">Auto repair</option>
+              <option value="salon/barber">Salon / barber</option>
+              <option value="restaurant">Restaurant</option>
+              <option value="other">Other</option>
+            </select>
+            <input id="fTradeOther" type="text" placeholder="Type your trade" hidden />
+          </div>
+          <div class="field"><label for="fCity">City</label><input id="fCity" name="city" type="text" required autocomplete="address-level2" placeholder="Kansas City, MO" /></div>
+        </div>
         <div class="field"><label for="fPhone">Phone</label><input id="fPhone" name="phone" type="tel" required autocomplete="tel" placeholder="(816) 555-0142" /></div>
         <div class="field"><label for="fEmail">Email</label><input id="fEmail" name="email" type="email" required autocomplete="email" placeholder="dave@davesauto.com" /></div>
+        <label class="agree-line"><input type="checkbox" id="fAgree" required /> I agree to the <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.</label>
         <button class="btn btn-primary" type="submit">Start my free site</button>
-        <div class="fine">Takes about 20 seconds. We send the link by text or email.</div>
+        <div class="fine">Your starter site begins building the moment you submit.</div>
         <div class="form-err" id="capErr" role="alert"></div>
       </form>
+      <div class="intake-done" id="capDone" hidden>
+        <div class="done-mark" aria-hidden="true">✓</div>
+        <h3>Your site is being built.</h3>
+        <p id="capDoneMsg">We emailed your private panel link.</p>
+        <a class="btn btn-primary" id="capSiteLink" href="#" target="_blank" rel="noopener">Open your site</a>
+        <p class="fine">Want to add photos, services or hours? <a href="/start">Open the full intake</a>.</p>
+      </div>
     </div>
   </section>
 
@@ -481,7 +523,93 @@ h1,h2,h3{font-family:Manrope,system-ui,sans-serif;color:var(--ink);letter-spacin
 </footer>
 
 <script>
-(function(){var form=document.getElementById('capForm');var err=document.getElementById('capErr');function showErr(msg){err.textContent=msg;err.classList.add('show')}form.addEventListener('submit',function(e){e.preventDefault();err.classList.remove('show');var business=document.getElementById('fBiz').value.trim();var phone=document.getElementById('fPhone').value.trim();var email=document.getElementById('fEmail').value.trim();if(business.length<2){showErr('Add your business name so we know what to build.');document.getElementById('fBiz').focus();return}if(phone.replace(/\D/g,'').length<10){showErr('Add a 10 digit phone so we can send you the link.');document.getElementById('fPhone').focus();return}if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){showErr('Check the email address so the link reaches you.');document.getElementById('fEmail').focus();return}try{sessionStorage.setItem('ks:intake',JSON.stringify({business:business,phone:phone,email:email}))}catch(e2){}if(window.ksEvent)ksEvent('intake_started',{source:'homepage'});window.location.href='/start'})})();
+(function () {
+  var form = document.getElementById('capForm');
+  var err = document.getElementById('capErr');
+  var done = document.getElementById('capDone');
+  var tradeSel = document.getElementById('fTrade');
+  var tradeOther = document.getElementById('fTradeOther');
+
+  function showErr(msg) { err.textContent = msg; err.classList.add('show'); }
+  function clearErr() { err.textContent = ''; err.classList.remove('show'); }
+  function msgFor(code) {
+    switch (code) {
+      case 'valid_email': return 'Check the email address so the link reaches you.';
+      case 'business_required': return 'Add your business name so we know what to build.';
+      case 'valid_phone': return 'Add a 10 digit phone so we can send you the link.';
+      case 'valid_public_email': return 'Check the public email address.';
+      case 'rate_limited': return 'Too many tries. Wait a minute and try again.';
+      case 'server_error': return 'Something went wrong on our side. Try again, or call (913) 933-1687.';
+      default: return 'Something went wrong. Try again, or call (913) 933-1687.';
+    }
+  }
+
+  tradeSel.addEventListener('change', function () {
+    var other = tradeSel.value === 'other';
+    tradeOther.hidden = !other;
+    if (other) tradeOther.focus();
+  });
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    clearErr();
+
+    var business = document.getElementById('fBiz').value.trim();
+    var trade = tradeSel.value === 'other' ? tradeOther.value.trim() : tradeSel.value;
+    var city = document.getElementById('fCity').value.trim();
+    var phone = document.getElementById('fPhone').value.trim();
+    var email = document.getElementById('fEmail').value.trim();
+    var agree = document.getElementById('fAgree').checked;
+
+    if (business.length < 2) { showErr('Add your business name so we know what to build.'); document.getElementById('fBiz').focus(); return; }
+    if (!trade) { showErr('Choose or type the trade.'); tradeSel.focus(); return; }
+    if (!city) { showErr('Add the city you serve.'); document.getElementById('fCity').focus(); return; }
+    if (phone.replace(/\D/g, '').length < 10) { showErr('Add a 10 digit phone so we can send you the link.'); document.getElementById('fPhone').focus(); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { showErr('Check the email address so the link reaches you.'); document.getElementById('fEmail').focus(); return; }
+    if (!agree) { showErr('Please agree to the Terms and Privacy Policy.'); document.getElementById('fAgree').focus(); return; }
+
+    var btn = form.querySelector('button[type=submit]');
+    var label = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Building your site…';
+
+    try { sessionStorage.setItem('ks:intake', JSON.stringify({ business: business, phone: phone, email: email })); } catch (e2) {}
+    if (window.ksEvent) ksEvent('intake_started', { source: 'homepage' });
+
+    try {
+      var r = await fetch('/api/inbound', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          business: business,
+          trade: trade,
+          city: city,
+          phone: phone,
+          email: email,
+          attribution: window.ksAttribution ? ksAttribution() : {},
+        }),
+      });
+      var d = await r.json().catch(function () { return {}; });
+      if (!r.ok || !d.ok) {
+        showErr(msgFor(d.error));
+        btn.disabled = false;
+        btn.textContent = label;
+        return;
+      }
+      if (window.ksEvent) ksEvent('signup_submitted', { source: 'homepage' });
+      form.hidden = true;
+      done.hidden = false;
+      var link = document.getElementById('capSiteLink');
+      if (d.siteUrl) { link.href = d.siteUrl; link.hidden = false; } else { link.hidden = true; }
+      document.getElementById('capDoneMsg').textContent = d.message || ('We emailed your private panel link to ' + email + '.');
+      done.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (e3) {
+      showErr('Something went wrong. Try again, or call (913) 933-1687.');
+      btn.disabled = false;
+      btn.textContent = label;
+    }
+  });
+})();
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
 <script defer src="/ks-analytics.js"></script>
