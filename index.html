@@ -186,6 +186,7 @@ h1,h2,h3{font-family:Manrope,system-ui,sans-serif;color:var(--ink);letter-spacin
 .field select{width:100%;border:1px solid var(--line-strong);border-radius:7px;padding:12px 13px;font:inherit;font-size:.92rem;color:var(--ink);background:#fff}
 .field select:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
 .field #fTradeOther{margin-top:8px}
+.hp-field{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 .agree-line{display:flex;align-items:flex-start;gap:8px;font-size:.78rem;color:var(--muted);margin:2px 0 12px;line-height:1.45}
 .agree-line input{margin-top:3px;flex:none}
 .agree-line a{color:var(--accent);text-decoration:underline}
@@ -453,6 +454,7 @@ h1,h2,h3{font-family:Manrope,system-ui,sans-serif;color:var(--ink);letter-spacin
         </div>
         <div class="field"><label for="fPhone">Phone</label><input id="fPhone" name="phone" type="tel" required autocomplete="tel" placeholder="(816) 555-0142" /></div>
         <div class="field"><label for="fEmail">Email</label><input id="fEmail" name="email" type="email" required autocomplete="email" placeholder="dave@davesauto.com" /></div>
+        <div class="hp-field" aria-hidden="true"><label for="fWebsite">Website</label><input id="fWebsite" name="website" type="text" tabindex="-1" autocomplete="off" /></div>
         <label class="agree-line"><input type="checkbox" id="fAgree" required /> I agree to the <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.</label>
         <button class="btn btn-primary" type="submit">Start my free site</button>
         <div class="fine">Your starter site begins building the moment you submit.</div>
@@ -529,6 +531,7 @@ h1,h2,h3{font-family:Manrope,system-ui,sans-serif;color:var(--ink);letter-spacin
   var done = document.getElementById('capDone');
   var tradeSel = document.getElementById('fTrade');
   var tradeOther = document.getElementById('fTradeOther');
+  var started = Date.now();
 
   function showErr(msg) { err.textContent = msg; err.classList.add('show'); }
   function clearErr() { err.textContent = ''; err.classList.remove('show'); }
@@ -586,6 +589,8 @@ h1,h2,h3{font-family:Manrope,system-ui,sans-serif;color:var(--ink);letter-spacin
           city: city,
           phone: phone,
           email: email,
+          website: document.getElementById('fWebsite').value,
+          elapsedMs: Date.now() - started,
           attribution: window.ksAttribution ? ksAttribution() : {},
         }),
       });

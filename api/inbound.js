@@ -14,8 +14,9 @@
 
 import { onboardCustomer } from '../lib/onboard.js';
 import { appendInboundLead } from '../lib/store.js';
-import { limited, LIMITS } from '../lib/ratelimit.js';
+import { limited, LIMITS, callerIp, callerGeo } from '../lib/ratelimit.js';
 import { ensureCustomerSite } from '../lib/autonomy.js';
+import { upsertSite } from '../lib/sites.js';
 import { publicOrigin } from '../lib/origin.js';
 import { normalizeAttribution } from '../lib/attribution.js';
 import { recordLifecycle } from '../lib/lifecycle.js';
@@ -111,6 +112,26 @@ export default async function handler(req, res) {
     try { body = JSON.parse(body); } catch { body = {}; }
   }
   if (!body || typeof body !== 'object') body = {};
+
+  // Cheap bot traps. The hidden field is never visible to a person; a filled
+  // value means a script walked the form. The elapsed check rejects instant
+  // submissions. Neither is a CAPTCHA, but both cost a naive bot the request.
+  if (String(body.website || '').trim()) {
+    res.status(400).json({ error: 'invalid_request' });
+    return;
+  }
+  const elapsedMs = Number(body.elapsedMs);
+  if (Number.isFinite(elapsedMs) && elapsedMs >= 0 && elapsedMs < 1200) {
+    res.status(400).json({ error: 'invalid_request' });
+    return;
+  }
+
+  const ip = callerIp(req);
+  const userAgent = String((req.headers && (req.headers['user-agent'] || req.headers['User-Agent'])) || '').slice(0, 300);
+  // Where the request came from, from the edge's own headers. Stored with the
+  // signup so the owner can see who entered what, and so an abusive burst can
+  // be traced back to an origin rather than just a random business name.
+  const geo = callerGeo(req);
 
   const email = String(body.email || '').trim().toLowerCase();
   const business = String(body.business || '').trim();
@@ -212,13 +233,25 @@ export default async function handler(req, res) {
       emailPublic: publicEmail, services, hours, about,
       source: 'inbound-homepage',
     });
+    // Self-serve signups stay indexable only after the customer proves they
+    // control the inbox by opening the panel link. Until then the page works
+    // by link but carries noindex and stays out of sitemap-sites.
+    if (provisioned && provisioned.created && provisioned.site) {
+      await upsertSite({
+        slug: provisioned.site.slug,
+        claimed: false,
+        signupIp: ip,
+        signupUserAgent: userAgent,
+        signupGeo: geo,
+      });
+    }
     await recordLifecycle(email, {
       type: 'site.published', stage: 'site_published', idempotencyKey: 'inbound:site-published',
       data: { siteSlug: provisioned.site.slug, created: provisioned.created },
     });
     out = await onboardCustomer({
       email, site: business, name: name || business, phone,
-      source: 'inbound-homepage', leadId,
+      source: 'inbound-homepage', leadId, signupIp: ip, signupUserAgent: userAgent, signupGeo: geo,
     });
   } catch (e) {
     console.error('[inbound] onboard', e);
@@ -251,6 +284,9 @@ export default async function handler(req, res) {
       name: business,
       contactName: name,
       phone,
+      ip,
+      userAgent,
+      geo,
       trade,
       street, city, state, zip,
       publicEmail,

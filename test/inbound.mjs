@@ -34,8 +34,10 @@ globalThis.fetch = async (url, opts = {}) => {
 };
 
 const inbound = (await import('../api/inbound.js')).default;
+const accountApi = (await import('../api/account.js')).default;
 const { getAccount, getLeads, upsertAccount } = await import('../lib/store.js');
 const { siteForEmail, upsertSite } = await import('../lib/sites.js');
+const { panelToken } = await import('../lib/panel-auth.js');
 
 function response() {
   const out = { code: 0, body: null };
@@ -45,9 +47,11 @@ function response() {
   return out;
 }
 
-async function submit(body, host = 'attacker.example', ip = '127.0.0.1') {
+async function submit(body, host = 'attacker.example', ip = '127.0.0.1', geo = null) {
   const res = response();
-  await inbound({ method: 'POST', body, headers: { host, origin: 'https://' + host, 'x-forwarded-for': ip } }, res);
+  const headers = { host, origin: 'https://' + host, 'x-forwarded-for': ip };
+  Object.assign(headers, geo || {});
+  await inbound({ method: 'POST', body, headers }, res);
   return res;
 }
 
@@ -66,21 +70,69 @@ let res = await submit({
     landingPage: '/free-website-for-plumbers-in-kansas-city', gclid: 'click-123',
     ignored: 'must not persist',
   },
+}, 'attacker.example', '10.20.30.40', {
+  'x-vercel-ip-city': 'Kansas%20City',
+  'x-vercel-ip-country-region': 'MO',
+  'x-vercel-ip-country': 'US',
+  'x-vercel-ip-latitude': '39.0997',
+  'x-vercel-ip-longitude': '-94.5786',
+  'x-vercel-ip-timezone': 'America/Chicago',
+  'user-agent': 'Mozilla/5.0 (test)',
 });
 check('signup succeeds', res.code === 200, JSON.stringify(res.body));
 const account = await getAccount('owner@example.com');
 const site = await siteForEmail('owner@example.com');
 check('the account is created', account && account.plan.includes('P0'));
 check('a real site is created and linked', site && site.slug === 'north-star-electric', JSON.stringify(site));
-check('the site is live and customer-claimed', site.published && site.claimed);
+// A self-serve site is live by link but NOT indexable: the customer has not yet
+// proved they control the inbox they typed. Opening the panel link flips this.
+check('the site is live but not yet customer-claimed', site.published && !site.claimed);
 check('the customer phone is on the page record', site.phone === '(816) 555-0199');
 check('the response links the live site', res.body.siteUrl === 'https://livelocalsites.com/s/north-star-electric', res.body.siteUrl);
 check('an attacker Host header cannot capture a panel token', !res.body.portalUrl && !JSON.stringify(res.body).includes('attacker.example'));
+check('the signup IP is saved on the site record', site.signupIp === '10.20.30.40', site.signupIp);
+check('the signup user-agent is saved on the site record', site.signupUserAgent === 'Mozilla/5.0 (test)', site.signupUserAgent);
+check('the signup location is saved on the site record, city decoded',
+  site.signupGeo && site.signupGeo.city === 'Kansas City' && site.signupGeo.region === 'MO'
+  && site.signupGeo.country === 'US' && site.signupGeo.latitude === 39.0997
+  && site.signupGeo.longitude === -94.5786 && site.signupGeo.timezone === 'America/Chicago',
+  JSON.stringify(site.signupGeo));
+check('the account carries the signup origin',
+  account.signupIp === '10.20.30.40' && account.signupGeo && account.signupGeo.city === 'Kansas City',
+  JSON.stringify(account.signupGeo));
 const inboundLead = (await getLeads()).find((lead) => lead.email === 'owner@example.com');
 check('the signup is present on the lead board', !!inboundLead);
+check('the lead carries the same origin as the site',
+  inboundLead.ip === '10.20.30.40' && inboundLead.userAgent === 'Mozilla/5.0 (test)'
+  && inboundLead.geo && inboundLead.geo.city === 'Kansas City', JSON.stringify(inboundLead.geo));
 check('campaign attribution survives into operations',
   inboundLead.attribution?.source === 'google' && inboundLead.attribution?.campaign === 'launch-plumbers');
 check('unrecognized attribution fields are rejected', !('ignored' in (inboundLead.attribution || {})));
+
+console.log('\nA FILLED HIDDEN FIELD OR INSTANT SUBMIT IS NOT A PERSON');
+res = await submit({ email: 'bot@example.com', business: 'Bot Shop', phone: '816-555-0101', website: 'http://spam.example' }, 'attacker.example', '10.9.9.1');
+check('a filled hidden field is rejected', res.code === 400 && res.body.error === 'invalid_request', JSON.stringify(res.body));
+res = await submit({ email: 'bot2@example.com', business: 'Bot Shop Two', phone: '816-555-0102', elapsedMs: 50 }, 'attacker.example', '10.9.9.2');
+check('a submission faster than a person can type is rejected', res.code === 400 && res.body.error === 'invalid_request', JSON.stringify(res.body));
+check('a trapped request creates no account', !(await getAccount('bot@example.com')) && !(await getAccount('bot2@example.com')));
+check('a trapped request creates no site', !(await siteForEmail('bot@example.com')));
+res = await submit({ email: 'human@example.com', business: 'Human Shop', phone: '816-555-0103', elapsedMs: 5000 }, 'attacker.example', '10.9.9.3');
+check('a human-paced submission with an empty hidden field passes', res.code === 200, JSON.stringify(res.body));
+
+console.log('\nOPENING THE EMAILED PANEL LINK IS THE VERIFICATION GATE');
+const token = await panelToken('owner@example.com');
+check('a panel token can be minted for the signup address', !!token);
+const wrong = response();
+await accountApi({ method: 'GET', query: { e: 'owner@example.com', t: 'not-a-token' }, headers: {} }, wrong);
+check('a bad token does not verify', wrong.code === 401, JSON.stringify(wrong.body));
+const unclaimedStill = await siteForEmail('owner@example.com');
+check('a bad token claims nothing', unclaimedStill.claimed === false);
+const opened = response();
+await accountApi({ method: 'GET', query: { e: 'owner@example.com', t: token }, headers: {} }, opened);
+check('the panel link opens the account', opened.code === 200, JSON.stringify(opened.body));
+const verified = await siteForEmail('owner@example.com');
+check('opening the emailed link claims the site', verified.claimed === true);
+check('the verified site is still published', verified.published === true);
 
 console.log('\nREPEATED SIGNUP CANNOT DOWNGRADE A CUSTOMER');
 await upsertAccount({ email: 'paid@example.com', name: 'Paid Original', site: 'Paid Original', plan: ['P0', 'P9'], owned: ['P3'], stripeCustomerId: 'cus_paid', createdAt: '2025-01-01T00:00:00.000Z', source: 'paid' });
