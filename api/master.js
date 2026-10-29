@@ -58,6 +58,10 @@ function configReport() {
     KS_PANEL_SECRET: 'sign panel links, without which no customer can open their panel',
     STRIPE_SECRET_KEY: 'read subscriptions and start a checkout',
     STRIPE_WEBHOOK_SECRET: 'trust what Stripe says about a payment',
+    // Without this the signup forms still work, but nothing stops a script:
+    // lib/turnstile.js skips the challenge and no widget is drawn. Reported
+    // here so the unprotected state is visible rather than assumed safe.
+    TURNSTILE_SECRET_KEY: 'block scripted signups with a Cloudflare challenge',
   };
   const missing = Object.keys(need).filter((k) => !String(process.env[k] || '').trim());
   return { ok: !missing.length, missing, why: need };

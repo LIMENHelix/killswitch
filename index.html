@@ -2,6 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<!-- Empty means Turnstile is not configured yet: no widget renders and the
+     server skips the check (see lib/turnstile.js). Setting the public site key
+     here is what turns the check on. -->
+<meta name="turnstile-sitekey" content="" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Your website, live in hours | Live Local Sites</title>
 <meta name="description" content="Live Local Sites builds local service businesses a polished starter site in hours, not weeks. Free to start, yours to keep." />
@@ -456,6 +460,7 @@ h1,h2,h3{font-family:Manrope,system-ui,sans-serif;color:var(--ink);letter-spacin
         <div class="field"><label for="fEmail">Email</label><input id="fEmail" name="email" type="email" required autocomplete="email" placeholder="dave@davesauto.com" /></div>
         <div class="hp-field" aria-hidden="true"><label for="fWebsite">Website</label><input id="fWebsite" name="website" type="text" tabindex="-1" autocomplete="off" /></div>
         <label class="agree-line"><input type="checkbox" id="fAgree" required /> I agree to the <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.</label>
+        <div id="fTurnstile" class="ts-slot" hidden></div>
         <button class="btn btn-primary" type="submit">Start my free site</button>
         <div class="fine">Your starter site begins building the moment you submit.</div>
         <div class="form-err" id="capErr" role="alert"></div>
@@ -533,6 +538,28 @@ h1,h2,h3{font-family:Manrope,system-ui,sans-serif;color:var(--ink);letter-spacin
   var tradeOther = document.getElementById('fTradeOther');
   var started = Date.now();
 
+  // Turnstile is loaded only when a site key is configured, so an unconfigured
+  // deploy renders no widget and asks nothing of the visitor.
+  var TS_KEY = (document.querySelector('meta[name="turnstile-sitekey"]') || {}).content || '';
+  function turnstileToken() {
+    var el = document.querySelector('input[name="cf-turnstile-response"]');
+    return el ? String(el.value || '') : '';
+  }
+  (function () {
+    if (!TS_KEY) return;
+    var slot = document.getElementById('fTurnstile');
+    if (!slot) return;
+    slot.hidden = false;
+    var s = document.createElement('script');
+    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+    s.async = true;
+    s.defer = true;
+    s.onload = function () {
+      if (window.turnstile) window.turnstile.render(slot, { sitekey: TS_KEY, theme: 'light' });
+    };
+    document.head.appendChild(s);
+  })();
+
   function showErr(msg) { err.textContent = msg; err.classList.add('show'); }
   function clearErr() { err.textContent = ''; err.classList.remove('show'); }
   function msgFor(code) {
@@ -542,6 +569,9 @@ h1,h2,h3{font-family:Manrope,system-ui,sans-serif;color:var(--ink);letter-spacin
       case 'valid_phone': return 'Add a 10 digit phone so we can send you the link.';
       case 'valid_public_email': return 'Check the public email address.';
       case 'rate_limited': return 'Too many tries. Wait a minute and try again.';
+      case 'verification_required': return 'Wait a moment for the security check, then press the button again.';
+      case 'verification_failed': return 'The security check did not pass. Reload the page and try again.';
+      case 'verification_unavailable': return 'Our security check is briefly unavailable. Try again, or call (913) 933-1687.';
       case 'server_error': return 'Something went wrong on our side. Try again, or call (913) 933-1687.';
       default: return 'Something went wrong. Try again, or call (913) 933-1687.';
     }
@@ -591,6 +621,7 @@ h1,h2,h3{font-family:Manrope,system-ui,sans-serif;color:var(--ink);letter-spacin
           email: email,
           website: document.getElementById('fWebsite').value,
           elapsedMs: Date.now() - started,
+          turnstileToken: turnstileToken(),
           attribution: window.ksAttribution ? ksAttribution() : {},
         }),
       });

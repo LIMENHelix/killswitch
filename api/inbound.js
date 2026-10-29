@@ -15,6 +15,7 @@
 import { onboardCustomer } from '../lib/onboard.js';
 import { appendInboundLead } from '../lib/store.js';
 import { limited, LIMITS, callerIp, callerGeo } from '../lib/ratelimit.js';
+import { verifyTurnstile } from '../lib/turnstile.js';
 import { ensureCustomerSite } from '../lib/autonomy.js';
 import { upsertSite } from '../lib/sites.js';
 import { publicOrigin } from '../lib/origin.js';
@@ -133,6 +134,15 @@ export default async function handler(req, res) {
   // be traced back to an origin rather than just a random business name.
   const geo = callerGeo(req);
 
+  // Turnstile is the real gate: the hidden field and the timing check above are
+  // cheap traps a script walks past, while solving this is work. It sits before
+  // anything is written, so a rejected request creates no account and no site.
+  const human = await verifyTurnstile(body.turnstileToken, ip);
+  if (!human.ok) {
+    res.status(400).json({ error: human.error });
+    return;
+  }
+
   const email = String(body.email || '').trim().toLowerCase();
   const business = String(body.business || '').trim();
   const phone = String(body.phone || '').trim();
@@ -237,9 +247,23 @@ export default async function handler(req, res) {
     // control the inbox by opening the panel link. Until then the page works
     // by link but carries noindex and stays out of sitemap-sites.
     if (provisioned && provisioned.created && provisioned.site) {
-      await upsertSite({
+      // A SELF-SERVE SITE IS NOT ON THE INTERNET YET.
+      //
+      // It used to be created published-and-noindex, which still put a page at a
+      // public URL for anyone who typed a business name and an address they did
+      // not own. Creation is now a hard 404. The only way a site becomes
+      // reachable is the customer opening the panel link mailed to the address
+      // they typed, which is the proof the inbox is theirs. That flip lives in
+      // api/account.js, where the panel token is already verified.
+      provisioned.createdSite = await upsertSite({
         slug: provisioned.site.slug,
+        published: false,
         claimed: false,
+        // The marker that makes this a SELF-SERVE site awaiting its owner. It is
+        // deliberately distinct from a draft the operator built: only this flag
+        // lets a panel load publish the site, so an unpublished customer site or
+        // an operator draft can never be resurrected by someone opening a panel.
+        awaitingVerification: true,
         signupIp: ip,
         signupUserAgent: userAgent,
         signupGeo: geo,
@@ -309,10 +333,16 @@ export default async function handler(req, res) {
     // Not fatal. Customer got their account.
   }
 
+  // No preview URL for a site that is not live yet: handing out a link that
+  // 404s reads as a broken site, and the panel link in their inbox is the way
+  // in. Once they verify, the same URL stops 404ing and this key comes back.
+  const hidden = !!(provisioned.createdSite && !provisioned.createdSite.published);
   res.status(200).json({
     ok: true,
     email: out.email,
-    siteUrl: publicOrigin() + '/s/' + provisioned.site.slug,
-    message: 'Website created. Private panel link sent to ' + out.email + '.',
+    siteUrl: hidden ? undefined : publicOrigin() + '/s/' + provisioned.site.slug,
+    message: hidden
+      ? 'Website created. Open the panel link we emailed to ' + out.email + ' to make it live.'
+      : 'Website created. Private panel link sent to ' + out.email + '.',
   });
 }

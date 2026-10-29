@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<!-- Empty means Turnstile is not configured yet: no widget renders and the
+     server skips the check (see lib/turnstile.js). -->
+<meta name="turnstile-sitekey" content="" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Start your free site · Live Local Sites</title>
 <meta name="description" content="Tell us about your business and we will build your free website. A few quick questions and you are on your way." />
@@ -123,6 +126,7 @@
       </div>
 
       <input name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden" />
+      <div id="fTurnstile" hidden style="margin:14px 0 10px"></div>
       <label class="agree">
         <input type="checkbox" id="agree" />
         <span>I agree to the <a href="/terms" target="_blank" rel="noopener">Terms of Service</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>. My free website is mine to keep, and nothing is charged unless I turn on a paid module.</span>
@@ -162,6 +166,28 @@
       note = document.getElementById('startNote'),
       whichWrap = document.getElementById('domWhichWrap'),
       started = Date.now();
+
+  // Turnstile is loaded only when a site key is configured, so an unconfigured
+  // deploy renders no widget and asks nothing of the visitor.
+  var TS_KEY = (document.querySelector('meta[name="turnstile-sitekey"]') || {}).content || '';
+  function turnstileToken() {
+    var el = document.querySelector('input[name="cf-turnstile-response"]');
+    return el ? String(el.value || '') : '';
+  }
+  (function () {
+    if (!TS_KEY) return;
+    var slot = document.getElementById('fTurnstile');
+    if (!slot) return;
+    slot.hidden = false;
+    var s = document.createElement('script');
+    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+    s.async = true;
+    s.defer = true;
+    s.onload = function () {
+      if (window.turnstile) window.turnstile.render(slot, { sitekey: TS_KEY, theme: 'light' });
+    };
+    document.head.appendChild(s);
+  })();
 
   function toggleWhich() {
     whichWrap.style.display = document.getElementById('domYes').checked ? 'block' : 'none';
@@ -221,6 +247,7 @@
         domain: domain,
         interests: modules, notes: g('notes'),
         website: g('website'), elapsedMs: Date.now() - started,
+        turnstileToken: turnstileToken(),
         attribution: window.ksAttribution ? window.ksAttribution() : {},
       })
     })

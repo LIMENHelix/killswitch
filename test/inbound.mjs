@@ -6,7 +6,15 @@ delete process.env.KS_PUBLIC_ORIGIN;
 
 const KV = new Map();
 globalThis.fetch = async (url, opts = {}) => {
-  if (!String(url).startsWith('https://kv.test')) throw new Error('unexpected fetch ' + url);
+  const target = String(url);
+  // Turnstile verification. Only 'good-token' solves the challenge, so the test
+  // can prove both the pass and the reject paths without any network.
+  if (target.startsWith('https://challenges.cloudflare.com')) {
+    const form = new URLSearchParams(String(opts.body || ''));
+    const success = form.get('response') === 'good-token';
+    return { ok: true, status: 200, json: async () => ({ success }), text: async () => '' };
+  }
+  if (!target.startsWith('https://kv.test')) throw new Error('unexpected fetch ' + url);
   const input = JSON.parse(opts.body);
   const run = (a) => {
     const [op, key, field, value] = a;
@@ -35,6 +43,7 @@ globalThis.fetch = async (url, opts = {}) => {
 
 const inbound = (await import('../api/inbound.js')).default;
 const accountApi = (await import('../api/account.js')).default;
+const switchApi = (await import('../api/switch.js')).default;
 const { getAccount, getLeads, upsertAccount } = await import('../lib/store.js');
 const { siteForEmail, upsertSite } = await import('../lib/sites.js');
 const { panelToken } = await import('../lib/panel-auth.js');
@@ -84,11 +93,11 @@ const account = await getAccount('owner@example.com');
 const site = await siteForEmail('owner@example.com');
 check('the account is created', account && account.plan.includes('P0'));
 check('a real site is created and linked', site && site.slug === 'north-star-electric', JSON.stringify(site));
-// A self-serve site is live by link but NOT indexable: the customer has not yet
-// proved they control the inbox they typed. Opening the panel link flips this.
-check('the site is live but not yet customer-claimed', site.published && !site.claimed);
+// A self-serve site does not exist in public at all until the customer proves
+// they control the inbox they typed. Opening the panel link is what publishes it.
+check('a new self-serve site is neither live nor claimed', !site.published && !site.claimed);
 check('the customer phone is on the page record', site.phone === '(816) 555-0199');
-check('the response links the live site', res.body.siteUrl === 'https://livelocalsites.com/s/north-star-electric', res.body.siteUrl);
+check('no preview link is handed out for a site that is not live yet', res.body.siteUrl === undefined, String(res.body.siteUrl));
 check('an attacker Host header cannot capture a panel token', !res.body.portalUrl && !JSON.stringify(res.body).includes('attacker.example'));
 check('the signup IP is saved on the site record', site.signupIp === '10.20.30.40', site.signupIp);
 check('the signup user-agent is saved on the site record', site.signupUserAgent === 'Mozilla/5.0 (test)', site.signupUserAgent);
@@ -127,12 +136,19 @@ await accountApi({ method: 'GET', query: { e: 'owner@example.com', t: 'not-a-tok
 check('a bad token does not verify', wrong.code === 401, JSON.stringify(wrong.body));
 const unclaimedStill = await siteForEmail('owner@example.com');
 check('a bad token claims nothing', unclaimedStill.claimed === false);
+check('a bad token publishes nothing', unclaimedStill.published === false);
 const opened = response();
 await accountApi({ method: 'GET', query: { e: 'owner@example.com', t: token }, headers: {} }, opened);
 check('the panel link opens the account', opened.code === 200, JSON.stringify(opened.body));
 const verified = await siteForEmail('owner@example.com');
-check('opening the emailed link claims the site', verified.claimed === true);
-check('the verified site is still published', verified.published === true);
+check('opening the emailed link publishes and claims the site',
+  verified.claimed === true && verified.published === true,
+  JSON.stringify({ claimed: verified.claimed, published: verified.published }));
+check('the verification time is recorded', typeof verified.verifiedAt === 'string' && verified.verifiedAt.length > 0);
+const reopened = response();
+await accountApi({ method: 'GET', query: { e: 'owner@example.com', t: token }, headers: {} }, reopened);
+const twice = await siteForEmail('owner@example.com');
+check('reopening the panel link is idempotent', twice.claimed === true && twice.published === true);
 
 console.log('\nREPEATED SIGNUP CANNOT DOWNGRADE A CUSTOMER');
 await upsertAccount({ email: 'paid@example.com', name: 'Paid Original', site: 'Paid Original', plan: ['P0', 'P9'], owned: ['P3'], stripeCustomerId: 'cus_paid', createdAt: '2025-01-01T00:00:00.000Z', source: 'paid' });
@@ -180,7 +196,8 @@ check('the parsed hours are on the site record',
 check('the customer about wins over the generated sentence',
   rvSite.about === 'Family owned, third generation, we answer the phone ourselves.', rvSite.about);
 check('a new free site is P0 only', JSON.stringify(rvSite.modules) === JSON.stringify(['P0']), JSON.stringify(rvSite.modules));
-check('the response links the live site', res.body.siteUrl === 'https://livelocalsites.com/s/rivertown-plumbing', res.body.siteUrl);
+check('no preview link is handed out for a site that is not live yet', res.body.siteUrl === undefined, String(res.body.siteUrl));
+check('the signup message points them at the emailed link', /panel link/i.test(res.body.message || ''), res.body.message);
 const rvAccount = await getAccount('rivertown@example.com');
 check('the contact name is on the account', rvAccount.name === 'Ada Ruiz', JSON.stringify(rvAccount));
 const rvLead = (await getLeads()).find((lead) => lead.email === 'rivertown@example.com');
@@ -250,6 +267,39 @@ res = await submit({ email: 'x@example.com', business: 'X Y', phone: '816-555-01
 check('oversized notes are rejected', res.code === 400 && res.body.error === 'notes_too_long', JSON.stringify(res.body));
 res = await submit({ email: 'x@example.com', business: 'X Y', phone: '816-555-0100', trade: 't'.repeat(81) }, 'attacker.example', '10.0.0.7');
 check('oversized intake fields are rejected', res.code === 400 && res.body.error === 'intake_fields_too_long', JSON.stringify(res.body));
+
+console.log('\nTURNSTILE IS THE GATE ONCE A SECRET IS CONFIGURED');
+// Unconfigured is the state every test above ran in: no token is asked for and
+// signup works. Now turn it on and prove the other half.
+process.env.TURNSTILE_SECRET_KEY = 'test-secret';
+res = await submit({ email: 'ts0@example.com', business: 'TS Zero', phone: '816-555-0200' }, 'attacker.example', '10.8.8.1');
+check('a signup with no token is rejected once configured',
+  res.code === 400 && res.body.error === 'verification_required', JSON.stringify(res.body));
+res = await submit({ email: 'ts1@example.com', business: 'TS One', phone: '816-555-0201', turnstileToken: 'bad-token' }, 'attacker.example', '10.8.8.2');
+check('a failed challenge is rejected',
+  res.code === 400 && res.body.error === 'verification_failed', JSON.stringify(res.body));
+check('a rejected challenge creates no account', !(await getAccount('ts1@example.com')));
+check('a rejected challenge creates no site', !(await siteForEmail('ts1@example.com')));
+res = await submit({ email: 'ts2@example.com', business: 'TS Two', phone: '816-555-0202', turnstileToken: 'good-token' }, 'attacker.example', '10.8.8.3');
+check('a solved challenge passes', res.code === 200, JSON.stringify(res.body));
+delete process.env.TURNSTILE_SECRET_KEY;
+
+console.log('\nTHE PANEL ITSELF IS WHAT PUBLISHES A VERIFIED SITE');
+// The panel never calls /api/account; it calls /api/switch. That path has to be
+// the one that lifts the 404, or a site created by A can never go live at all.
+await submit({ email: 'panel@example.com', business: 'Panel Proof Co', phone: '816-555-0300' }, 'attacker.example', '10.7.7.1');
+const beforePanel = await siteForEmail('panel@example.com');
+check('a fresh signup site is a 404', !!beforePanel && !beforePanel.published && !beforePanel.claimed,
+  JSON.stringify({ published: beforePanel && beforePanel.published, claimed: beforePanel && beforePanel.claimed }));
+const ptok = await panelToken('panel@example.com');
+const sw = response();
+await switchApi({ method: 'POST', body: { action: 'state', e: 'panel@example.com', t: ptok }, headers: {} }, sw);
+const afterPanel = await siteForEmail('panel@example.com');
+check('opening the panel publishes and claims it',
+  afterPanel.published === true && afterPanel.claimed === true,
+  JSON.stringify({ published: afterPanel.published, claimed: afterPanel.claimed }));
+check('the panel response carries the live address',
+  sw.body && sw.body.siteUrl === '/s/panel-proof-co', JSON.stringify(sw.body && sw.body.siteUrl));
 
 console.log('\n' + passed + ' passed, ' + failed + ' failed\n');
 process.exit(failed ? 1 : 0);

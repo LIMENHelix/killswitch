@@ -12,7 +12,8 @@ import { verifyPanel, panelToken } from '../lib/panel-auth.js';
 import { MONTHLY, PRICE_TO_PHASE, isSellable } from '../lib/prices.js';
 import { stripeGet, stripePost, stripeDelete } from '../lib/stripe.js';
 import { notifyOperator, labelPhases } from '../lib/notify.js';
-import { siteForEmail, upsertSite } from '../lib/sites.js';
+import { siteForEmail } from '../lib/sites.js';
+import { publishOnPanelOpen } from '../lib/claims.js';
 // syncModulesLoud, not syncModules: a paid switch that renders nowhere used to
 // return null into a catch that only ever saw thrown errors. See lib/site-link.js.
 import { syncModulesLoud } from '../lib/site-link.js';
@@ -37,6 +38,14 @@ export default async function handler(req, res) {
 
   const found = await getAccount(email);
   if (!found) { res.status(404).json({ error: 'not_found' }); return; }
+
+  // Opening the panel is the customer proving they control the inbox the link
+  // was mailed to. That is the only thing that publishes a self-serve site:
+  // api/inbound.js creates one as a hard 404 so a script cannot put a page in
+  // public, and this is where a real owner lifts it. Does nothing to a site
+  // that is already claimed.
+  try { await publishOnPanelOpen(email); }
+  catch (e) { console.error('[switch] publish', e); }
 
   const host = publicOrigin();
 
@@ -113,15 +122,11 @@ async function readState(account) {
   try {
     const rec = await siteForEmail(account.email);
     if (rec) {
-      // AUTO-CLAIM on first panel load: customer opened their panel, so they own it.
-      // Published sites stay published and get indexed. Unpublished draft 404s until
-      // they claim it themselves (which this does), so nothing changes visibility.
-      if (!rec.claimed) {
-        try {
-          await upsertSite({ slug: rec.slug, claimed: true });
-          rec.claimed = true;
-        } catch (e) { console.error('[switch] auto-claim', rec.slug, e); }
-      }
+      // Claiming, and publishing a self-serve signup that was waiting for its
+      // owner, already happened at the top of this handler through
+      // publishOnPanelOpen. Repeating it here would split one rule across two
+      // places. rec is read after that call, so these flags are current.
+
       live = { slug: rec.slug, path: '/s/' + rec.slug, published: !!rec.published, claimed: !!rec.claimed };
       // THE ENGAGEMENT STAMP the free-site claim reminder stands down on. The
       // first panel open is the owner claiming their site in every sense that
