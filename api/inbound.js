@@ -13,7 +13,8 @@
 // Stripe, or checkout. No operator step needed: fully autonomous signup.
 
 import { onboardCustomer } from '../lib/onboard.js';
-import { appendInboundLead } from '../lib/store.js';
+import { appendInboundLead, claimOnce } from '../lib/store.js';
+import { feeEnabled, createFeeSession, readFeeSession } from '../lib/signup-fee.js';
 import { limited, LIMITS, callerIp, callerGeo } from '../lib/ratelimit.js';
 import { verifyTurnstile } from '../lib/turnstile.js';
 import { ensureCustomerSite } from '../lib/autonomy.js';
@@ -230,6 +231,54 @@ export default async function handler(req, res) {
   // intake whose form requires the Terms checkbox. A client-sent timestamp is
   // ignored on purpose — proof of consent is ours to record, not theirs.
   const termsAcceptedAt = new Date().toISOString();
+
+  // THE SETUP FEE. When one is configured, this endpoint no longer creates
+  // anything until Stripe says the money is in. Nothing is written before the
+  // check below: no lifecycle event, no site, no account, no email. A bot that
+  // posts the form and stops gets a checkout URL it cannot complete.
+  //
+  // The fee is a separate Stripe charge from the add-on subscriptions — see
+  // lib/signup-fee.js for why that separation is enforced rather than assumed.
+  if (feeEnabled()) {
+    const paidSession = String(body.paymentSession || '').trim();
+
+    if (!paidSession) {
+      const pid = crypto.randomBytes(9).toString('hex');
+      const sess = await createFeeSession({ email, host: publicOrigin(), pid });
+      if (sess.error) { res.status(502).json({ error: sess.error }); return; }
+      res.status(200).json({
+        ok: true,
+        requiresPayment: true,
+        checkoutUrl: sess.url,
+        feeCents: sess.cents,
+      });
+      return;
+    }
+
+    const got = await readFeeSession(paidSession);
+    if (got.error) { res.status(502).json({ error: got.error }); return; }
+    const session = got.session;
+    const meta = session.metadata || {};
+    const paidEmail = String(
+      session.customer_email
+      || (session.customer_details && session.customer_details.email)
+      || '',
+    ).trim().toLowerCase();
+
+    // Order matters: everything is verified before the session is marked spent,
+    // so a customer whose payment has not settled yet can retry the same one.
+    if (meta.kind !== 'signup-fee') { res.status(400).json({ error: 'not_a_signup_fee' }); return; }
+    if (String(session.payment_status || '') !== 'paid') { res.status(402).json({ error: 'payment_not_complete' }); return; }
+    if (paidEmail && paidEmail !== email) { res.status(400).json({ error: 'payment_email_mismatch' }); return; }
+
+    // One session, one site. Stripe retries and a customer hitting Back must not
+    // provision twice, and this is also what stops a paid session being replayed
+    // by anyone who gets hold of its id.
+    if (!await claimOnce('ks:signupfee:' + paidSession, 86400)) {
+      res.status(400).json({ error: 'payment_already_used' });
+      return;
+    }
+  }
 
   let out;
   let provisioned;

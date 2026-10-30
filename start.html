@@ -236,23 +236,34 @@
     var btn = form.querySelector('button[type=submit]');
     btn.disabled = true; setNote('Sending...', false);
 
+    var payload = {
+      email: email, business: business, phone: phone, name: name,
+      trade: g('trade'), city: g('city'), state: g('state'),
+      street: g('street'), zip: g('zip'), publicEmail: publicEmail,
+      services: g('services'), hours: g('hours'), about: g('about'),
+      domain: domain,
+      interests: modules, notes: g('notes'),
+      website: g('website'), elapsedMs: Date.now() - started,
+      turnstileToken: turnstileToken(),
+      attribution: window.ksAttribution ? window.ksAttribution() : {},
+    };
+    // Kept for the return trip from Stripe: a site is created only after the
+    // setup fee is paid, and this is the signup that payment buys.
+    try { sessionStorage.setItem('ksSignup', JSON.stringify(payload)); } catch (e5) {}
+
     fetch('/api/inbound', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: email, business: business, phone: phone, name: name,
-        trade: g('trade'), city: g('city'), state: g('state'),
-        street: g('street'), zip: g('zip'), publicEmail: publicEmail,
-        services: g('services'), hours: g('hours'), about: g('about'),
-        domain: domain,
-        interests: modules, notes: g('notes'),
-        website: g('website'), elapsedMs: Date.now() - started,
-        turnstileToken: turnstileToken(),
-        attribution: window.ksAttribution ? window.ksAttribution() : {},
-      })
+      body: JSON.stringify(payload)
     })
     .then(function (r) { return r.json().catch(function () { return {}; }); })
     .then(function (d) {
+      // A site costs money now. Send them to Stripe and create nothing.
+      if (d && d.ok && d.requiresPayment && d.checkoutUrl) {
+        setNote('Taking you to secure payment…', false);
+        window.location.href = d.checkoutUrl;
+        return;
+      }
       if (d && d.ok) {
         if (window.ksEvent) ksEvent('signup_submitted', { source: 'start-page' });
         form.style.display = 'none'; setNote('', false);
@@ -281,6 +292,59 @@
     })
     .catch(function () { setNote('Network error, please try again.', true); btn.disabled = false; });
   });
+
+  // RETURNING FROM STRIPE. The setup fee was paid; the signup that fee bought is
+  // the one parked in sessionStorage. Nothing was created when they first
+  // submitted, so this is the only request that actually builds the site — and
+  // the server checks with Stripe that the session is paid and unused before it
+  // does. A reload or a Back button replays into 'payment_already_used', which
+  // means the single site it bought already exists; that is not an error worth
+  // showing a customer as one.
+  (function () {
+    var q = new URLSearchParams(location.search);
+    var sid = q.get('session_id');
+    if (q.get('cancelled')) { setNote('Payment was cancelled, so nothing was created. You can try again whenever you like.', true); return; }
+    if (!q.get('paid') || !sid) return;
+
+    var raw = '';
+    try { raw = sessionStorage.getItem('ksSignup') || ''; } catch (e6) { raw = ''; }
+    if (!raw) {
+      setNote('Payment received. Reply to the email we sent, or call (913) 933-1687, and we will finish setting up your site.', false);
+      return;
+    }
+
+    var parked;
+    try { parked = JSON.parse(raw); } catch (e7) { parked = null; }
+    if (!parked) return;
+
+    form.style.display = 'none';
+    setNote('Payment received — building your site…', false);
+
+    fetch('/api/inbound', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.assign({}, parked, { paymentSession: sid, elapsedMs: Date.now() - started }))
+    })
+      .then(function (r) { return r.json().catch(function () { return {}; }); })
+      .then(function (d) {
+        try { sessionStorage.removeItem('ksSignup'); } catch (e8) {}
+        var done = document.getElementById('startDone');
+        if (d && d.ok) {
+          done.style.display = 'block';
+          done.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setNote('', false);
+          return;
+        }
+        form.style.display = '';
+        setNote(d && d.error === 'payment_already_used'
+          ? 'This payment was already used to set up your site. Open the panel link we emailed you.'
+          : 'Payment received, but we could not finish just now. Call (913) 933-1687 and we will sort it out.', true);
+      })
+      .catch(function () {
+        form.style.display = '';
+        setNote('Payment received, but the connection dropped. Please call (913) 933-1687.', true);
+      });
+  })();
 })();
 </script>
 <script src="/ks-fx.js"></script>

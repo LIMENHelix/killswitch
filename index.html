@@ -610,26 +610,37 @@ h1,h2,h3{font-family:Manrope,system-ui,sans-serif;color:var(--ink);letter-spacin
     if (window.ksEvent) ksEvent('intake_started', { source: 'homepage' });
 
     try {
+      var payload = {
+        business: business,
+        trade: trade,
+        city: city,
+        phone: phone,
+        email: email,
+        website: document.getElementById('fWebsite').value,
+        elapsedMs: Date.now() - started,
+        turnstileToken: turnstileToken(),
+        attribution: window.ksAttribution ? ksAttribution() : {},
+      };
+      // Kept so /start can finish the signup after the customer pays: the site
+      // is only created once Stripe confirms, and this is what it re-posts.
+      try { sessionStorage.setItem('ksSignup', JSON.stringify(payload)); } catch (e4) {}
       var r = await fetch('/api/inbound', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          business: business,
-          trade: trade,
-          city: city,
-          phone: phone,
-          email: email,
-          website: document.getElementById('fWebsite').value,
-          elapsedMs: Date.now() - started,
-          turnstileToken: turnstileToken(),
-          attribution: window.ksAttribution ? ksAttribution() : {},
-        }),
+        body: JSON.stringify(payload),
       });
       var d = await r.json().catch(function () { return {}; });
       if (!r.ok || !d.ok) {
         showErr(msgFor(d.error));
         btn.disabled = false;
         btn.textContent = label;
+        return;
+      }
+      // A site costs money now: hand them to Stripe instead of pretending it is
+      // built. Nothing exists on our side until that payment comes back.
+      if (d.requiresPayment && d.checkoutUrl) {
+        btn.textContent = 'Redirecting to payment…';
+        window.location.href = d.checkoutUrl;
         return;
       }
       if (window.ksEvent) ksEvent('signup_submitted', { source: 'homepage' });

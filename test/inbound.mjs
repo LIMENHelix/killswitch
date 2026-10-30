@@ -14,6 +14,16 @@ globalThis.fetch = async (url, opts = {}) => {
     const success = form.get('response') === 'good-token';
     return { ok: true, status: 200, json: async () => ({ success }), text: async () => '' };
   }
+  if (target.startsWith('https://api.stripe.com')) {
+    if (opts.method === 'POST') {
+      return { ok: true, status: 200, json: async () => ({ id: 'cs_test_1', url: 'https://checkout.stripe.test/1' }), text: async () => '' };
+    }
+    const id = target.split('/').pop();
+    const base = { id, customer_email: 'fee@example.com' };
+    if (id === 'cs_unpaid') return { ok: true, status: 200, json: async () => ({ ...base, payment_status: 'unpaid', metadata: { kind: 'signup-fee' } }), text: async () => '' };
+    if (id === 'cs_wrongkind') return { ok: true, status: 200, json: async () => ({ ...base, payment_status: 'paid', metadata: { kind: 'module' } }), text: async () => '' };
+    return { ok: true, status: 200, json: async () => ({ ...base, payment_status: 'paid', metadata: { kind: 'signup-fee' } }), text: async () => '' };
+  }
   if (!target.startsWith('https://kv.test')) throw new Error('unexpected fetch ' + url);
   const input = JSON.parse(opts.body);
   const run = (a) => {
@@ -312,6 +322,29 @@ check('opening the panel publishes and claims it',
   JSON.stringify({ published: afterPanel.published, claimed: afterPanel.claimed }));
 check('the panel response carries the live address',
   sw.body && sw.body.siteUrl === '/s/panel-proof-co', JSON.stringify(sw.body && sw.body.siteUrl));
+
+console.log('\nA CONFIGURED SETUP FEE CREATES NOTHING UNTIL STRIPE SAYS PAID');
+process.env.SIGNUP_FEE_CENTS = '100';
+process.env.STRIPE_SECRET_KEY = 'sk_test_fee';
+res = await submit({ email: 'fee@example.com', business: 'Fee Shop', phone: '816-555-0400' }, 'attacker.example', '10.5.5.1');
+check('an unpaid signup is sent to checkout instead of creating a site',
+  res.code === 200 && res.body.requiresPayment === true && !!res.body.checkoutUrl, JSON.stringify(res.body));
+check('the fee is one dollar', res.body.feeCents === 100, String(res.body.feeCents));
+check('nothing was created before payment', !(await getAccount('fee@example.com')) && !(await siteForEmail('fee@example.com')));
+res = await submit({ email: 'fee@example.com', business: 'Fee Shop', phone: '816-555-0400', paymentSession: 'cs_unpaid' }, 'attacker.example', '10.5.5.2');
+check('an unsettled payment provisions nothing', res.code === 402 && res.body.error === 'payment_not_complete', JSON.stringify(res.body));
+check('the unsettled attempt created nothing', !(await siteForEmail('fee@example.com')));
+res = await submit({ email: 'fee@example.com', business: 'Fee Shop', phone: '816-555-0400', paymentSession: 'cs_wrongkind' }, 'attacker.example', '10.5.5.3');
+check('a different kind of Stripe charge cannot buy a site', res.code === 400 && res.body.error === 'not_a_signup_fee', JSON.stringify(res.body));
+res = await submit({ email: 'fee@example.com', business: 'Fee Shop', phone: '816-555-0400', paymentSession: 'cs_paid_ok' }, 'attacker.example', '10.5.5.4');
+check('a paid fee creates the site', res.code === 200 && res.body.ok === true, JSON.stringify(res.body));
+const feeSite = await siteForEmail('fee@example.com');
+check('the paid site exists and is still unverified', !!feeSite && feeSite.published === false && feeSite.claimed === false,
+  JSON.stringify(feeSite && { published: feeSite.published, claimed: feeSite.claimed }));
+res = await submit({ email: 'fee@example.com', business: 'Fee Shop', phone: '816-555-0400', paymentSession: 'cs_paid_ok' }, 'attacker.example', '10.5.5.5');
+check('one payment cannot be replayed for a second site', res.code === 400 && res.body.error === 'payment_already_used', JSON.stringify(res.body));
+delete process.env.SIGNUP_FEE_CENTS;
+delete process.env.STRIPE_SECRET_KEY;
 
 console.log('\n' + passed + ' passed, ' + failed + ' failed\n');
 process.exit(failed ? 1 : 0);
