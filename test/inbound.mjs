@@ -60,7 +60,10 @@ async function submit(body, host = 'attacker.example', ip = '127.0.0.1', geo = n
   const res = response();
   const headers = { host, origin: 'https://' + host, 'x-forwarded-for': ip };
   Object.assign(headers, geo || {});
-  await inbound({ method: 'POST', body, headers }, res);
+  // Both traps are required now, so a normal case has to carry them the way the
+  // real forms do. Tests that probe a trap override these deliberately.
+  const payload = { website: '', elapsedMs: 5000, ...body };
+  await inbound({ method: 'POST', body: payload, headers }, res);
   return res;
 }
 
@@ -127,6 +130,15 @@ check('a trapped request creates no account', !(await getAccount('bot@example.co
 check('a trapped request creates no site', !(await siteForEmail('bot@example.com')));
 res = await submit({ email: 'human@example.com', business: 'Human Shop', phone: '816-555-0103', elapsedMs: 5000 }, 'attacker.example', '10.9.9.3');
 check('a human-paced submission with an empty hidden field passes', res.code === 200, JSON.stringify(res.body));
+// The traps are required, not optional: a caller that omits them is not one of
+// our forms. These call the handler directly because submit() supplies defaults.
+const noTraps = response();
+await inbound({ method: 'POST', body: { email: 'nt@example.com', business: 'No Traps', phone: '816-555-0202' }, headers: { host: 'attacker.example', 'x-forwarded-for': '10.6.6.1' } }, noTraps);
+check('a signup that omits both trap fields is rejected', noTraps.code === 400 && noTraps.body.error === 'invalid_request', JSON.stringify(noTraps.body));
+const noTime = response();
+await inbound({ method: 'POST', body: { email: 'nt2@example.com', business: 'No Time', phone: '816-555-0203', website: '' }, headers: { host: 'attacker.example', 'x-forwarded-for': '10.6.6.2' } }, noTime);
+check('a signup with no fill time is rejected', noTime.code === 400 && noTime.body.error === 'invalid_request', JSON.stringify(noTime.body));
+check('neither trapped request created an account', !(await getAccount('nt@example.com')) && !(await getAccount('nt2@example.com')));
 
 console.log('\nOPENING THE EMAILED PANEL LINK IS THE VERIFICATION GATE');
 const token = await panelToken('owner@example.com');

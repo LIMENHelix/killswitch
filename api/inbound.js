@@ -117,12 +117,17 @@ export default async function handler(req, res) {
   // Cheap bot traps. The hidden field is never visible to a person; a filled
   // value means a script walked the form. The elapsed check rejects instant
   // submissions. Neither is a CAPTCHA, but both cost a naive bot the request.
-  if (String(body.website || '').trim()) {
+  // Both traps are REQUIRED now, not merely checked when present. The homepage
+  // and /start always send both, so a request without them is not one of our
+  // forms. This is still not a wall — a script can send website:'' and a large
+  // elapsedMs — but it means the request has to imitate the form deliberately
+  // instead of omitting fields by accident.
+  if (!('website' in body) || String(body.website || '').trim()) {
     res.status(400).json({ error: 'invalid_request' });
     return;
   }
   const elapsedMs = Number(body.elapsedMs);
-  if (Number.isFinite(elapsedMs) && elapsedMs >= 0 && elapsedMs < 1200) {
+  if (!Number.isFinite(elapsedMs) || elapsedMs < 1200) {
     res.status(400).json({ error: 'invalid_request' });
     return;
   }

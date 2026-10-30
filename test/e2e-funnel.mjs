@@ -399,6 +399,8 @@ await inbound({
   body: {
     email: EMAIL, business: BUSINESS, phone: '(913) 555-0199', trade: 'plumber',
     city: 'Kansas City', state: 'MO', street: '44 Main St', zip: '64108',
+    // The traps are required now; send them the way the real forms do.
+    website: '', elapsedMs: 5000,
   },
 }, res);
 check('the claim is accepted', res.code === 200 && res.body.ok === true, res.code + ' ' + JSON.stringify(res.body));
@@ -455,7 +457,7 @@ res = mkres();
 await inbound({
   method: 'POST',
   headers: { 'x-forwarded-for': '203.0.113.9' },
-  body: { email: EMAIL, business: BUSINESS, phone: '(913) 555-0199', trade: 'plumber', city: 'Kansas City', state: 'MO', street: '44 Main St', zip: '64108' },
+  body: { email: EMAIL, business: BUSINESS, phone: '(913) 555-0199', trade: 'plumber', city: 'Kansas City', state: 'MO', street: '44 Main St', zip: '64108', website: '', elapsedMs: 5000 },
 }, res);
 check('a repeat signup succeeds against the same site', res.code === 200 && res.body.siteUrl.endsWith('/s/' + SLUG));
 const account2 = await getAccount(EMAIL);

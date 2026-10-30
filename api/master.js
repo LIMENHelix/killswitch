@@ -6,7 +6,7 @@
 // MRR/switch data is read live from Stripe on each load, so it is always
 // accurate with no sync to maintain. Free accounts (no Stripe) show plan P0.
 import crypto from 'node:crypto';
-import { getAccounts, saveAccounts, upsertAccount, getLeads, setLeadMetaMany } from '../lib/store.js';
+import { getAccounts, saveAccounts, upsertAccount, getLeads, setLeadMetaMany, deleteAccount, deleteInboundLead } from '../lib/store.js';
 import { draftFromLead } from '../lib/draft-site.js';
 import { writeSite } from '../lib/site-writer.js';
 
@@ -593,6 +593,54 @@ export default async function handler(req, res) {
       const out = await deleteSite(slug);
       if (!out.deleted) { res.status(404).json(out); return; }
       res.status(200).json({ ok: true, ...out });
+      return;
+    }
+
+    if (action === 'signup-purge') {
+      // Bot signups: a site the public form created, named the way that bot named
+      // them, that was never published and never claimed. The set is derived HERE
+      // from the records, never from a caller-supplied list, so a mistyped slug
+      // cannot name a real customer. Dry run is the default; removing anything
+      // needs the exact confirmation string.
+      const candidates = (await listSites()).filter((s) => s && s.slug
+        && s.source === 'inbound-homepage'
+        && /-llc$/i.test(s.slug)
+        && !s.published && !s.claimed);
+
+      const emails = new Set(candidates.map((s) => String(s.email || '').trim().toLowerCase()).filter(Boolean));
+      // Leads are matched by the EMAIL the bot typed, not by slug: the public
+      // signup writer leaves siteSlug empty, and a slug match would sweep up the
+      // operator's own bulk drafts, which also end in -llc.
+      const leadHits = (await getLeads()).filter((l) => l && l.email && emails.has(String(l.email).trim().toLowerCase()));
+
+      if (String(body.confirm || '') !== 'purge-signups') {
+        res.status(200).json({
+          ok: true,
+          dryRun: true,
+          sites: candidates.length,
+          leads: leadHits.length,
+          accounts: emails.size,
+          sample: candidates.slice(0, 10).map((s) => s.slug),
+          hint: "send confirm:'purge-signups' to remove exactly these",
+        });
+        return;
+      }
+
+      let sites = 0, leadCount = 0, accountCount = 0;
+      const failed = [];
+      for (const s of candidates) {
+        try { if ((await deleteSite(s.slug)).deleted) sites++; }
+        catch (e) { failed.push({ slug: s.slug, error: String(e && e.message || e) }); }
+      }
+      for (const l of leadHits) {
+        try { if (await deleteInboundLead(l.id)) leadCount++; }
+        catch (e) { failed.push({ lead: l.id, error: String(e && e.message || e) }); }
+      }
+      for (const e of emails) {
+        try { if (await deleteAccount(e)) accountCount++; }
+        catch (err) { failed.push({ email: e, error: String(err && err.message || err) }); }
+      }
+      res.status(200).json({ ok: !failed.length, sites, leads: leadCount, accounts: accountCount, failed });
       return;
     }
 
